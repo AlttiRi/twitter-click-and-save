@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name        Twitter Click&Save
-// @version     0.1.2
+// @version     0.1.3
 // @namespace   gh.alttiri
-// @description Add buttons to download images and videos, also does some enhances for Twitter.
+// @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
 // @homepageURL https://github.com/AlttiRi/twitter-click-and-save
 // @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
