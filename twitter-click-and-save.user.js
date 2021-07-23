@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click&Save
-// @version     0.1.1
+// @version     0.1.2
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos, also does some enhances for Twitter.
 // @match       https://twitter.com/*
@@ -9,7 +9,7 @@
 // @downloadURL https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js
 // ==/UserScript==
 
-const verbose = true;
+const verbose = false;
 const LS = hoistLS({logInTitle: verbose});
 const API = hoistAPI();
 const Post = hoistPost();
