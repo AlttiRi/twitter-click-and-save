@@ -9,3 +9,11 @@ The content saves (downloads) with the most appropriate filename. The userscript
 - Highlight visited links
 - Automatically expands spoilers
 - Hides: sign up bar, sign up section; trends; topics to follow
+
+## Installation
+
+An installed userscript manager browser extension is required. _(TamperMonkey, ViolentMonkey, GreaseMonkey)_
+
+1. [Click on this link](https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js) 
+2. Confirm the installation in your usersript manager.
+
