@@ -1,9 +1,12 @@
 // ==UserScript==
 // @name        Twitter Click&Save
 // @version     0.1.1
-// @namespace   Twitter Click&Save
+// @namespace   gh.alttiri
+// @description Add buttons to download images and videos, also does some enhances for Twitter.
 // @match       https://twitter.com/*
-// @description Add buttons to download images and videos, also does some enhances.
+// @homepageURL https://github.com/AlttiRi/twitter-click-and-save
+// @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
+// @downloadURL https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js
 // ==/UserScript==
 
 const verbose = true;
