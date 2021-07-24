@@ -14,13 +14,13 @@ The content saves (downloads) with the most appropriate filename. The userscript
 
 _An installed userscript manager browser extension is required._
 _(Tampermonkey
-[![Chrome image by Google](https://icons.iconarchive.com/icons/google/chrome/24/Google-Chrome-icon.png "Download Tampermonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
-[![Firefox image by Mozilla Foundation](https://icons.iconarchive.com/icons/carlosjj/mozilla/24/Firefox-icon.png "Download Tampermonkey for Firefox")](https://addons.mozilla.org/firefox/addon/tampermonkey/),
+[![Chrome image by Google](https://camo.githubusercontent.com/bae47ea3643e2620e4cb40abcb8a9889d4f8c2719232de1e0bd185da0d55a466/68747470733a2f2f69636f6e732e69636f6e617263686976652e636f6d2f69636f6e732f676f6f676c652f6368726f6d652f32342f476f6f676c652d4368726f6d652d69636f6e2e706e67 "Download Tampermonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+[![Firefox image by Mozilla Foundation](https://camo.githubusercontent.com/4bd792755387276114a3bb4c063c99c0efa29fdca0da7be0638ca9fc9fb0ec59/68747470733a2f2f69636f6e732e69636f6e617263686976652e636f6d2f69636f6e732f6361726c6f736a6a2f6d6f7a696c6c612f32342f46697265666f782d69636f6e2e706e67 "Download Tampermonkey for Firefox")](https://addons.mozilla.org/firefox/addon/tampermonkey/),
 Violentmonkey
-[![Chrome image by Google](https://icons.iconarchive.com/icons/google/chrome/24/Google-Chrome-icon.png "Download Violentmonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
-[![Firefox image by Mozilla Foundation](https://icons.iconarchive.com/icons/carlosjj/mozilla/24/Firefox-icon.png "Download Violentmonkey for Firefox")](https://addons.mozilla.org/firefox/addon/violentmonkey/), 
+[![Chrome image by Google](https://camo.githubusercontent.com/bae47ea3643e2620e4cb40abcb8a9889d4f8c2719232de1e0bd185da0d55a466/68747470733a2f2f69636f6e732e69636f6e617263686976652e636f6d2f69636f6e732f676f6f676c652f6368726f6d652f32342f476f6f676c652d4368726f6d652d69636f6e2e706e67 "Download Violentmonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
+[![Firefox image by Mozilla Foundation](https://camo.githubusercontent.com/4bd792755387276114a3bb4c063c99c0efa29fdca0da7be0638ca9fc9fb0ec59/68747470733a2f2f69636f6e732e69636f6e617263686976652e636f6d2f69636f6e732f6361726c6f736a6a2f6d6f7a696c6c612f32342f46697265666f782d69636f6e2e706e67 "Download Violentmonkey for Firefox")](https://addons.mozilla.org/firefox/addon/violentmonkey/), 
 Greasemonkey
-[![Firefox image by Mozilla Foundation](https://icons.iconarchive.com/icons/carlosjj/mozilla/24/Firefox-icon.png "Download Greasemonkey for Firefox")](https://addons.mozilla.org/firefox/addon/greasemonkey/))_
+[![Firefox image by Mozilla Foundation](https://camo.githubusercontent.com/4bd792755387276114a3bb4c063c99c0efa29fdca0da7be0638ca9fc9fb0ec59/68747470733a2f2f69636f6e732e69636f6e617263686976652e636f6d2f69636f6e732f6361726c6f736a6a2f6d6f7a696c6c612f32342f46697265666f782d69636f6e2e706e67 "Download Greasemonkey for Firefox")](https://addons.mozilla.org/firefox/addon/greasemonkey/))_
 
 To install just do two clicks:
 
