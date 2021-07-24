@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.5
+// @version     0.1.6
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -9,7 +9,15 @@
 // @downloadURL https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js
 // ==/UserScript==
 
+// --- For debug --- //
 const verbose = false;
+
+// --- Constants for language dependent features --- //
+const VIEW             = ["View",              "Посмотреть"];
+const YES_VIEW_PROFILE = ["Yes, view profile", "Да, посмотреть профиль"];
+
+
+// --- "Imports" --- //
 const LS = hoistLS({logInTitle: verbose});
 const API = hoistAPI();
 const Post = hoistPost();
@@ -37,7 +45,6 @@ const Features = hoistFeatures();
 })();
 
 
-
 // --- Features to execute --- //
 function mainOnce() {
     addCSS(getUserScriptCSS());
@@ -49,7 +56,6 @@ function mainOnce() {
 function instantMain() {
     Features.expandSpoilers();
 }
-
 function main() {
     verbose && console.log("main");
     Features.imagesHandler();
@@ -60,10 +66,6 @@ function main() {
     Features.directLinks();
     Features.handleTitle();
 }
-
-
-const VIEW = ["View", "Посмотреть"];
-const YES_VIEW_PROFILE = ["Yes, view profile", "Да, посмотреть профиль"];
 
 
 
