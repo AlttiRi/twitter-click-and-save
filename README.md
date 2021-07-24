@@ -17,6 +17,15 @@ An installed userscript manager browser extension is required. _(TamperMonkey, V
 1. [Click on this link](https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js) 
 2. Confirm the installation in your usersript manager.
 
+## Let's look
+
+![https://twitter.com/SpaceX/status/1418667693016711170](https://user-images.githubusercontent.com/16310547/126852065-519d3cb5-77eb-4af0-a0c0-58a9934c5fdd.png "https://twitter.com/SpaceX/status/1418667693016711170")
+
+It adds a colored download button to the left upper corner of a media. It appears only when you hover mouse pointer over the tweet.
+The red button means you did not save this image (or video), green — you have downloaded it right now, blue — the media is already saved.
+
+_Note: the green button does not disapper after the mouse leave the tweet in order to easier counting that you have downloaded right now._
+
 ## Filename format
 
 I sure this userscript saves files with the best filename.
