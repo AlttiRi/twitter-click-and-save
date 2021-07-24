@@ -287,6 +287,7 @@ function hoistFeatures() {
                 .find(el => YES_VIEW_PROFILE.includes(el.textContent))
                 ?.click();
 
+            // todo: expand spoiler commentary in photo view mode (.../photo/1)
             const b = main.querySelectorAll("article article[role=article] [role=button]");
             b && [...b]
                 .filter(el => VIEW.includes(el.textContent))
