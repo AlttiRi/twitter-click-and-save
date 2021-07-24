@@ -396,6 +396,10 @@ article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
 div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
     background: #1da1f2; /*blue*/
 }
+
+.ujs-btn-download:active {
+    background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+}
     `;
 }
 
