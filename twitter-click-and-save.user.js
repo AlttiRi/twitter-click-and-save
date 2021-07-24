@@ -119,6 +119,7 @@ function hoistFeatures() {
             verbose && console.log(id, author);
 
 
+            btn.classList.add("ujs-downloading");
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
@@ -128,6 +129,7 @@ function hoistFeatures() {
             if (!downloaded) {
                 await LS.pushItem("ujs-twitter-downloaded", id);
             }
+            btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
         }
 
@@ -168,6 +170,7 @@ function hoistFeatures() {
             const video = await API.getVideoInfo(id); // {bitrate, content_type, url}
             verbose && console.log(video);
 
+            btn.classList.add("ujs-downloading");
             const url = video.url;
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
 
@@ -178,6 +181,7 @@ function hoistFeatures() {
             if (!downloaded) {
                 await LS.pushItem("ujs-twitter-downloaded-videos", id);
             }
+            btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
         }
 
@@ -352,55 +356,67 @@ function hoistFeatures() {
 
 // required CSS
 function getUserScriptCSS() {
-    return `
-.ujs-hidden {
-    display: none;
-}
-
-.ujs-show-on-hover:hover {
-    opacity: 1;
-    transition: opacity 1s ease-out 0.1s;
-}
-.ujs-show-on-hover {
-    opacity: 0;
-    transition: opacity 0.5s ease-out;
-}
-
-.ujs-btn-download {
-    top: 0.5em;
-    left: 0.5em;
-    width: 33px;
-    height: 33px;
-    background: #e0245e; /*red*/
-    opacity: 0;
-    position: absolute;
-    border-radius: 0.3em;
-}
-article[role=article]:hover .ujs-btn-download {
-    opacity: 1;
-}
-div[aria-label="Image"]:hover .ujs-btn-download {
-    opacity: 1;
-}
-
-.ujs-btn-download.ujs-downloaded {
-    background: #4caf50; /*green*/
-    opacity: 1;
-}
-.ujs-btn-download.ujs-video {
-    left: calc(0.5em + 33px + 3px);
-}
-article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
-    background: #1da1f2; /*blue*/
-}
-div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
-    background: #1da1f2; /*blue*/
-}
-
-.ujs-btn-download:active {
-    background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
-}
-    `;
+    const css = `
+        .ujs-hidden {
+            display: none;
+        }
+        
+        .ujs-show-on-hover:hover {
+            opacity: 1;
+            transition: opacity 1s ease-out 0.1s;
+        }
+        .ujs-show-on-hover {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .ujs-btn-download {
+            top: 0.5em;
+            left: 0.5em;
+            width: 33px;
+            height: 33px;
+            background: #e0245e; /*red*/
+            opacity: 0;
+            position: absolute;
+            border-radius: 0.3em;
+        }
+        article[role=article]:hover .ujs-btn-download {
+            opacity: 1;
+        }
+        div[aria-label="Image"]:hover .ujs-btn-download {
+            opacity: 1;
+        }
+        
+        .ujs-btn-download.ujs-downloaded {
+            background: #4caf50; /*green*/
+            opacity: 1;
+        }
+        .ujs-btn-download.ujs-video {
+            left: calc(0.5em + 33px + 3px);
+        }
+        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
+            background: #1da1f2; /*blue*/
+        }
+        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
+            background: #1da1f2; /*blue*/
+        }
+        
+        .ujs-btn-download:active {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+        }
+        .ujs-btn-download.ujs-downloading {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+        }
+        
+        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded):active {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+        }
+        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+        }
+        
+        `;
+    return css.replaceAll(" ".repeat(8), "");
 }
 
 
