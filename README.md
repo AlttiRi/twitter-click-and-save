@@ -48,6 +48,11 @@ The examples:
 - [twitter] SpaceX—2021.07.20—1417288642662338564—E6s4ZjGUUAEInfM.jpg
 - [twitter] SpaceX—2021.07.23—1418667693016711170—E7AdwdkUYAAqxy3.jpg
 
+## Addition enhancements (more details)
+
+While the main purpose of the userscript is to be **Twitter image and video downloader** it also does some useful thing:
+
+
 ## Gallery-dl config
 This userscript is suited for single media downloading. If you want to download a balk of media, use [gallery-dl](https://github.com/mikf/gallery-dl).
 
