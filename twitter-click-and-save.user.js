@@ -13,7 +13,7 @@
 const verbose = false;
 
 // --- Constants for language dependent features --- //
-const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 ];
+const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 ]; //todo: "ja", "zh", "de", "fr"
 const VIEW                = ["View",                   "Посмотреть",             "Ver",                                ];
 const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     ];
 const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         ];
