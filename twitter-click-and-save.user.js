@@ -260,7 +260,7 @@ function hoistFeatures() {
 
             const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]")
             a && [...a]
-                .find(el => el.textContent === "Yes, view profile")
+                .find(el => el.textContent === "Yes, view profile") // todo: it probably does not works for non english users
                 ?.click();
 
             const b = main.querySelectorAll("article article[role=article] [role=button]");
