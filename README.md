@@ -1,4 +1,4 @@
-# Twitter Click'n'Save
+# [Twitter Click'n'Save](https://github.com/AlttiRi/twitter-click-and-save#twitter-clicknsave)
 
 This userscript allows you to save media content (images, videos) from Twitter's tweets by just a click on a button which appears over the media in tweets.
 
