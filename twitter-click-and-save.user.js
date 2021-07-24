@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.8
+// @version     0.1.9
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -13,18 +13,18 @@
 const verbose = false;
 
 // --- Constants for language dependent features --- //
-const SUPPORTED_LANGUAGES = ["en",                     "ru",                     ]
-const VIEW                = ["View",                   "Посмотреть",             ];
-const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", ];
-const SIGNUP              = ["Sign up",                "Зарегистрироваться",     ];
-const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", ];
-const TOPICS_TO_FOLLOW    = ["Timeline: ",             null,                     ];
-const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            ];
-const FOOTER              = ["Footer",                 "Нижний колонтитул",      ];
+const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 ];
+const VIEW                = ["View",                   "Посмотреть",             "Ver",                                ];
+const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     ];
+const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         ];
+const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", ];
+const TOPICS_TO_FOLLOW    = ["Timeline: ",             null,                     "Cronología: ",                       ];
+const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     ];
+const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      ];
 const defaultQuotes       = [`"`, `"`];
-const QUOTES              = [defaultQuotes,            [`«`,`»`],                ];
-const ON_TWITTER          = ["on Twitter",             "в Твиттере",             ];
-const TWITTER             = ["Twitter",                "Твиттер",                ];
+const QUOTES              = [defaultQuotes,            [`«`,`»`],                defaultQuotes,                        ];
+const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         ];
+const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            ];
 const lang = document.querySelector("html").getAttribute("lang");
 const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
 
