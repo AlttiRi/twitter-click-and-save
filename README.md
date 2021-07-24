@@ -12,7 +12,7 @@ The content saves (downloads) with the most appropriate filename. The userscript
 
 ## Installation
 
-An installed userscript manager browser extension is required.
+_An installed userscript manager browser extension is required._
 _(Tampermonkey
 [![Chrome image by Google](https://icons.iconarchive.com/icons/google/chrome/24/Google-Chrome-icon.png "Download Tampermonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 [![Firefox image by Mozilla Foundation](https://icons.iconarchive.com/icons/carlosjj/mozilla/24/Firefox-icon.png "Download Tampermonkey for Firefox")](https://addons.mozilla.org/firefox/addon/tampermonkey/)
@@ -25,7 +25,9 @@ Greasemonkey
 [![Firefox image by Mozilla Foundation](https://icons.iconarchive.com/icons/carlosjj/mozilla/24/Firefox-icon.png "Download Greasemonkey for Firefox")](https://addons.mozilla.org/firefox/addon/greasemonkey/)
 )_
 
-1. [Click on this link](https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js) 
+To install just do two clicks:
+
+1. **[Click on this link](https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js)**
 2. Confirm the installation in your usersript manager.
 
 ## Let's look
