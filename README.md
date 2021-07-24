@@ -14,11 +14,11 @@ The content saves (downloads) with the most appropriate filename. The userscript
 
 An installed userscript manager browser extension is required.
 _(Tampermonkey
-[![Chromium image by Google](https://icons.iconarchive.com/icons/google/chrome/24/Google-Chrome-Chromium-icon.png "Download Tampermonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+[![Chrome image by Google](https://icons.iconarchive.com/icons/google/chrome/24/Google-Chrome-icon.png "Download Tampermonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 [![Firefox image by Mozilla Foundation](https://icons.iconarchive.com/icons/carlosjj/mozilla/24/Firefox-icon.png "Download Tampermonkey for Firefox")](https://addons.mozilla.org/firefox/addon/tampermonkey/)
 ,
 Violentmonkey
-[![Chromium image by Google](https://icons.iconarchive.com/icons/google/chrome/24/Google-Chrome-Chromium-icon.png "Download Violentmonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
+[![Chrome image by Google](https://icons.iconarchive.com/icons/google/chrome/24/Google-Chrome-icon.png "Download Violentmonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
 [![Firefox image by Mozilla Foundation](https://icons.iconarchive.com/icons/carlosjj/mozilla/24/Firefox-icon.png "Download Violentmonkey for Firefox")](https://addons.mozilla.org/firefox/addon/violentmonkey/)
 , 
 Greasemonkey
