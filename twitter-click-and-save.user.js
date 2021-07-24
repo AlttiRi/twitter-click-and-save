@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.4
+// @version     0.1.5
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -61,6 +61,9 @@ function main() {
     Features.handleTitle();
 }
 
+
+const VIEW = ["View", "Посмотреть"];
+const YES_VIEW_PROFILE = ["Yes, view profile", "Да, посмотреть профиль"];
 
 
 
@@ -260,12 +263,12 @@ function hoistFeatures() {
 
             const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]")
             a && [...a]
-                .find(el => el.textContent === "Yes, view profile") // todo: it probably does not works for non english users
+                .find(el => YES_VIEW_PROFILE.includes(el.textContent))
                 ?.click();
 
             const b = main.querySelectorAll("article article[role=article] [role=button]");
             b && [...b]
-                .filter(el => el.textContent === "View")
+                .filter(el => VIEW.includes(el.textContent))
                 .forEach(el => el.click());
         }
 
