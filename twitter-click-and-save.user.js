@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.9
+// @version     0.1.10
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -21,10 +21,11 @@ const TRENDS              = ["Timeline: Trending now", "Лента: Актуал
 const TOPICS_TO_FOLLOW    = ["Timeline: ",             null,                     "Cronología: ",                       ];
 const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     ];
 const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      ];
-const defaultQuotes       = [`"`, `"`];
-const QUOTES              = [defaultQuotes,            [`«`,`»`],                defaultQuotes,                        ];
+const defaultQuotes = [`"`, `"`];
+const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        ];
 const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         ];
 const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            ];
+const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             ];
 const lang = document.querySelector("html").getAttribute("lang");
 const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
 
@@ -389,6 +390,7 @@ function hoistFeatures() {
 
 // required CSS
 function getUserScriptCSS() {
+    const labelText = IMAGE[langIndex] || "Image";
     const css = `
         .ujs-hidden {
             display: none;
@@ -416,7 +418,7 @@ function getUserScriptCSS() {
         article[role=article]:hover .ujs-btn-download {
             opacity: 1;
         }
-        div[aria-label="Image"]:hover .ujs-btn-download {
+        div[aria-label="${labelText}"]:hover .ujs-btn-download {
             opacity: 1;
         }
         
@@ -430,7 +432,7 @@ function getUserScriptCSS() {
         article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
             background: #1da1f2; /*blue*/
         }
-        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
             background: #1da1f2; /*blue*/
         }
         
@@ -456,13 +458,13 @@ function getUserScriptCSS() {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
         
-        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded:hover {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded:hover {
             background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
         }
-        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded:active {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded:active {
             background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
         }
-        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded.ujs-downloading {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded.ujs-downloading {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
         
