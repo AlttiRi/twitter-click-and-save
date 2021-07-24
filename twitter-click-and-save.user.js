@@ -401,6 +401,11 @@ function getUserScriptCSS() {
             background: #1da1f2; /*blue*/
         }
         
+        /* -------------------------------------------------------- */
+        /* Shadow the button on hover, active and while downloading */
+        .ujs-btn-download:hover {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+        }
         .ujs-btn-download:active {
             background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
         }
@@ -408,12 +413,27 @@ function getUserScriptCSS() {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
         
-        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded):active {
+        article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded):hover {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+        }
+        article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded):active {
             background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
         }
-        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
+        article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
+        
+        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded:hover {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+        }
+        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded:active {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+        }
+        div[aria-label="Image"]:hover .ujs-already-downloaded:not(.ujs-downloaded.ujs-downloading {
+            background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+        }
+        
+        /* -------------------------------------------------------- */
         
         `;
     return css.replaceAll(" ".repeat(8), "");
