@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.6
+// @version     0.1.7
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -13,12 +13,13 @@
 const verbose = false;
 
 // --- Constants for language dependent features --- //
-const VIEW             = ["View",              "Посмотреть"];
-const YES_VIEW_PROFILE = ["Yes, view profile", "Да, посмотреть профиль"];
+const SUPPORTED_LANGUAGES = ["en",                "ru"]
+const VIEW                = ["View",              "Посмотреть"];
+const YES_VIEW_PROFILE    = ["Yes, view profile", "Да, посмотреть профиль"];;
 
 
 // --- "Imports" --- //
-const LS = hoistLS({logInTitle: verbose});
+const LS = hoistLS({verbose});
 const API = hoistAPI();
 const Post = hoistPost();
 const Features = hoistFeatures();
@@ -355,8 +356,8 @@ function hoistFeatures() {
                 Features.footerHandled = true;
             }
         }
-
-
+        // not the most suited place for it, but let it be
+        static lang = document.querySelector("html").getAttribute("lang");
     }
     return Features;
 }
@@ -566,7 +567,9 @@ function hoistAPI() {
 
 // --- LocalStorage util class --- //
 function hoistLS(settings = {}) {
-    const {logInTitle} = settings;
+    const {
+        verbose, // bebug "messages" in the document.title
+    } = settings;
     class LS {
         constructor(name) {
             this.name = name;
@@ -615,7 +618,7 @@ function hoistLS(settings = {}) {
             //sanity check
             await sleep(50);
             if (!LS.hasItem(name, value)) {
-                if (logInTitle) {
+                if (verbose) {
                     document.title = "🟥" + document.title;
                 }
                 await LS.pushItem(name, value);
@@ -630,7 +633,7 @@ function hoistLS(settings = {}) {
                 //sanity check
                 await sleep(50);
                 if (LS.hasItem(name, value)) {
-                    if (logInTitle) {
+                    if (verbose) {
                         document.title = "🟨" + document.title;
                     }
                     await LS.popItem(name, value);
