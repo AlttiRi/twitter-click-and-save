@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.7
+// @version     0.1.8
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -13,10 +13,20 @@
 const verbose = false;
 
 // --- Constants for language dependent features --- //
-const SUPPORTED_LANGUAGES = ["en",                "ru"]
-const VIEW                = ["View",              "Посмотреть"];
-const YES_VIEW_PROFILE    = ["Yes, view profile", "Да, посмотреть профиль"];;
-
+const SUPPORTED_LANGUAGES = ["en",                     "ru",                     ]
+const VIEW                = ["View",                   "Посмотреть",             ];
+const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", ];
+const SIGNUP              = ["Sign up",                "Зарегистрироваться",     ];
+const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", ];
+const TOPICS_TO_FOLLOW    = ["Timeline: ",             null,                     ];
+const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            ];
+const FOOTER              = ["Footer",                 "Нижний колонтитул",      ];
+const defaultQuotes       = [`"`, `"`];
+const QUOTES              = [defaultQuotes,            [`«`,`»`],                ];
+const ON_TWITTER          = ["on Twitter",             "в Твиттере",             ];
+const TWITTER             = ["Twitter",                "Твиттер",                ];
+const lang = document.querySelector("html").getAttribute("lang");
+const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
 
 // --- "Imports" --- //
 const LS = hoistLS({verbose});
@@ -52,7 +62,7 @@ function mainOnce() {
     Features.hideSignUpBottomBar();
     Features.hideTrends();
     Features.highlightVisitedLinks();
-    Features.removeTopicsToFollowInstantly();
+    Features.hideTopicsToFollowInstantly();
 }
 function instantMain() {
     Features.expandSpoilers();
@@ -63,7 +73,7 @@ function main() {
     Features.videoHandler();
     Features.expandSpoilers();
     Features.hideSignUpSection();
-    Features.removeTopicsToFollow();
+    Features.hideTopicsToFollow();
     Features.directLinks();
     Features.handleTitle();
 }
@@ -205,7 +215,14 @@ function hoistFeatures() {
             if (titleText === Features.lastHandledTitle) {
                 return;
             }
-            const urlsToReplace = [...titleText.matchAll(/https:\/\/t\.co\/[^ "]+/g)].map(el => el[0]);
+            
+            
+            const [openQuote, closeQuote] = QUOTES[langIndex];
+            const onTwitter = ON_TWITTER[langIndex];
+            const twitter = TWITTER[langIndex];
+            
+            
+            const urlsToReplace = [...titleText.matchAll(new RegExp(`https:\\/\\/t\\.co\\/[^ ${closeQuote}]+`, "g"))].map(el => el[0]);
             // the last one can be the URL to the post // or to an embedded shared URL
 
             const map = new Map();
@@ -233,10 +250,11 @@ function hoistFeatures() {
                 titleText = titleText.replaceAll(key, value + ` (${key})`);
             }
 
-            titleText = titleText.replace(/ on Twitter(?=: ")/, "");
-            titleText = titleText.replace(/(?<=") \/ Twitter$/, "");
+            titleText = titleText.replace(new RegExp(` ${onTwitter}(?=: ${openQuote})`), "");
+            titleText = titleText.replace(new RegExp(`(?<=${closeQuote}) \\\/ ${twitter}$`), "");
             if (!lastUrlIsAttachment) {
-                titleText = titleText.replace(/(?<short> https:\/\/t\.co\/.{6,14})"$/, (match, p1, p2, offset, string) => `" —${p1}`);
+                const regExp = new RegExp(`(?<short> https:\\/\\/t\\.co\\/.{6,14})${closeQuote}$`);
+                titleText = titleText.replace(regExp, (match, p1, p2, offset, string) => `${closeQuote} —${p1}`);
             } else {
                 titleText = titleText.replace(lastUrl, `${lastUrl} (${attachmentDescription})`);
             }
@@ -276,9 +294,11 @@ function hoistFeatures() {
         }
 
         static hideSignUpSection() { // "New to Twitter?"
-            const elem = document.querySelector("section[aria-label='Sign up'][role=region]");
+            const labelText = SIGNUP[langIndex];
+            if (!labelText) { return; }
+            const elem = document.querySelector(`section[aria-label="${labelText}"][role=region]`);
             if (elem) {
-                elem.parentNode.style = "display: none;";
+                elem.parentNode.classList.add("ujs-hidden");
             }
         }
 
@@ -295,10 +315,10 @@ function hoistFeatures() {
 
         // "Trends for you"
         static hideTrends() {
+            const labelText = TRENDS[langIndex];
+            if (!labelText) { return; }
             addCSS(`
-            /*  [aria-label="Relevant people"],       */
-            /*  [aria-label="Who to follow"],         */
-                [aria-label="Timeline: Trending now"]
+                [aria-label="${labelText}"]
                 {
                     display: none;
                 }
@@ -314,21 +334,27 @@ function hoistFeatures() {
 
 
         // Use it once. To prevent blinking.
-        static removeTopicsToFollowInstantly() {
+        static hideTopicsToFollowInstantly() {
+            const labelText = TOPICS_TO_FOLLOW[langIndex];
+            if (!labelText) { return; }
             addCSS(`
-                div[aria-label="Timeline: "] {
+                div[aria-label="${labelText}"] {
                     display: none;
                 }
             `);
         }
-        // Remove container and separator line
-        static removeTopicsToFollow() {
-            const elem = xpath(`.//section[@role="region" and child::div[@aria-label="Timeline: "]]/../..`);
+        // Hides container and "separator line"
+        static hideTopicsToFollow() {
+            const labelText = TOPICS_TO_FOLLOW[langIndex];
+            if (!labelText) { return; }
+            const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${labelText}"]]/../..`);
             if (!elem) {
                 return;
             }
             elem.classList.add("ujs-hidden");
-            elem.previousSibling.classList.add("ujs-hidden"); // a separator line
+            
+            elem.previousSibling.classList.add("ujs-hidden"); // a "separator line" (empty element of "TRENDS", for example)
+            // in fact it's a hack // todo rework
         }
 
         // todo split to two methods
@@ -356,8 +382,6 @@ function hoistFeatures() {
                 Features.footerHandled = true;
             }
         }
-        // not the most suited place for it, but let it be
-        static lang = document.querySelector("html").getAttribute("lang");
     }
     return Features;
 }
@@ -717,8 +741,8 @@ function addCSS(css) {
 
 function getCookie(name) {
     verbose && console.log(document.cookie);
-    const regEx = new RegExp(`(?<=${name}=)[^;]+`);
-    return document.cookie.match(regEx)?.[0];
+    const regExp = new RegExp(`(?<=${name}=)[^;]+`);
+    return document.cookie.match(regExp)?.[0];
 }
 
 function throttle(runnable, time = 50) {
