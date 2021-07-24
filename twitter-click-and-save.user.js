@@ -187,6 +187,8 @@ function hoistFeatures() {
 
 
         // it depends of `directLinks()` // use only it after `directLinks()`
+        // it looks it simetimes does not work correctly, probably it executes before `directLinks`.
+        // todo: keep short urls and rerun this (Note: with the original title) after `directLinks` handled them.
         static handleTitle() {
             // if not a opened post
             if (!location.href.match(/twitter\.com\/[^\/]+\/status\/\d+/)) {
@@ -210,7 +212,7 @@ function hoistFeatures() {
 
             const lastUrl = urlsToReplace.slice(-1)[0];
             let lastUrlIsAttachment = false;
-            let attachmentDescription = false;
+            let attachmentDescription = "";
             if (!map.has(lastUrl)) {
                 const a = document.querySelector(`a[href="${lastUrl}?amp=1"]`);
                 if (a) {
@@ -232,8 +234,8 @@ function hoistFeatures() {
             } else {
                 titleText = titleText.replace(lastUrl, `${lastUrl} (${attachmentDescription})`);
             }
-            document.title = titleText;
-            Features.lastHandledTitle = titleText;
+            document.title = titleText; // Note: some characters will be removed automatically (`\n`, extra spaces)
+            Features.lastHandledTitle = document.title;
         }
         static lastHandledTitle = "";
 
