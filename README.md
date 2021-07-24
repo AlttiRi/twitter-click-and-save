@@ -54,10 +54,10 @@ This userscript is suited for single media downloading. If you want to download 
 To have the same filenames use the follow config:
 ```json
 "twitter": {
-    "retweets": "original",
-    "videos": true,
     "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
-    "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}"
+    "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}",
+    "retweets": "original",
+    "videos": true
 }
 ```
 
@@ -73,10 +73,10 @@ Add this to `gallery-dl.conf` config file, so it will look so:
     },
     
     "twitter": {
+      "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
+      "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}",
       "retweets": "original",
-      "videos": true,
-      "directory": ["[gallery-dl]","[{category}] {author[name]}"],
-      "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}"
+      "videos": true
     },
     
     "tumblr": {
