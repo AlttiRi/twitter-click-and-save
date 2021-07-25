@@ -33,7 +33,7 @@ Greasemonkey
 
 ## Let's look
 
-![https://twitter.com/SpaceX/status/1418667693016711170](https://user-images.githubusercontent.com/16310547/126852065-519d3cb5-77eb-4af0-a0c0-58a9934c5fdd.png "https://twitter.com/SpaceX/status/1418667693016711170")
+![https://twitter.com/SpaceX/status/1418667693016711170](https://user-images.githubusercontent.com/16310547/126910424-497886d1-527c-493a-9a17-3e832b48ce05.png "https://twitter.com/SpaceX/status/1418667693016711170")
 
 It adds a colored download button to the left upper corner of a media. It appears only when you hover mouse pointer over the tweet.
 The red button means you did not save this image (or video), green — you have downloaded it right now, blue — the media is already saved.
