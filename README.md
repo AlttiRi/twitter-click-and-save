@@ -96,15 +96,15 @@ This userscript does it automatically, instantly.
 
 ### Unnecessary content hiding: sign up bar/section; trends; topics to follow
 
-It hides the sign up bar and the sign up section which shows all time while you are not logged in.
-
 ![Screenshot](https://user-images.githubusercontent.com/16310547/126911788-1cf9ec76-a415-49d2-9428-4f8a7ae1ca7d.png)
+
+It hides the sign up bar and the sign up section which shows all time while you are not logged in.
 
 _(Note: of course, you able to log in/sing up in [the front page](https://twitter.com/) or in the pop up that appers after you click on some button ("Like", "Follow"))_
 
 ![Screenshot](https://user-images.githubusercontent.com/16310547/126912048-5efa30be-db76-4b7e-bd4a-7dc9d0dddb11.png)
 
-Finally, it hides "Trends" and "Topic to follow" by default. I find them useless, but you can do not agree with me, so it's not a big problem to disable this option. Just comment three lines in the code in `Features to execute` section.
+Finally, it hides "Trends" and "Topic to follow" by default. I find them useless, but you can do not agree with me, so it's not a big problem to disable this option. Just comment three related lines in the code in `Features to execute` section.
 
 ---
 
