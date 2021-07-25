@@ -51,7 +51,7 @@ The examples:
 
 ## Addition enhancements (more details)
 
-While the main purpose of the userscript is to be **Twitter image and video downloader** it also does some useful thing:
+While the main purpose of the userscript is to be **Twitter image and video downloader** it also does some useful things:
 
 ### Direct links: in tweets, in title and `a:visited` 
 
