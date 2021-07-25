@@ -52,6 +52,35 @@ The examples:
 
 While the main purpose of the userscript is to be **Twitter image and video downloader** it also does some useful thing:
 
+### Direct links: in tweets, in title and `a:visited` 
+
+![image](https://user-images.githubusercontent.com/16310547/126907767-49141217-7c43-470e-b5ea-ad0cdc6979fe.png)
+
+Twitter replaces all outer links in tweets with redirect links like it: https://t.co/0MLMmDhZRx?amp=1 (https://example.com).
+
+The userscript transforms redirect links to the original links.
+
+While [Twitter says that it's used for protection](https://developer.twitter.com/en/docs/tco), but it's mostly used for analitic purpose. 
+
+With the direct link you immitiatly see where it to goes (in the browser bottom corner), also you can copy exactly it with a context menu.
+
+In addtional to it the userscript enables highlight of `:visited` links with `darkorange` color. So you can see did you visit the link before or not. (Note: it's based on the browser history which keeps visits within 3 months).
+
+The more useful feature is that it also adds to `t.co` links in the title the original links.
+
+For example, the default title: 
+
+`Username on Twitter: "A test tweet. https://t.co/0MLMmDhZRx" / Twitter` 
+
+transforms to
+
+`Username: "A test tweet. https://example.com/ (https://t.co/0MLMmDhZRx)"`
+
+It's very useful if you bookmark tweets. You can find the bookmarked tweet by searching of the site's name that was posted in the tweet, since the title is used as a bookmark's description.
+
+_And yes, I did not forget to add `rel="nofollow noopener noreferrer"` to the direct links (If you know what it is)._
+
+---
 
 ## Gallery-dl config
 This userscript is suited for single media downloading. If you want to download a balk of media, use [gallery-dl](https://github.com/mikf/gallery-dl).
