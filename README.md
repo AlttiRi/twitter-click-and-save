@@ -113,7 +113,7 @@ Finally, it hides "Trends" and "Topic to follow" by default. I find them useless
 ## Gallery-dl config
 This userscript is suited for single media downloading. If you want to download a balk of media, use [gallery-dl](https://github.com/mikf/gallery-dl).
 
-To have the same filenames use the follow config:
+To have [the same filenames](#filename-format) use the follow config:
 ```json
 "twitter": {
     "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
