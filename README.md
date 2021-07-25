@@ -61,7 +61,7 @@ Twitter replaces all outer links in tweets with redirect links like it: https://
 
 The userscript transforms redirect links to the original links.
 
-While [Twitter says that it's used for protection](https://developer.twitter.com/en/docs/tco), but it's mostly used for analitic purpose. 
+While [Twitter says that it's used for protection](https://developer.twitter.com/en/docs/tco), but it's mostly used for the analytic purpose. 
 
 With the direct link you immitiatly see where it to goes (in the browser bottom corner), also you can copy exactly it with a context menu.
 
