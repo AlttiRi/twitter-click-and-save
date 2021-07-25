@@ -4,6 +4,7 @@ This userscript allows you to save media content (images, videos) from Twitter's
 
 The content saves (downloads) with the most appropriate filename. The userscript also keeps the download history, so you will not download some media twice if you do not want it. 
 
+
 ## Additional enhancements
 - Makes links direct in tweets and in the browser title
 - Highlight visited links
@@ -79,6 +80,16 @@ transforms to
 It's very useful if you bookmark tweets. You can find the bookmarked tweet by searching of the site's name that was posted in the tweet, since the title is used as a bookmark's description.
 
 _And yes, I did not forget to add `rel="nofollow noopener noreferrer"` to the direct links (If you know what it is)._
+
+
+### Automatic spoiler expanding
+
+![Profile and Media Spoiler](https://user-images.githubusercontent.com/16310547/126909041-ad6cb522-a44f-49b6-992d-873bbd77ae8e.png)
+
+
+If you have no Twitter account and you visit a profile or watch tweets with media that were marked as "may include potentially sensitive content" it's starting to be a pain to expand spoilers by a click on "View" button each damning time.
+
+This userscript does it automatically, instantly.
 
 ---
 
