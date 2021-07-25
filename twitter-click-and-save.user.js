@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.10
+// @version     0.1.11
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -39,6 +39,8 @@ const Features = hoistFeatures();
 // --- Script runner --- //
 (function starter() {
     mainOnce();
+    instantMain();
+    main();
 
     const targetNode = document.querySelector("body");
     const observerOptions = {
@@ -216,13 +218,13 @@ function hoistFeatures() {
             if (titleText === Features.lastHandledTitle) {
                 return;
             }
-            
-            
+
+
             const [openQuote, closeQuote] = QUOTES[langIndex];
             const onTwitter = ON_TWITTER[langIndex];
             const twitter = TWITTER[langIndex];
-            
-            
+
+
             const urlsToReplace = [...titleText.matchAll(new RegExp(`https:\\/\\/t\\.co\\/[^ ${closeQuote}]+`, "g"))].map(el => el[0]);
             // the last one can be the URL to the post // or to an embedded shared URL
 
@@ -354,7 +356,7 @@ function hoistFeatures() {
                 return;
             }
             elem.classList.add("ujs-hidden");
-            
+
             elem.previousSibling.classList.add("ujs-hidden"); // a "separator line" (empty element of "TRENDS", for example)
             // in fact it's a hack // todo rework
         }
@@ -735,7 +737,7 @@ function dateToDayDateString(dateValue, utc = true) {
 
 
 function addCSS(css) {
-   const styleElem = document.createElement("style");
+    const styleElem = document.createElement("style");
     styleElem.textContent = css;
     document.body.append(styleElem);
     return styleElem;
