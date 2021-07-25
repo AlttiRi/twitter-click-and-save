@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.12
+// @version     0.1.13
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -10,24 +10,17 @@
 // ==/UserScript==
 
 // --- For debug --- //
-const verbose = false;
+const verbose = true;
 
-// --- Constants for language dependent features --- //
-const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 ]; //todo: "ja", "zh", "de", "fr"
-const VIEW                = ["View",                   "Посмотреть",             "Ver",                                ];
-const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     ];
-const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         ];
-const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", ];
-const TOPICS_TO_FOLLOW    = ["Timeline: ",             null,                     "Cronología: ",                       ];
-const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     ];
-const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      ];
-const defaultQuotes = [`"`, `"`];
-const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        ];
-const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         ];
-const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            ];
-const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             ];
-const lang = document.querySelector("html").getAttribute("lang");
-const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
+const {
+    VIEW, YES_VIEW_PROFILE,
+    SIGNUP,
+    TRENDS, TOPICS_TO_FOLLOW,
+    WHO_TO_FOLLOW, FOOTER,
+    QUOTES, ON_TWITTER, TWITTER,
+    IMAGE,
+} = getLanguageConstants();
+//todo I18N
 
 // --- "Imports" --- //
 const LS = hoistLS({verbose});
@@ -36,41 +29,18 @@ const Post = hoistPost();
 const Features = hoistFeatures();
 
 
-// --- Script runner --- //
-(function starter() {
-    mainOnce();
-    instantMain();
-    const throttledMain = throttle(main, 200);
-    throttledMain();
-
-    const targetNode = document.querySelector("body");
-    const observerOptions = {
-        subtree: true,
-        childList: true,
-    };
-    const observer = new MutationObserver(callback);
-    observer.observe(targetNode, observerOptions);
-    
-    function callback(mutationList, observer) {
-        verbose && console.log(mutationList);
-        instantMain();
-        throttledMain();
-    }
-})();
-
-
 // --- Features to execute --- //
-function mainOnce() {
-    addCSS(getUserScriptCSS());
+function execFeaturesOnce() {
+    Features.addRequiredCSS();
     Features.hideSignUpBottomBar();
     Features.hideTrends();
     Features.highlightVisitedLinks();
     Features.hideTopicsToFollowInstantly();
 }
-function instantMain() {
+function execFeaturesImmediately() {
     Features.expandSpoilers();
 }
-function main() {
+function execFeatures() {
     verbose && console.log("main");
     Features.imagesHandler();
     Features.videoHandler();
@@ -80,6 +50,34 @@ function main() {
     Features.directLinks();
     Features.handleTitle();
 }
+
+// --- Script runner --- //
+(function starter(feats) {
+    const {once, onChangeImmediate, onChange} = feats;
+
+    once();
+    onChangeImmediate();
+    const onChangeThrottled = throttle(onChange, 200);
+    onChangeThrottled();
+
+    const targetNode = document.querySelector("body");
+    const observerOptions = {
+        subtree: true,
+        childList: true,
+    };
+    const observer = new MutationObserver(callback);
+    observer.observe(targetNode, observerOptions);
+
+    function callback(mutationList, observer) {
+        verbose && console.log(mutationList);
+        onChangeImmediate();
+        onChangeThrottled();
+    }
+})({
+    once: execFeaturesOnce,
+    onChangeImmediate: execFeaturesImmediately,
+    onChange: execFeatures
+});
 
 
 
@@ -119,7 +117,6 @@ function hoistFeatures() {
                 }
             }
         }
-
         static async _imageClickHandler(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
@@ -151,7 +148,6 @@ function hoistFeatures() {
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
         }
-
 
 
         static async videoHandler() {
@@ -205,8 +201,12 @@ function hoistFeatures() {
         }
 
 
+        static addRequiredCSS() {
+            addCSS(getUserScriptCSS());
+        }
+
         // it depends of `directLinks()` // use only it after `directLinks()`
-        // it looks it simetimes does not work correctly, probably it executes before `directLinks`.
+        // it looks it sometimes does not work correctly, probably it executes before `directLinks`.
         // todo: keep short urls and rerun this (Note: with the original title) after `directLinks` handled them.
         static handleTitle() {
             // if not a opened post
@@ -219,13 +219,8 @@ function hoistFeatures() {
                 return;
             }
 
-
-            const [openQuote, closeQuote] = QUOTES[langIndex];
-            const onTwitter = ON_TWITTER[langIndex];
-            const twitter = TWITTER[langIndex];
-
-
-            const urlsToReplace = [...titleText.matchAll(new RegExp(`https:\\/\\/t\\.co\\/[^ ${closeQuote}]+`, "g"))].map(el => el[0]);
+            const [OPEN_QUOTE, CLOSE_QUOTE] = QUOTES;
+            const urlsToReplace = [...titleText.matchAll(new RegExp(`https:\\/\\/t\\.co\\/[^ ${CLOSE_QUOTE}]+`, "g"))].map(el => el[0]);
             // the last one can be the URL to the post // or to an embedded shared URL
 
             const map = new Map();
@@ -253,11 +248,11 @@ function hoistFeatures() {
                 titleText = titleText.replaceAll(key, value + ` (${key})`);
             }
 
-            titleText = titleText.replace(new RegExp(` ${onTwitter}(?=: ${openQuote})`), "");
-            titleText = titleText.replace(new RegExp(`(?<=${closeQuote}) \\\/ ${twitter}$`), "");
+            titleText = titleText.replace(new RegExp(` ${ON_TWITTER}(?=: ${OPEN_QUOTE})`), "");
+            titleText = titleText.replace(new RegExp(`(?<=${CLOSE_QUOTE}) \\\/ ${TWITTER}$`), "");
             if (!lastUrlIsAttachment) {
-                const regExp = new RegExp(`(?<short> https:\\/\\/t\\.co\\/.{6,14})${closeQuote}$`);
-                titleText = titleText.replace(regExp, (match, p1, p2, offset, string) => `${closeQuote} —${p1}`);
+                const regExp = new RegExp(`(?<short> https:\\/\\/t\\.co\\/.{6,14})${CLOSE_QUOTE}$`);
+                titleText = titleText.replace(regExp, (match, p1, p2, offset, string) => `${CLOSE_QUOTE} —${p1}`);
             } else {
                 titleText = titleText.replace(lastUrl, `${lastUrl} (${attachmentDescription})`);
             }
@@ -287,23 +282,22 @@ function hoistFeatures() {
             if (!main) {
                 return;
             }
-            
+
             const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]")
             a && [...a]
-                .find(el => YES_VIEW_PROFILE.includes(el.textContent))
+                .find(el => YES_VIEW_PROFILE === el.textContent)
                 ?.click();
 
             // todo: expand spoiler commentary in photo view mode (.../photo/1)
             const b = main.querySelectorAll("article article[role=article] [role=button]");
             b && [...b]
-                .filter(el => VIEW.includes(el.textContent))
+                .filter(el => VIEW === el.textContent)
                 .forEach(el => el.click());
         }
 
         static hideSignUpSection() { // "New to Twitter?"
-            const labelText = SIGNUP[langIndex];
-            if (!labelText) { return; }
-            const elem = document.querySelector(`section[aria-label="${labelText}"][role=region]`);
+            if (!SIGNUP) { return; }
+            const elem = document.querySelector(`section[aria-label="${SIGNUP}"][role=region]`);
             if (elem) {
                 elem.parentNode.classList.add("ujs-hidden");
             }
@@ -322,10 +316,9 @@ function hoistFeatures() {
 
         // "Trends for you"
         static hideTrends() {
-            const labelText = TRENDS[langIndex];
-            if (!labelText) { return; }
+            if (!TRENDS) { return; }
             addCSS(`
-                [aria-label="${labelText}"]
+                [aria-label="${TRENDS}"]
                 {
                     display: none;
                 }
@@ -342,19 +335,17 @@ function hoistFeatures() {
 
         // Use it once. To prevent blinking.
         static hideTopicsToFollowInstantly() {
-            const labelText = TOPICS_TO_FOLLOW[langIndex];
-            if (!labelText) { return; }
+            if (!TOPICS_TO_FOLLOW) { return; }
             addCSS(`
-                div[aria-label="${labelText}"] {
+                div[aria-label="${TOPICS_TO_FOLLOW}"] {
                     display: none;
                 }
             `);
         }
         // Hides container and "separator line"
         static hideTopicsToFollow() {
-            const labelText = TOPICS_TO_FOLLOW[langIndex];
-            if (!labelText) { return; }
-            const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${labelText}"]]/../..`);
+            if (!TOPICS_TO_FOLLOW) { return; }
+            const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${TOPICS_TO_FOLLOW}"]]/../..`);
             if (!elem) {
                 return;
             }
@@ -395,7 +386,7 @@ function hoistFeatures() {
 
 // required CSS
 function getUserScriptCSS() {
-    const labelText = IMAGE[langIndex] || "Image";
+    const labelText = IMAGE || "Image";
     const css = `
         .ujs-hidden {
             display: none;
@@ -477,6 +468,41 @@ function getUserScriptCSS() {
         
         `;
     return css.replaceAll(" ".repeat(8), "");
+}
+
+function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
+    const defaultQuotes = [`"`, `"`];
+
+    const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 ];
+    const VIEW                = ["View",                   "Посмотреть",             "Ver",                                ];
+    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     ];
+    const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         ];
+    const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", ];
+    const TOPICS_TO_FOLLOW    = ["Timeline: ",             null,                     "Cronología: ",                       ];
+    const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     ];
+    const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      ];
+    const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        ];
+    const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         ];
+    const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            ];
+    const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             ];
+
+    const lang = document.querySelector("html").getAttribute("lang");
+    const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
+
+    return {
+        SUPPORTED_LANGUAGES,
+        VIEW: VIEW[langIndex],
+        YES_VIEW_PROFILE: YES_VIEW_PROFILE[langIndex],
+        SIGNUP: SIGNUP[langIndex],
+        TRENDS: TRENDS[langIndex],
+        TOPICS_TO_FOLLOW: TOPICS_TO_FOLLOW[langIndex],
+        WHO_TO_FOLLOW: WHO_TO_FOLLOW[langIndex],
+        FOOTER: FOOTER[langIndex],
+        QUOTES: QUOTES[langIndex],
+        ON_TWITTER: ON_TWITTER[langIndex],
+        TWITTER: TWITTER[langIndex],
+        IMAGE: IMAGE[langIndex],
+    }
 }
 
 
