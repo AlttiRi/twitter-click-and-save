@@ -284,7 +284,10 @@ function hoistFeatures() {
         // Do NOT throttle it
         static expandSpoilers() {
             const main = document.querySelector("main[role=main]");
-
+            if (!main) {
+                return;
+            }
+            
             const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]")
             a && [...a]
                 .find(el => YES_VIEW_PROFILE.includes(el.textContent))
