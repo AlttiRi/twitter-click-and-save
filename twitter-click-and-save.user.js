@@ -40,7 +40,8 @@ const Features = hoistFeatures();
 (function starter() {
     mainOnce();
     instantMain();
-    main();
+    const throttledMain = throttle(main, 200);
+    throttledMain();
 
     const targetNode = document.querySelector("body");
     const observerOptions = {
@@ -49,8 +50,7 @@ const Features = hoistFeatures();
     };
     const observer = new MutationObserver(callback);
     observer.observe(targetNode, observerOptions);
-
-    const throttledMain = throttle(main, 200);
+    
     function callback(mutationList, observer) {
         verbose && console.log(mutationList);
         instantMain();
