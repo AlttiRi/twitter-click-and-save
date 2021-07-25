@@ -51,6 +51,8 @@ The examples:
 - [twitter] SpaceX—2021.07.20—1417288642662338564—E6s4ZjGUUAEInfM.jpg
 - [twitter] SpaceX—2021.07.23—1418667693016711170—E7AdwdkUYAAqxy3.jpg
 
+_[@see `gallery-dl` config](#gallery-dl-config)_
+
 ## Addition enhancements (more details)
 
 While the main purpose of the userscript is to be **Twitter image and video downloader** it also does some useful things:
