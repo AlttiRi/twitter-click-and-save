@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.11
+// @version     0.1.12
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -686,24 +686,29 @@ function sleep(time) {
 }
 
 async function fetchResource(url) {
-    url = new URL(url);
-    const response = await fetch(url, {
-        cache: "force-cache",
-    });
-    const lastModifiedDateSeconds = response.headers.get("last-modified");
-    const contentType = response.headers.get("content-type");
+    try {
+        const response = await fetch(url, {
+            cache: "force-cache",
+        });
+        const lastModifiedDateSeconds = response.headers.get("last-modified");
+        const contentType = response.headers.get("content-type");
 
-    const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
-    const extension = extensionFromMime(contentType);
-    const blob = await response.blob();
+        const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
+        const extension = extensionFromMime(contentType);
+        const blob = await response.blob();
 
-    // https://pbs.twimg.com/media/AbcdEFgijKL01_9?format=jpg&name=orig                                     -> AbcdEFgijKL01_9
-    // https://pbs.twimg.com/ext_tw_video_thumb/1234567890123456789/pu/img/Ab1cd2345EFgijKL.jpg?name=orig   -> Ab1cd2345EFgijKL.jpg
-    // https://video.twimg.com/ext_tw_video/1234567890123456789/pu/vid/946x720/Ab1cd2345EFgijKL.mp4?tag=10  -> Ab1cd2345EFgijKL.mp4
-    const {filename} = (url.origin + url.pathname).match(/(?<filename>[^\/]+$)/).groups;
+        // https://pbs.twimg.com/media/AbcdEFgijKL01_9?format=jpg&name=orig                                     -> AbcdEFgijKL01_9
+        // https://pbs.twimg.com/ext_tw_video_thumb/1234567890123456789/pu/img/Ab1cd2345EFgijKL.jpg?name=orig   -> Ab1cd2345EFgijKL.jpg
+        // https://video.twimg.com/ext_tw_video/1234567890123456789/pu/vid/946x720/Ab1cd2345EFgijKL.mp4?tag=10  -> Ab1cd2345EFgijKL.mp4
+        const _url = new URL(url);
+        const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
 
-    const {name} = filename.match(/(?<name>^[^\.]+)/).groups;
-    return {blob, lastModifiedDate, contentType, extension, name};
+        const {name} = filename.match(/(?<name>^[^\.]+)/).groups;
+        return {blob, lastModifiedDate, contentType, extension, name};
+    } catch (error) {
+        verbose && console.error(url, error);
+        throw error;
+    }
 }
 
 function extensionFromMime(mimeType) {
