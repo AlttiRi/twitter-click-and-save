@@ -4,7 +4,6 @@ This userscript allows you to save media content (images, videos) from Twitter's
 
 The content saves (downloads) with the most appropriate filename. The userscript also keeps the download history, so you will not download some media twice if you do not want it. 
 
-
 ## Additional enhancements
 - Makes links direct in tweets and in the browser title
 - Highlight visited links
@@ -93,6 +92,19 @@ _And yes, I did not forget to add `rel="nofollow noopener noreferrer"` to the di
 If you have no Twitter account and you visit a profile or watch tweets with media that were marked as "may include potentially sensitive content" it's starting to be a pain to expand spoilers by a click on "View" button each damning time.
 
 This userscript does it automatically, instantly.
+
+
+### Unnecessary content hiding: sign up bar/section; trends; topics to follow
+
+It hides the sign up bar and the sign up section which shows all time while you are not logged in.
+
+![Screenshot](https://user-images.githubusercontent.com/16310547/126911788-1cf9ec76-a415-49d2-9428-4f8a7ae1ca7d.png)
+
+_(Note: of course, you able to log in/sing up in [the front page](https://twitter.com/) or in the pop up that appers after you click on some button ("Like", "Follow"))_
+
+![Screenshot](https://user-images.githubusercontent.com/16310547/126912048-5efa30be-db76-4b7e-bd4a-7dc9d0dddb11.png)
+
+Finally, it hides "Trends" and "Topic to follow" by default. I find them useless, but you can do not agree with me, so it's not a big problem to disable this option. Just comment three lines in the code in `Features to execute` section.
 
 ---
 
