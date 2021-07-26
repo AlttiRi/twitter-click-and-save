@@ -769,6 +769,7 @@ function getUtils({verbose}) {
         return extension;
     }
 
+    // the original download url will be posted as hash of the blob url, so you can check it in the download manager's history
     function download(blob, name = "", url = "") {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob) + "#" + url;
