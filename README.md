@@ -41,15 +41,29 @@ _Note: the green button does not disapper after the mouse leave the tweet in ord
 
 ## Filename format
 
-I sure this userscript saves files with the best filename.
+I sure this userscript saves files with **the best filename**.
 
-The filename format looks so: `[twitter] {author}—{YYYY.MM.DD}—{id}—{filename}.{extension}`.
+The filename pattern looks so: `[twitter] {author}—{YYYY.MM.DD}—{id}—{filename}.{extension}`.
 
 The examples:
 - [twitter] SpaceX—2020.05.04—1257328055816601600—EXLtL49UYAA7vCG.jpg
 - [twitter] SpaceX—2021.03.30—1376902938635870209—Exu93-nU8AAMAiC.jpg
 - [twitter] SpaceX—2021.07.20—1417288642662338564—E6s4ZjGUUAEInfM.jpg
 - [twitter] SpaceX—2021.07.23—1418667693016711170—E7AdwdkUYAAqxy3.jpg
+
+It's the perfect filename.
+
+Why? Because it resolves the problem of file organization and includes a lot of useful information!
+
+With this filename the downloaded **files are already orginazed**: 
+with the default sorting by name (in a file explorer) the files will grouped by site, by user, by date and ordered by date and tweet ID.
+It's not a problem if the files are located in the differet folders. 
+Just perform the seatch by `[twitter]` in a root folder to list all files which you have download with this userscript. Again, they will be grouped and sorted only due to name sorting. That's extremely useful thing!
+
+You can easily find some media from the selected user in you local files, know when it was posted, and to go to the tweet by pasting the tweed `ID` to `https://twitter.com/_/status/{ID}`. The "default" filename (for example, `EXLtL49UYAA7vCG.jpg`) is for "compatibility". For example, if someone shared with you a file with `E7AdwdkUYAAqxy3.jpg` filename you can check did you downloaded it just by the search in youe local files.
+
+Finally, **`—`** character. Probably, it's the best character for separating purpose. It just **one** character, you do not need to add extra spaces around it to make it looks good. It's a rarely used character, that makes parsing easier.
+
 
 _[@see `gallery-dl` config](#gallery-dl-config)_
 
