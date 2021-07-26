@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.15
+// @version     0.1.16
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -8,16 +8,8 @@
 // @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
 // @downloadURL https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js
 // ==/UserScript==
-
-// --- For debug --- //
-const verbose = true;
-
-// --- "Imports" --- //
-const LS = hoistLS({verbose});
-const API = hoistAPI();
-const Post = hoistPost();
-const Features = hoistFeatures();
-const I18N = getLanguageConstants();
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 
 // --- Features to execute --- //
@@ -41,7 +33,33 @@ function execFeatures() {
     Features.handleTitle();
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+
+// --- For debug --- //
+const verbose = true;
+
+// --- "Imports" --- //
+const {
+    sleep, fetchResource, download,
+    addCSS,
+    getCookie,
+    throttle,
+    xpath, xpathAll,
+    getNearestElementByType, getParentWithSiblingDataset,
+} = getUtils({verbose});
+const LS = hoistLS({verbose});
+
+const API = hoistAPI();
+const Post = hoistPost();
+const Features = hoistFeatures();
+const I18N = getLanguageConstants();
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 // --- Script runner --- //
+
 (function starter(feats) {
     const {once, onChangeImmediate, onChange} = feats;
 
@@ -68,6 +86,10 @@ function execFeatures() {
     onChangeImmediate: execFeaturesImmediately,
     onChange: execFeatures
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+// --- Twitter Specific code --- //
 
 // In fact it contains tweets IDs, so downloading 1 image of 4 will mark all 4 images as "already downloaded"
 // on the next time when the tweet will appear
@@ -619,9 +641,7 @@ function hoistAPI() {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-
-
-// --- Util --- //
+// --- Common Utils --- //
 
 // --- LocalStorage util class --- //
 function hoistLS(settings = {}) {
@@ -629,7 +649,7 @@ function hoistLS(settings = {}) {
         verbose, // debug "messages" in the document.title
     } = settings;
     class LS {
-        constructor(name) { //todo use instead of static methods
+        constructor(name) {
             this.name = name;
         }
         getItem(defaultValue) {
@@ -706,189 +726,203 @@ function hoistLS(settings = {}) {
     return LS;
 }
 
+// --- Just groups them in a function for the convenient code looking --- //
+function getUtils({verbose}) {
+    function sleep(time) {
+        return new Promise(resolve => setTimeout(resolve, time));
+    }
 
-function sleep(time) {
-    return new Promise(resolve => setTimeout(resolve, time));
-}
+    async function fetchResource(url) {
+        try {
+            const response = await fetch(url, {
+                cache: "force-cache",
+            });
+            const lastModifiedDateSeconds = response.headers.get("last-modified");
+            const contentType = response.headers.get("content-type");
 
-async function fetchResource(url) {
-    try {
-        const response = await fetch(url, {
-            cache: "force-cache",
+            const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
+            const extension = extensionFromMime(contentType);
+            const blob = await response.blob();
+
+            // https://pbs.twimg.com/media/AbcdEFgijKL01_9?format=jpg&name=orig                                     -> AbcdEFgijKL01_9
+            // https://pbs.twimg.com/ext_tw_video_thumb/1234567890123456789/pu/img/Ab1cd2345EFgijKL.jpg?name=orig   -> Ab1cd2345EFgijKL.jpg
+            // https://video.twimg.com/ext_tw_video/1234567890123456789/pu/vid/946x720/Ab1cd2345EFgijKL.mp4?tag=10  -> Ab1cd2345EFgijKL.mp4
+            const _url = new URL(url);
+            const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
+
+            const {name} = filename.match(/(?<name>^[^\.]+)/).groups;
+            return {blob, lastModifiedDate, contentType, extension, name};
+        } catch (error) {
+            verbose && console.error(url, error);
+            throw error;
+        }
+    }
+
+    function extensionFromMime(mimeType) {
+        let extension = mimeType.match(/(?<=\/).+/)[0];
+        extension = extension === "jpeg" ? "jpg" : extension;
+        return extension;
+    }
+
+    function download(blob, name = "", url = "") {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob) + "#" + url;
+        a.download = name;
+        a.click();
+
+        setTimeout(_ => {
+            URL.revokeObjectURL(a.href);
+        }, 1000 * 30);
+    }
+
+    // "Sun, 10 Jan 2021 22:22:22 GMT" -> "2021.01.10"
+    function dateToDayDateString(dateValue, utc = true) {
+        const _date = new Date(dateValue);
+        function pad(str) {
+            return str.toString().padStart(2, "0");
+        }
+        const _utc = utc ? "UTC" : "";
+        const year  = _date[`get${_utc}FullYear`]();
+        const month = _date[`get${_utc}Month`]() + 1;
+        const date  = _date[`get${_utc}Date`]();
+
+        return year + "." + pad(month) + "." + pad(date);
+    }
+
+
+    function addCSS(css) {
+        const styleElem = document.createElement("style");
+        styleElem.textContent = css;
+        document.body.append(styleElem);
+        return styleElem;
+    }
+
+
+    function getCookie(name) {
+        verbose && console.log(document.cookie);
+        const regExp = new RegExp(`(?<=${name}=)[^;]+`);
+        return document.cookie.match(regExp)?.[0];
+    }
+
+    function throttle(runnable, time = 50) {
+        let waiting = false;
+        let queued = false;
+        let context;
+        let args;
+
+        return function() {
+            if (!waiting) {
+                waiting = true;
+                setTimeout(function() {
+                    if (queued) {
+                        runnable.apply(context, args);
+                        context = args = undefined;
+                    }
+                    waiting = queued = false;
+                }, time);
+                return runnable.apply(this, arguments);
+            } else {
+                queued = true;
+                context = this;
+                args = arguments;
+            }
+        }
+    }
+    function throttleWithResult(func, time = 50) {
+        let waiting = false;
+        let args;
+        let context;
+        let timeout;
+        let promise;
+
+        return async function() {
+            if (!waiting) {
+                waiting = true;
+                timeout = new Promise(async resolve => {
+                    await sleep(time);
+                    waiting = false;
+                    resolve();
+                });
+                return func.apply(this, arguments);
+            } else {
+                args = arguments;
+                context = this;
+            }
+
+            if (!promise) {
+                promise = new Promise(async resolve => {
+                    await timeout;
+                    const result = func.apply(context, args);
+                    args = context = promise = undefined;
+                    resolve(result);
+                });
+            }
+            return promise;
+        }
+    }
+
+
+    function xpath(path, node = document) {
+        let xPathResult = document.evaluate(path, node, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+        return xPathResult.singleNodeValue;
+    }
+    function xpathAll(path, node = document) {
+        let xPathResult = document.evaluate(path, node, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+        const nodes = [];
+        try {
+            let node = xPathResult.iterateNext();
+
+            while (node) {
+                nodes.push(node);
+                node = xPathResult.iterateNext();
+            }
+            return nodes;
+        }
+        catch (e) {
+            // todo need investigate it
+            console.error(e); // "The document has mutated since the result was returned."
+            return [];
+        }
+    }
+
+
+    function getNearestElementByType(elem, type) {
+        const parent = elem.parentNode;
+        if (parent === document) {
+            return null;
+        }
+        if (parent.nodeName === type.toUpperCase()) {
+            return parent;
+        }
+        return getNearestElementByType(parent, type);
+    }
+    function getParentWithSiblingDataset(node, name, value) {
+        const parent = node.parentNode;
+        if (parent === document) {
+            return null;
+        }
+        // console.log(parent, parent.childNodes);
+        const elem = [...parent.childNodes].find(el => {
+            if (el.dataset?.[name] === value) {
+                return true;
+            }
         });
-        const lastModifiedDateSeconds = response.headers.get("last-modified");
-        const contentType = response.headers.get("content-type");
-
-        const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
-        const extension = extensionFromMime(contentType);
-        const blob = await response.blob();
-
-        // https://pbs.twimg.com/media/AbcdEFgijKL01_9?format=jpg&name=orig                                     -> AbcdEFgijKL01_9
-        // https://pbs.twimg.com/ext_tw_video_thumb/1234567890123456789/pu/img/Ab1cd2345EFgijKL.jpg?name=orig   -> Ab1cd2345EFgijKL.jpg
-        // https://video.twimg.com/ext_tw_video/1234567890123456789/pu/vid/946x720/Ab1cd2345EFgijKL.mp4?tag=10  -> Ab1cd2345EFgijKL.mp4
-        const _url = new URL(url);
-        const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
-
-        const {name} = filename.match(/(?<name>^[^\.]+)/).groups;
-        return {blob, lastModifiedDate, contentType, extension, name};
-    } catch (error) {
-        verbose && console.error(url, error);
-        throw error;
-    }
-}
-
-function extensionFromMime(mimeType) {
-    let extension = mimeType.match(/(?<=\/).+/)[0];
-    extension = extension === "jpeg" ? "jpg" : extension;
-    return extension;
-}
-
-function download(blob, name = "", url = "") {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob) + "#" + url;
-    a.download = name;
-    a.click();
-
-    setTimeout(_ => {
-        URL.revokeObjectURL(a.href);
-    }, 1000 * 60);
-}
-
-// "Sun, 10 Jan 2021 22:22:22 GMT" -> "2021.01.10"
-function dateToDayDateString(dateValue, utc = true) {
-    const _date = new Date(dateValue);
-    function pad(str) {
-        return str.toString().padStart(2, "0");
-    }
-    const _utc = utc ? "UTC" : "";
-    const year  = _date[`get${_utc}FullYear`]();
-    const month = _date[`get${_utc}Month`]() + 1;
-    const date  = _date[`get${_utc}Date`]();
-
-    return year + "." + pad(month) + "." + pad(date);
-}
-
-
-
-function addCSS(css) {
-    const styleElem = document.createElement("style");
-    styleElem.textContent = css;
-    document.body.append(styleElem);
-    return styleElem;
-}
-
-
-function getCookie(name) {
-    verbose && console.log(document.cookie);
-    const regExp = new RegExp(`(?<=${name}=)[^;]+`);
-    return document.cookie.match(regExp)?.[0];
-}
-
-function throttle(runnable, time = 50) {
-    let waiting = false;
-    let queued = false;
-    let context;
-    let args;
-
-    return function() {
-        if (!waiting) {
-            waiting = true;
-            setTimeout(function() {
-                if (queued) {
-                    runnable.apply(context, args);
-                    context = args = undefined;
-                }
-                waiting = queued = false;
-            }, time);
-            return runnable.apply(this, arguments);
-        } else {
-            queued = true;
-            context = this;
-            args = arguments;
+        if (!elem) {
+            return getParentWithSiblingDataset(parent, name, value);
         }
-    }
-}
-function throttleWithResult(func, time = 50) {
-    let waiting = false;
-    let args;
-    let context;
-    let timeout;
-    let promise;
-
-    return async function() {
-        if (!waiting) {
-            waiting = true;
-            timeout = new Promise(async resolve => {
-                await sleep(time);
-                waiting = false;
-                resolve();
-            });
-            return func.apply(this, arguments);
-        } else {
-            args = arguments;
-            context = this;
-        }
-
-        if (!promise) {
-            promise = new Promise(async resolve => {
-                await timeout;
-                const result = func.apply(context, args);
-                args = context = promise = undefined;
-                resolve(result);
-            });
-        }
-        return promise;
-    }
-}
-
-
-function xpath(path, node = document) {
-    let xPathResult = document.evaluate(path, node, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-    return xPathResult.singleNodeValue;
-}
-function xpathAll(path, node = document) {
-    let xPathResult = document.evaluate(path, node, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-    const nodes = [];
-    try {
-        let node = xPathResult.iterateNext();
-
-        while (node) {
-            nodes.push(node);
-            node = xPathResult.iterateNext();
-        }
-        return nodes;
-    }
-    catch (e) {
-        // todo need investigate it
-        console.error(e); // "The document has mutated since the result was returned."
-        return [];
-    }
-}
-
-
-function getNearestElementByType(elem, type) {
-    const parent = elem.parentNode;
-    if (parent === document) {
-        return null;
-    }
-    if (parent.nodeName === type.toUpperCase()) {
         return parent;
     }
-    return getNearestElementByType(parent, type);
-}
-function getParentWithSiblingDataset(node, name, value) {
-    const parent = node.parentNode;
-    if (parent === document) {
-        return null;
+
+    return {
+        sleep, fetchResource, extensionFromMime, download, dateToDayDateString,
+        addCSS,
+        getCookie,
+        throttle, throttleWithResult,
+        xpath, xpathAll,
+        getNearestElementByType, getParentWithSiblingDataset,
     }
-    // console.log(parent, parent.childNodes);
-    const elem = [...parent.childNodes].find(el => {
-        if (el.dataset?.[name] === value) {
-            return true;
-        }
-    });
-    if (!elem) {
-        return getParentWithSiblingDataset(parent, name, value);
-    }
-    return parent;
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
