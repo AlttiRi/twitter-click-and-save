@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.13
+// @version     0.1.14
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -12,21 +12,12 @@
 // --- For debug --- //
 const verbose = true;
 
-const {
-    VIEW, YES_VIEW_PROFILE,
-    SIGNUP,
-    TRENDS, TOPICS_TO_FOLLOW,
-    WHO_TO_FOLLOW, FOOTER,
-    QUOTES, ON_TWITTER, TWITTER,
-    IMAGE,
-} = getLanguageConstants();
-//todo I18N
-
 // --- "Imports" --- //
 const LS = hoistLS({verbose});
 const API = hoistAPI();
 const Post = hoistPost();
 const Features = hoistFeatures();
+const I18N = getLanguageConstants();
 
 
 // --- Features to execute --- //
@@ -41,7 +32,6 @@ function execFeaturesImmediately() {
     Features.expandSpoilers();
 }
 function execFeatures() {
-    verbose && console.log("main");
     Features.imagesHandler();
     Features.videoHandler();
     Features.expandSpoilers();
@@ -57,7 +47,7 @@ function execFeatures() {
 
     once();
     onChangeImmediate();
-    const onChangeThrottled = throttle(onChange, 200);
+    const onChangeThrottled = throttle(onChange, 250);
     onChangeThrottled();
 
     const targetNode = document.querySelector("body");
@@ -81,7 +71,7 @@ function execFeatures() {
 
 
 
-// --- Features --- //
+// --- Twitter.Features --- //
 function hoistFeatures() {
     class Features {
         static async imagesHandler() {
@@ -219,9 +209,11 @@ function hoistFeatures() {
                 return;
             }
 
-            const [OPEN_QUOTE, CLOSE_QUOTE] = QUOTES;
-            const urlsToReplace = [...titleText.matchAll(new RegExp(`https:\\/\\/t\\.co\\/[^ ${CLOSE_QUOTE}]+`, "g"))].map(el => el[0]);
-            // the last one can be the URL to the post // or to an embedded shared URL
+            const [OPEN_QUOTE, CLOSE_QUOTE] = I18N.QUOTES;
+            const urlsToReplace = [
+                ...titleText.matchAll(new RegExp(`https:\\/\\/t\\.co\\/[^ ${CLOSE_QUOTE}]+`, "g"))
+            ].map(el => el[0]);
+            // the last one may be the URL to the post // or to an embedded shared URL
 
             const map = new Map();
             const anchors = document.querySelectorAll(`a[data-redirect^="https://t.co/"]`);
@@ -248,8 +240,8 @@ function hoistFeatures() {
                 titleText = titleText.replaceAll(key, value + ` (${key})`);
             }
 
-            titleText = titleText.replace(new RegExp(` ${ON_TWITTER}(?=: ${OPEN_QUOTE})`), "");
-            titleText = titleText.replace(new RegExp(`(?<=${CLOSE_QUOTE}) \\\/ ${TWITTER}$`), "");
+            titleText = titleText.replace(new RegExp(` ${I18N.ON_TWITTER}(?=: ${OPEN_QUOTE})`), "");
+            titleText = titleText.replace(new RegExp(`(?<=${CLOSE_QUOTE}) \\\/ ${I18N.TWITTER}$`), "");
             if (!lastUrlIsAttachment) {
                 const regExp = new RegExp(`(?<short> https:\\/\\/t\\.co\\/.{6,14})${CLOSE_QUOTE}$`);
                 titleText = titleText.replace(regExp, (match, p1, p2, offset, string) => `${CLOSE_QUOTE} —${p1}`);
@@ -285,19 +277,19 @@ function hoistFeatures() {
 
             const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]")
             a && [...a]
-                .find(el => YES_VIEW_PROFILE === el.textContent)
+                .find(el => el.textContent === I18N.YES_VIEW_PROFILE)
                 ?.click();
 
             // todo: expand spoiler commentary in photo view mode (.../photo/1)
             const b = main.querySelectorAll("article article[role=article] [role=button]");
             b && [...b]
-                .filter(el => VIEW === el.textContent)
+                .filter(el => el.textContent === I18N.VIEW)
                 .forEach(el => el.click());
         }
 
         static hideSignUpSection() { // "New to Twitter?"
-            if (!SIGNUP) { return; }
-            const elem = document.querySelector(`section[aria-label="${SIGNUP}"][role=region]`);
+            if (!I18N.SIGNUP) { return; }
+            const elem = document.querySelector(`section[aria-label="${I18N.SIGNUP}"][role=region]`);
             if (elem) {
                 elem.parentNode.classList.add("ujs-hidden");
             }
@@ -316,9 +308,9 @@ function hoistFeatures() {
 
         // "Trends for you"
         static hideTrends() {
-            if (!TRENDS) { return; }
+            if (!I18N.TRENDS) { return; }
             addCSS(`
-                [aria-label="${TRENDS}"]
+                [aria-label="${I18N.TRENDS}"]
                 {
                     display: none;
                 }
@@ -335,32 +327,33 @@ function hoistFeatures() {
 
         // Use it once. To prevent blinking.
         static hideTopicsToFollowInstantly() {
-            if (!TOPICS_TO_FOLLOW) { return; }
+            if (!I18N.TOPICS_TO_FOLLOW) { return; }
             addCSS(`
-                div[aria-label="${TOPICS_TO_FOLLOW}"] {
+                div[aria-label="${I18N.TOPICS_TO_FOLLOW}"] {
                     display: none;
                 }
             `);
         }
         // Hides container and "separator line"
         static hideTopicsToFollow() {
-            if (!TOPICS_TO_FOLLOW) { return; }
-            const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${TOPICS_TO_FOLLOW}"]]/../..`);
+            if (!I18N.TOPICS_TO_FOLLOW) { return; }
+            const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${I18N.TOPICS_TO_FOLLOW}"]]/../..`);
             if (!elem) {
                 return;
             }
             elem.classList.add("ujs-hidden");
 
             elem.previousSibling.classList.add("ujs-hidden"); // a "separator line" (empty element of "TRENDS", for example)
-            // in fact it's a hack // todo rework
+            // in fact it's a hack // todo rework // may hide "You might like" section [bug]
         }
 
         // todo split to two methods
         // todo fix it, currently it works questionably
+        // not tested with non eng langs
         static footerHandled = false;
         static hideAndMoveFooter() { // "Terms of Service   Privacy Policy   Cookie Policy"
-            let footer = document.querySelector("main[role=main] nav[aria-label=Footer][role=navigation]");
-            const nav  = document.querySelector("nav[aria-label=Primary][role=navigation]");
+            let footer = document.querySelector(`main[role=main] nav[aria-label=${I18N.FOOTER}][role=navigation]`);
+            const nav  = document.querySelector("nav[aria-label=Primary][role=navigation]"); // I18N."Primary" [?]
 
             if (footer) {
                 footer = footer.parentNode;
@@ -384,9 +377,9 @@ function hoistFeatures() {
     return Features;
 }
 
-// required CSS
+// --- Twitter.RequiredCSS --- //
 function getUserScriptCSS() {
-    const labelText = IMAGE || "Image";
+    const labelText = I18N.IMAGE || "Image";
     const css = `
         .ujs-hidden {
             display: none;
@@ -470,6 +463,7 @@ function getUserScriptCSS() {
     return css.replaceAll(" ".repeat(8), "");
 }
 
+// --- Twitter.LangConstants --- //
 function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
     const defaultQuotes = [`"`, `"`];
 
@@ -505,10 +499,7 @@ function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
     }
 }
 
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-
+// --- Twitter.Post --- //
 function hoistPost() {
     class Post {
         constructor(elem) {
@@ -548,6 +539,7 @@ function hoistPost() {
     return Post;
 }
 
+// --- Twitter.API --- //
 function hoistAPI() {
     class API {
         static guestToken = getCookie("gt");
@@ -619,6 +611,9 @@ function hoistAPI() {
     }
     return API;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 
 // --- Util --- //
