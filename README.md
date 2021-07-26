@@ -62,6 +62,10 @@ Just perform the seatch by `[twitter]` in a root folder to list all files which 
 
 You can easily find some media from the selected user in you local files, know when it was posted, and to go to the tweet by pasting the tweed `ID` to `https://twitter.com/_/status/{ID}`. The "default" filename (for example, `EXLtL49UYAA7vCG.jpg`) is for "compatibility". For example, if someone shared with you a file with `E7AdwdkUYAAqxy3.jpg` filename you can check did you downloaded it just by the search in your local files.
 
+The date format is `YYYY.MM.DD`. It's the only one proper format. It's unambiguous format. And it can be properly ordered by the sorting by name. The importans detail is it's UTC date. So the same file downloaded by people in different time zones will have the same filename.
+
+`[twitter]`, not just `twitter`? The first character as a special character (not `a-zA-Z0-9`) separates the downloaded files with the userscript from other files with "usual" names. And it looks nice, like a common tag. 
+
 Finally, "**—**" character. Probably, it's the best character for separating purpose. It just **one** character, you do not need to add extra spaces around it to make it looks good. It's a rarely used character, that makes parsing easier.
 
 
