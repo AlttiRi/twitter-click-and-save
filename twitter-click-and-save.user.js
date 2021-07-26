@@ -621,10 +621,10 @@ function hoistAPI() {
 // --- LocalStorage util class --- //
 function hoistLS(settings = {}) {
     const {
-        verbose, // bebug "messages" in the document.title
+        verbose, // debug "messages" in the document.title
     } = settings;
     class LS {
-        constructor(name) {
+        constructor(name) { //todo use instead of static methods
             this.name = name;
         }
         getItem(defaultValue) {
