@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.16
+// @version     0.1.17
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -422,6 +422,7 @@ function getUserScriptCSS() {
         }
         
         .ujs-btn-download {
+            cursor: pointer;
             top: 0.5em;
             left: 0.5em;
             width: 33px;
@@ -430,6 +431,7 @@ function getUserScriptCSS() {
             opacity: 0;
             position: absolute;
             border-radius: 0.3em;
+            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
         }
         article[role=article]:hover .ujs-btn-download {
             opacity: 1;
@@ -440,6 +442,7 @@ function getUserScriptCSS() {
         
         .ujs-btn-download.ujs-downloaded {
             background: #4caf50; /*green*/
+            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
             opacity: 1;
         }
         .ujs-btn-download.ujs-video {
@@ -447,9 +450,11 @@ function getUserScriptCSS() {
         }
         article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
             background: #1da1f2; /*blue*/
+            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
         }
         div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
             background: #1da1f2; /*blue*/
+            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
         }
         
         /* -------------------------------------------------------- */
@@ -474,13 +479,13 @@ function getUserScriptCSS() {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
         
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded:hover {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):hover {
             background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
         }
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded:active {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):active {
             background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
         }
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded.ujs-downloading {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
         
