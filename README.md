@@ -65,7 +65,7 @@ You can easily find some media from the selected user in you local files, know w
 Finally, **`—`** character. Probably, it's the best character for separating purpose. It just **one** character, you do not need to add extra spaces around it to make it looks good. It's a rarely used character, that makes parsing easier.
 
 
-_[@see `gallery-dl` config](#gallery-dl-config)_
+_[@see `gallery-dl` config ↓](#gallery-dl-config)_
 
 ## Addition enhancements (more details)
 
@@ -127,7 +127,7 @@ Finally, it hides "Trends" and "Topic to follow" by default. I find them useless
 ## Gallery-dl config
 This userscript is suited for single media downloading. If you want to download a balk of media, use [gallery-dl](https://github.com/mikf/gallery-dl).
 
-To have [the same filenames](#filename-format) use the follow config:
+To have [the same filenames ↑](#filename-format) use the follow config:
 ```json
 "twitter": {
     "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
