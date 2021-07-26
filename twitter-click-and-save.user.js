@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.14
+// @version     0.1.15
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -69,6 +69,11 @@ function execFeatures() {
     onChange: execFeatures
 });
 
+// In fact it contains tweets IDs, so downloading 1 image of 4 will mark all 4 images as "already downloaded"
+// on the next time when the tweet will appear
+// todo keep images number
+const downloadedImagesStorage = new LS("ujs-twitter-downloaded");
+const downloadedVideosStorage = new LS("ujs-twitter-downloaded-videos");
 
 
 // --- Twitter.Features --- //
@@ -101,7 +106,7 @@ function hoistFeatures() {
 
                 await sleep(5); // await append to html
                 const id = Post.of(btn)?.id; // no for header image !!!
-                const downloaded = LS.hasItem("ujs-twitter-downloaded", id);
+                const downloaded = downloadedImagesStorage.hasItem(id);
                 if (downloaded) {
                     btn.classList.add("ujs-already-downloaded");
                 }
@@ -133,7 +138,7 @@ function hoistFeatures() {
 
             const downloaded = btn.classList.contains("already-downloaded");
             if (!downloaded) {
-                await LS.pushItem("ujs-twitter-downloaded", id);
+                await downloadedImagesStorage.pushItem(id);
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
@@ -160,7 +165,7 @@ function hoistFeatures() {
 
                 // await sleep(5); // not needed
                 const id = Post.of(btn).id;
-                const downloaded = LS.hasItem("ujs-twitter-downloaded-videos", id);
+                const downloaded = downloadedVideosStorage.hasItem(id);
                 if (downloaded) {
                     btn.classList.add("ujs-already-downloaded");
                 }
@@ -184,7 +189,7 @@ function hoistFeatures() {
 
             const downloaded = btn.classList.contains("ujs-already-downloaded");
             if (!downloaded) {
-                await LS.pushItem("ujs-twitter-downloaded-videos", id);
+                await downloadedVideosStorage.pushItem(id);
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
