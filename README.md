@@ -62,7 +62,7 @@ Just perform the seatch by `[twitter]` in a root folder to list all files which 
 
 You can easily find some media from the selected user in you local files, know when it was posted, and to go to the tweet by pasting the tweed `ID` to `https://twitter.com/_/status/{ID}`. The "default" filename (for example, `EXLtL49UYAA7vCG.jpg`) is for "compatibility". For example, if someone shared with you a file with `E7AdwdkUYAAqxy3.jpg` filename you can check did you downloaded it just by the search in your local files.
 
-Finally, **`—`** character. Probably, it's the best character for separating purpose. It just **one** character, you do not need to add extra spaces around it to make it looks good. It's a rarely used character, that makes parsing easier.
+Finally, "**—**" character. Probably, it's the best character for separating purpose. It just **one** character, you do not need to add extra spaces around it to make it looks good. It's a rarely used character, that makes parsing easier.
 
 
 _[@see `gallery-dl` config ↓](#gallery-dl-config)_
