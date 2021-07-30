@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.2
+// @version     0.3.3
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -38,12 +38,13 @@ function execFeatures() {
 
 
 // --- For debug --- //
-const verbose = false;
+const verbose = true;
 
 
 // --- [Violentmonkey + Firefox 90 + Strict Tracking Protection] fix --- //
 const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init) {
-    return globalThis.wrappedJSObject.fetch(resource, cloneInto(init, document));
+    verbose && console.log("wrappedJSObject.fetch", resource, init);
+    return globalThis.wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
 } : globalThis.fetch;
 
 
@@ -618,7 +619,15 @@ function hoistAPI() {
         static async _requestBearerToken() {
             const scriptSrc = [...document.querySelectorAll("script")]
                 .find(el => el.src.match(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web\/main[\w\d\.]*\.js/)).src;
-            const text = await (await fetch(scriptSrc)).text();
+
+            let text;
+            try {
+                text = await (await fetch(scriptSrc)).text();
+            } catch (e) {
+                console.error(e, scriptSrc);
+                throw e;
+            }
+
             const authorizationKey = text.match(/(?<=")AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D.+?(?=")/)[0];
             const authorization = `Bearer ${authorizationKey}`;
 
@@ -659,8 +668,16 @@ function hoistAPI() {
                 headers.append("x-twitter-auth-type", "OAuth2Session");
             }
 
-            const response = await fetch(url, {headers});
-            const json = await response.json();
+
+            const _url = url.toString();
+            let json;
+            try {
+                const response = await fetch(_url, {headers});
+                json = await response.json();
+            } catch (e) {
+                console.error(e, _url);
+                throw e;
+            }
 
             verbose && console.warn(JSON.stringify(json, null, " "));
             // 429 - [{code: 88, message: "Rate limit exceeded"}] — for suspended accounts
