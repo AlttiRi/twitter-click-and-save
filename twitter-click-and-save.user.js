@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.1.17
+// @version     0.2.0
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -35,6 +35,12 @@ function execFeatures() {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+
+// --- That use for image history --- //
+const imagesHistoryBy = "TWEET_ID"; // "TWEET_ID" or "IMAGE_NAME"
+// With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
+// on the next time when the tweet will appear.
+// "IMAGE_NAME" will count each image of a post, but it will take more data to store.
 
 // --- For debug --- //
 const verbose = true;
@@ -91,16 +97,37 @@ const I18N = getLanguageConstants();
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Twitter Specific code --- //
 
-// In fact it contains tweets IDs, so downloading 1 image of 4 will mark all 4 images as "already downloaded"
-// on the next time when the tweet will appear
-// todo keep images number
-const downloadedImagesStorage = new LS("ujs-twitter-downloaded");
-const downloadedVideosStorage = new LS("ujs-twitter-downloaded-videos");
 
+const downloadedImages = new LS("ujs-twitter-downloaded-images-names");
+const downloadedImageTweetIds = new LS("ujs-twitter-downloaded-image-tweet-ids");
+const downloadedVideoTweetIds = new LS("ujs-twitter-downloaded-video-tweet-ids");
 
 // --- Twitter.Features --- //
 function hoistFeatures() {
     class Features {
+        static _ImageHistory = class {
+            static getImageNameFromUrl(url) {
+                const _url = new URL(url);
+                const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
+                return filename.match(/^[^\.]+/)[0]; // remove extension
+            }
+            static isDownloaded({id, url}) {
+                if (imagesHistoryBy === "TWEET_ID") {
+                    return downloadedImageTweetIds.hasItem(id);
+                } else if (imagesHistoryBy === "IMAGE_NAME") {
+                    const name = Features._ImageHistory.getImageNameFromUrl(url);
+                    return downloadedImages.hasItem(name);
+                }
+            }
+            static async markDownloaded({id, url}) {
+                if (imagesHistoryBy === "TWEET_ID") {
+                    await downloadedImageTweetIds.pushItem(id);
+                } else if (imagesHistoryBy === "IMAGE_NAME") {
+                    const name = Features._ImageHistory.getImageNameFromUrl(url);
+                    await downloadedImages.pushItem(name);
+                }
+            }
+        }
         static async imagesHandler() {
             const images = document.querySelectorAll("img");
             for (const img of images) {
@@ -125,10 +152,10 @@ function hoistFeatures() {
                 }
                 anchor.append(btn);
 
-
-                await sleep(5); // await append to html
-                const id = Post.of(btn)?.id; // no for header image !!!
-                const downloaded = downloadedImagesStorage.hasItem(id);
+                const downloaded = Features._ImageHistory.isDownloaded({
+                    id: Post.of(btn).id,
+                    url: btn.dataset.url
+                });
                 if (downloaded) {
                     btn.classList.add("ujs-already-downloaded");
                 }
@@ -160,7 +187,7 @@ function hoistFeatures() {
 
             const downloaded = btn.classList.contains("already-downloaded");
             if (!downloaded) {
-                await downloadedImagesStorage.pushItem(id);
+                await Features._ImageHistory.markDownloaded({id, url});
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
@@ -185,9 +212,8 @@ function hoistFeatures() {
                 let elem = vid.parentNode.parentNode.parentNode;
                 elem.after(btn);
 
-                // await sleep(5); // not needed
                 const id = Post.of(btn).id;
-                const downloaded = downloadedVideosStorage.hasItem(id);
+                const downloaded = downloadedVideoTweetIds.hasItem(id);
                 if (downloaded) {
                     btn.classList.add("ujs-already-downloaded");
                 }
@@ -211,7 +237,7 @@ function hoistFeatures() {
 
             const downloaded = btn.classList.contains("ujs-already-downloaded");
             if (!downloaded) {
-                await downloadedVideosStorage.pushItem(id);
+                await downloadedVideoTweetIds.pushItem(id);
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
