@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.2.0
+// @version     0.2.1
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -40,7 +40,7 @@ function execFeatures() {
 const imagesHistoryBy = "TWEET_ID"; // "TWEET_ID" or "IMAGE_NAME"
 // With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
 // on the next time when the tweet will appear.
-// "IMAGE_NAME" will count each image of a post, but it will take more data to store.
+// "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
 
 // --- For debug --- //
 const verbose = true;
@@ -57,7 +57,7 @@ const {
 const LS = hoistLS({verbose});
 
 const API = hoistAPI();
-const Post = hoistPost();
+const Tweet = hoistTweet();
 const Features = hoistFeatures();
 const I18N = getLanguageConstants();
 
@@ -153,7 +153,7 @@ function hoistFeatures() {
                 anchor.append(btn);
 
                 const downloaded = Features._ImageHistory.isDownloaded({
-                    id: Post.of(btn).id,
+                    id: Tweet.of(btn).id,
                     url: btn.dataset.url
                 });
                 if (downloaded) {
@@ -175,7 +175,7 @@ function hoistFeatures() {
                 return urlObj.toString();
             }
 
-            const {id, author} = Post.of(btn);
+            const {id, author} = Tweet.of(btn);
             verbose && console.log(id, author);
 
 
@@ -212,7 +212,7 @@ function hoistFeatures() {
                 let elem = vid.parentNode.parentNode.parentNode;
                 elem.after(btn);
 
-                const id = Post.of(btn).id;
+                const id = Tweet.of(btn).id;
                 const downloaded = downloadedVideoTweetIds.hasItem(id);
                 if (downloaded) {
                     btn.classList.add("ujs-already-downloaded");
@@ -224,7 +224,7 @@ function hoistFeatures() {
             event.stopImmediatePropagation();
 
             const btn = event.currentTarget;
-            const {id, author} = Post.of(btn);
+            const {id, author} = Tweet.of(btn);
             const video = await API.getVideoInfo(id); // {bitrate, content_type, url}
             verbose && console.log(video);
 
@@ -252,7 +252,7 @@ function hoistFeatures() {
         // it looks it sometimes does not work correctly, probably it executes before `directLinks`.
         // todo: keep short urls and rerun this (Note: with the original title) after `directLinks` handled them.
         static handleTitle() {
-            // if not a opened post
+            // if not a opened tweet
             if (!location.href.match(/twitter\.com\/[^\/]+\/status\/\d+/)) {
                 return;
             }
@@ -266,7 +266,7 @@ function hoistFeatures() {
             const urlsToReplace = [
                 ...titleText.matchAll(new RegExp(`https:\\/\\/t\\.co\\/[^ ${CLOSE_QUOTE}]+`, "g"))
             ].map(el => el[0]);
-            // the last one may be the URL to the post // or to an embedded shared URL
+            // the last one may be the URL to the tweet // or to an embedded shared URL
 
             const map = new Map();
             const anchors = document.querySelectorAll(`a[data-redirect^="https://t.co/"]`);
@@ -557,33 +557,33 @@ function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
     }
 }
 
-// --- Twitter.Post --- //
-function hoistPost() {
-    class Post {
+// --- Twitter.Tweet --- //
+function hoistTweet() {
+    class Tweet {
         constructor(elem) {
             this.elem = elem;
-            this.url = Post.getUrl(elem);
+            this.url = Tweet.getUrl(elem);
         }
         static of(innerElem) {
             const elem = getParentWithSiblingDataset(innerElem, "testid", "tweet");
             if (!elem) { // opened image
-                verbose && console.log("no-post elem");
+                verbose && console.log("no-tweet elem");
             }
-            return new Post(elem);
+            return new Tweet(elem);
         }
         static getUrl(elem) {
             if (!elem) { // if opened image
                 return location.href;
             }
 
-            const postAnchor = [...elem.querySelectorAll("a")].find(el => {
+            const tweetAnchor = [...elem.querySelectorAll("a")].find(el => {
                 return el.childNodes[0]?.nodeName === "TIME";
             });
 
-            if (postAnchor) {
-                return postAnchor.href;
+            if (tweetAnchor) {
+                return tweetAnchor.href;
             }
-            // else if selected post
+            // else if selected tweet
             return location.href;
         }
 
@@ -594,7 +594,7 @@ function hoistPost() {
             return this.url.match(/(?<=\/status\/)[^\/]+/)?.[0];
         }
     }
-    return Post;
+    return Tweet;
 }
 
 // --- Twitter.API --- //
@@ -623,7 +623,7 @@ function hoistAPI() {
         }
 
         // @return {bitrate, content_type, url}
-        static async getVideoInfo(postId) {
+        static async getVideoInfo(tweetId) {
             // Hm... it always is the same. Even for a logged user.
             // const authorization = API.guestToken ? API.guestAuthorization : await API.getAuthorization();
             const authorization = API.guestAuthorization;
@@ -634,8 +634,8 @@ function hoistAPI() {
             verbose && sessionStorage.setItem("x-csrf-token", API.csrfToken);
             verbose && sessionStorage.setItem("x-guest-token", API.guestToken);
 
-            // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${postId}.json`); // only for suspended/anon
-            const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${postId}.json`);
+            // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
+            const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
             url.searchParams.set("tweet_mode", "extended");
 
             const headers = new Headers({
@@ -656,8 +656,8 @@ function hoistAPI() {
             // 429 - [{code: 88, message: "Rate limit exceeded"}] — for suspended accounts
 
 
-            const postData = json.globalObjects.tweets[postId];
-            const videoVariants = postData.extended_entities.media[0].video_info.variants;
+            const tweetData = json.globalObjects.tweets[tweetId];
+            const videoVariants = tweetData.extended_entities.media[0].video_info.variants;
             verbose && console.log(videoVariants);
 
 
