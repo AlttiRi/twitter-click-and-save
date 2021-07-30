@@ -169,3 +169,10 @@ Add this to `gallery-dl.conf` config file, so it will look so:
 _Do not forget to add a comma (`,`) if you put this in the middle of the json file._
 
 </details>
+
+---
+
+### Additional notes
+1. Some features are language dependent. Currently the script works fully with `"en"`, `"es"`, `"ru"`. See `getLanguageConstants` function. You can add `?lang=en` in the address bar to temporary change your language to check the work of the script.
+
+2. The script uses `LocalStorage` too keep download history.
