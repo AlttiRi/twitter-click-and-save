@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.2.1
+// @version     0.2.2
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -37,7 +37,7 @@ function execFeatures() {
 // ---------------------------------------------------------------------------------------------------------------------
 
 // --- That use for image history --- //
-const imagesHistoryBy = "TWEET_ID"; // "TWEET_ID" or "IMAGE_NAME"
+const imagesHistoryBy = "IMAGE_NAME"; // "TWEET_ID" or "IMAGE_NAME"
 // With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
 // on the next time when the tweet will appear.
 // "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
