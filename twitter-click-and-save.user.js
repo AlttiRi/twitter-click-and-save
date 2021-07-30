@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.4
+// @version     0.3.5
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
 // @homepageURL https://github.com/AlttiRi/twitter-click-and-save
 // @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
-// @downloadURL https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js
 // ==/UserScript==
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -38,7 +37,7 @@ function execFeatures() {
 
 
 // --- For debug --- //
-const verbose = true;
+const verbose = false;
 
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
