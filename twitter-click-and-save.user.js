@@ -530,7 +530,7 @@ function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
     const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     ];
     const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         ];
     const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", ];
-    const TOPICS_TO_FOLLOW    = ["Timeline: ",             null,                     "Cronología: ",                       ];
+    const TOPICS_TO_FOLLOW    = ["Timeline: ",             "Лента: ",                "Cronología: ",                       ];
     const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     ];
     const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      ];
     const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        ];
