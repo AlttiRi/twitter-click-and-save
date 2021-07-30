@@ -36,7 +36,7 @@ function execFeatures() {
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
-// --- That use for image history --- //
+// --- That to use for the image history --- //
 const imagesHistoryBy = "IMAGE_NAME"; // "TWEET_ID" or "IMAGE_NAME"
 // With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
 // on the next time when the tweet will appear.
