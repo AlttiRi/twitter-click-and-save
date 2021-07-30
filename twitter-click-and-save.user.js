@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.0
+// @version     0.3.1
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -36,11 +36,6 @@ function execFeatures() {
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
-// --- That to use for the image history --- //
-const imagesHistoryBy = "IMAGE_NAME"; // "TWEET_ID" or "IMAGE_NAME"
-// With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
-// on the next time when the tweet will appear.
-// "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
 
 // --- For debug --- //
 const verbose = true;
@@ -50,6 +45,7 @@ const verbose = true;
 const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init) {
     return globalThis.wrappedJSObject.fetch(resource, cloneInto(init, document));
 } : globalThis.fetch;
+
 
 // --- "Imports" --- //
 const {
@@ -66,6 +62,14 @@ const API = hoistAPI();
 const Tweet = hoistTweet();
 const Features = hoistFeatures();
 const I18N = getLanguageConstants();
+
+
+// --- That to use for the image history --- //
+// "TWEET_ID" or "IMAGE_NAME"
+const imagesHistoryBy = LS.getItem("ujs-images-history-by", "IMAGE_NAME");
+// With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
+// on the next time when the tweet will appear.
+// "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
 
 
 // ---------------------------------------------------------------------------------------------------------------------
