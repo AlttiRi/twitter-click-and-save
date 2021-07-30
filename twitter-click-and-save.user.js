@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.1
+// @version     0.3.2
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -535,18 +535,18 @@ function getUserScriptCSS() {
 function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
     const defaultQuotes = [`"`, `"`];
 
-    const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 ];
-    const VIEW                = ["View",                   "Посмотреть",             "Ver",                                ];
-    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     ];
-    const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         ];
-    const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", ];
-    const TOPICS_TO_FOLLOW    = ["Timeline: ",             "Лента: ",                "Cronología: ",                       ];
-    const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     ];
-    const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      ];
-    const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        ];
-    const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         ];
-    const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            ];
-    const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             ];
+    const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               ];
+    const VIEW                = ["View",                   "Посмотреть",             "Ver",                                "查看",             ];
+    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     "是，查看个人资料", ];
+    const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         "注册",             ];
+    const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", "时间线：当前趋势", ];
+    const TOPICS_TO_FOLLOW    = ["Timeline: ",             "Лента: ",                "Cronología: ",                       "时间线：",/*suggestion*/];
+    const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     "推荐关注",         ];
+    const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      "页脚",             ];
+    const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        defaultQuotes,      ];
+    const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         "在 Twitter",       ];
+    const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            "Twitter",          ];
+    const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             "图像",             ];
 
     const lang = document.querySelector("html").getAttribute("lang");
     const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
