@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.3
+// @version     0.3.4
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -41,9 +41,23 @@ function execFeatures() {
 const verbose = true;
 
 
-// --- [Violentmonkey + Firefox 90 + Strict Tracking Protection] fix --- //
+// --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
 const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init) {
     verbose && console.log("wrappedJSObject.fetch", resource, init);
+
+    /** @param {Headers} headers */
+    function headersToSimpleObject(headers) {
+        const temp = {};
+        for (const [key, value] of headers.entries()) {
+            temp[key] = value;
+        }
+        return temp;
+    }
+    if (init.headers instanceof Headers) {
+        // Since `Headers` are not allowed for structured cloning.
+        init.headers = headersToSimpleObject(init.headers);
+    }
+
     return globalThis.wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
 } : globalThis.fetch;
 
@@ -667,7 +681,6 @@ function hoistAPI() {
                 headers.append("x-twitter-active-user", "yes");
                 headers.append("x-twitter-auth-type", "OAuth2Session");
             }
-
 
             const _url = url.toString();
             let json;
