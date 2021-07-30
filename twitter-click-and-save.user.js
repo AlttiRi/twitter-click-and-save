@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.2.2
+// @version     0.3.0
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -44,6 +44,12 @@ const imagesHistoryBy = "IMAGE_NAME"; // "TWEET_ID" or "IMAGE_NAME"
 
 // --- For debug --- //
 const verbose = true;
+
+
+// --- [Violentmonkey + Firefox 90 + Strict Tracking Protection] fix --- //
+const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init) {
+    return globalThis.wrappedJSObject.fetch(resource, cloneInto(init, document));
+} : globalThis.fetch;
 
 // --- "Imports" --- //
 const {
