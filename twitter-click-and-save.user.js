@@ -38,7 +38,7 @@ function execFeatures() {
 
 
 // --- For debug --- //
-const verbose = true;
+const verbose = false;
 
 
 // --- [Violentmonkey + Firefox 90 + Strict Tracking Protection] fix --- //
