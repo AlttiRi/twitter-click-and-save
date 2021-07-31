@@ -16,7 +16,7 @@ _An installed userscript manager browser extension is required._*
 
 To install just do two clicks:
 
-1. **[Click on this link](https://github.com/AlttiRi/twitter-click-and-save/raw/master/twitter-click-and-save.user.js)**
+1. **[Click on this link](https://greasyfork.org/scripts/430132-twitter-click-n-save/code/Twitter%20Click'n'Save.user.js)**
 2. Confirm the installation in your usersript manager.
 
 _*For example: Tampermonkey
