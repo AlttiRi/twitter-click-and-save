@@ -142,8 +142,6 @@ To have [the same filenames ↑](#filename-format) use the follow config:
 ```
 
 Add this to `gallery-dl.conf` config file, so it will look so:
-<details>
-  <summary>Click to expand</summary>
   
 ```json
 {
@@ -168,7 +166,6 @@ Add this to `gallery-dl.conf` config file, so it will look so:
 ```
 _Do not forget to add a comma (`,`) if you put this in the middle of the json file._
 
-</details>
 
 ---
 
