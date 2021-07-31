@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.5
+// @version     0.3.6
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -44,17 +44,9 @@ const verbose = false;
 const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init) {
     verbose && console.log("wrappedJSObject.fetch", resource, init);
 
-    /** @param {Headers} headers */
-    function headersToSimpleObject(headers) {
-        const temp = {};
-        for (const [key, value] of headers.entries()) {
-            temp[key] = value;
-        }
-        return temp;
-    }
     if (init.headers instanceof Headers) {
         // Since `Headers` are not allowed for structured cloning.
-        init.headers = headersToSimpleObject(init.headers);
+        init.headers = Object.fromEntries(init.headers.entries())
     }
 
     return globalThis.wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
