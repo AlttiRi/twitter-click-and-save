@@ -60,7 +60,7 @@ with the default sorting by name (in a file explorer) the files will grouped by 
 It's not a problem if the files are located in the differet folders. 
 Just perform the seatch by `[twitter]` in a root folder to list all files which you have download with this userscript. Again, they will be grouped and sorted only due to name sorting. That's extremely useful thing!
 
-You can easily find some media from the selected user in you local files (the media's **author is credited** in the filename), know when it was posted, and to go to the tweet by pasting the tweed `ID` to `https://twitter.com/_/status/{ID}`. The "default" filename (for example, `EXLtL49UYAA7vCG.jpg`) is for "compatibility". For example, if someone shared with you a file with `E7AdwdkUYAAqxy3.jpg` filename you can check did you downloaded it just by the search in your local files.
+You can easily find some media from the selected user in you local files (the media's **author is credited** in the filename), know when it was posted, and go to the tweet by pasting the tweet `ID` to `https://twitter.com/_/status/{ID}`. The "default" filename (for example, `EXLtL49UYAA7vCG.jpg`) is for "compatibility". For example, if someone shared with you a file with `E7AdwdkUYAAqxy3.jpg` filename you can check did you downloaded it just by the search in your local files.
 
 The date format is `YYYY.MM.DD`. It's the only one proper format. It's unambiguous format. And it can be properly ordered by the sorting by name. The importans detail is it's UTC date. So the same file downloaded by people in different time zones will have the same filename.
 
