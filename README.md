@@ -145,23 +145,23 @@ Add this to `gallery-dl.conf` config file, so it will look so:
   
 ```json
 {
-  "extractor": {    
-    "reddit": {
-      "...": "..."
-    },
+    "extractor": {    
+        "reddit": {
+            "...": "..."
+        },
     
-    "twitter": {
-      "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
-      "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}",
-      "retweets": "original",
-      "videos": true
-    },
-    
-    "tumblr": {
-      "...": "...",
-      "...": "..."
+        "twitter": {
+            "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
+            "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}",
+            "retweets": "original",
+            "videos": true
+        },
+
+        "tumblr": {
+            "...": "...",
+            "...": "..."
+        }
     }
-  }
 }
 ```
 _Do not forget to add a comma (`,`) if you put this in the middle of the json file._
