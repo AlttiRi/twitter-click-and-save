@@ -66,7 +66,7 @@ The date format is `YYYY.MM.DD`. It's the only one proper format. It's unambiguo
 
 `[twitter]`, not just `twitter`? The first character as a special character (not `a-zA-Z0-9`) separates the downloaded files with the userscript from other files with "usual" names. And it looks nice, like a common tag. 
 
-Finally, "**—**" character. Probably, it's the best character for separating purpose. It just **one** character, you do not need to add extra spaces around it to make it looks good. It's a rarely used character, that makes parsing easier.
+Finally, "**—**" character. Probably, it's the best character for separating purpose. It just **one** character _(UTF-16)_, you do not need to add extra spaces around it to make it looks good. It's a rarely used character, that makes parsing easier.
 
 
 _[@see `gallery-dl` config ↓](#gallery-dl-config)_
