@@ -141,15 +141,18 @@ To have [the same filenames ↑](#filename-format) use the follow config:
 }
 ```
 
-Replace with it the default settings for [`"twitter"`](https://github.com/mikf/gallery-dl/blob/5eca3781be862e80d871bd6e51fc26e1ff73f0db/docs/gallery-dl.conf#L255-L268) in your [`gallery-dl.conf`](https://github.com/mikf/gallery-dl/blob/master/docs/gallery-dl.conf) config file, so it will look so:
+Replace with it the default settings for [`"twitter"`](https://github.com/mikf/gallery-dl/blob/5eca3781be862e80d871bd6e51fc26e1ff73f0db/docs/gallery-dl.conf#L255-L268) in your [`%HOMEPATH%/gallery-dl.conf`](https://github.com/mikf/gallery-dl/blob/master/docs/gallery-dl.conf) config file, so it will look so:
   
 ```json
 {
-    "extractor": {    
+    "extractor": {
+        "base-directory": "./",
+        "...": "...",
+        "...": "...",
         "reddit": {
             "...": "..."
         },
-    
+
         "twitter": {
             "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
             "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}",
