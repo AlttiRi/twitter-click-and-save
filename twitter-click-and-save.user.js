@@ -607,7 +607,7 @@ function hoistTweet() {
             return this.url.match(/(?<=twitter\.com\/).+?(?=\/)/)?.[0];
         }
         get id() {
-            return this.url.match(/(?<=\/status\/)[^\/]+/)?.[0];
+            return this.url.match(/(?<=\/status\/)\d+/)?.[0];
         }
     }
     return Tweet;
