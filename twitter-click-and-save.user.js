@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.7
+// @version     0.3.8
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -12,9 +12,11 @@
 
 
 // --- Features to execute --- //
+const doNotPlayVideosAutomatically = false;
+
 function execFeaturesOnce() {
     Features.addRequiredCSS();
-    Features.hideSignUpBottomBarAndMessages();
+    Features.hideSignUpBottomBarAndMessages(doNotPlayVideosAutomatically);
     Features.hideTrends();
     Features.highlightVisitedLinks();
     Features.hideTopicsToFollowInstantly();
@@ -367,12 +369,21 @@ function hoistFeatures() {
         // Call it once.
         // "Don’t miss what’s happening" if you are not logged in.
         // It looks that `#layers` is used only for this bar.
-        static hideSignUpBottomBarAndMessages() {
-            addCSS(`
-                #layers > div:nth-child(1) {
-                    display: none;
-                }
-            `);
+        static hideSignUpBottomBarAndMessages(doNotPlayVideosAutomatically) {
+            if (doNotPlayVideosAutomatically) {
+                addCSS(`
+                    #layers > div:nth-child(1) {
+                        display: none;
+                    }
+                `);
+            } else {
+                addCSS(`
+                    #layers > div:nth-child(1) {
+                        height: 1px;
+                        opacity: 0;
+                    }
+                `);
+            }
         }
 
         // "Trends for you"
