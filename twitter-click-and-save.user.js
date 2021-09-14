@@ -14,7 +14,7 @@
 // --- Features to execute --- //
 function execFeaturesOnce() {
     Features.addRequiredCSS();
-    Features.hideSignUpBottomBar();
+    Features.hideSignUpBottomBarAndMessages();
     Features.hideTrends();
     Features.highlightVisitedLinks();
     Features.hideTopicsToFollowInstantly();
@@ -367,7 +367,7 @@ function hoistFeatures() {
         // Call it once.
         // "Don’t miss what’s happening" if you are not logged in.
         // It looks that `#layers` is used only for this bar.
-        static hideSignUpBottomBar() {
+        static hideSignUpBottomBarAndMessages() {
             addCSS(`
                 #layers > div:nth-child(1) {
                     display: none;
