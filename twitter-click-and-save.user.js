@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.9
+// @version     0.4.0
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -196,9 +196,29 @@ function hoistFeatures() {
             const {id, author} = Tweet.of(btn);
             verbose && console.log(id, author);
 
+            async function safeFetchResource(url) {
+                let fallbackUsed = false;
+                retry:
+                while (true) {
+                    try {
+                        return await fetchResource(url);
+                    } catch (e) {
+                        if (fallbackUsed) {
+                            throw "Fallback URL failed";
+                        }
+                        const _url = new URL(url);
+                        _url.searchParams.set("name", "4096x4096");
+                        url = _url.href;
+                        verbose && console.warn("[safeFetchResource] Fallback URL:", url);
+                        fallbackUsed = true;
+                        continue retry;
+                    }
+                }
+
+            }
 
             btn.classList.add("ujs-downloading");
-            const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
+            const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             download(blob, filename, url);
@@ -834,7 +854,7 @@ function getUtils({verbose}) {
             const {name} = filename.match(/(?<name>^[^\.]+)/).groups;
             return {blob, lastModifiedDate, contentType, extension, name};
         } catch (error) {
-            verbose && console.error(url, error);
+            verbose && console.error("[fetchResource]", url, error);
             throw error;
         }
     }
