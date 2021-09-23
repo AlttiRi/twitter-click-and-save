@@ -350,7 +350,9 @@ function hoistFeatures() {
             if (a) {
                 const elems = [...a];
                 const button = elems.find(el => el.textContent === I18N.YES_VIEW_PROFILE);
-                button?.click();
+                if (buttons) {
+                    button.click();
+                }
             }
             
             // todo: expand spoiler commentary in photo view mode (.../photo/1)
