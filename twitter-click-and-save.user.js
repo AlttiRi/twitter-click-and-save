@@ -48,7 +48,7 @@ const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.f
 
     if (init.headers instanceof Headers) {
         // Since `Headers` are not allowed for structured cloning.
-        init.headers = Object.fromEntries(init.headers.entries())
+        init.headers = Object.fromEntries(init.headers.entries());
     }
 
     return globalThis.wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
