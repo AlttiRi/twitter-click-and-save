@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.3.8
+// @version     0.3.9
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -346,16 +346,22 @@ function hoistFeatures() {
                 return;
             }
 
-            const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]")
-            a && [...a]
-                .find(el => el.textContent === I18N.YES_VIEW_PROFILE)
-                ?.click();
-
+            const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]");
+            if (a) {
+                const elems = [...a];
+                const button = elems.find(el => el.textContent === I18N.YES_VIEW_PROFILE);
+                button?.click();
+            }
+            
             // todo: expand spoiler commentary in photo view mode (.../photo/1)
-            const b = main.querySelectorAll("article article[role=article] [role=button]");
-            b && [...b]
-                .filter(el => el.textContent === I18N.VIEW)
-                .forEach(el => el.click());
+            const b = main.querySelectorAll("article [role=presentation] div[role=button]");
+            if (b) {
+                const elems = [...b];
+                const buttons = elems.filter(el => el.textContent === I18N.VIEW);
+                if (buttons.length) {
+                    buttons.forEach(el => el.click());
+                }
+            }
         }
 
         static hideSignUpSection() { // "New to Twitter?"
