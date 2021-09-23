@@ -370,7 +370,7 @@ function hoistFeatures() {
             if (a) {
                 const elems = [...a];
                 const button = elems.find(el => el.textContent === I18N.YES_VIEW_PROFILE);
-                if (buttons) {
+                if (button) {
                     button.click();
                 }
             }
