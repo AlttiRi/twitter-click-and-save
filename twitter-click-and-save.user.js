@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.4.0
+// @version     0.4.1-2021.12.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -286,19 +286,18 @@ function hoistFeatures() {
             addCSS(getUserScriptCSS());
         }
 
-        // it depends of `directLinks()` // use only it after `directLinks()`
-        // it looks it sometimes does not work correctly, probably it executes before `directLinks`.
-        // todo: keep short urls and rerun this (Note: with the original title) after `directLinks` handled them.
-        static handleTitle() {
+        // it depends of `directLinks()` use only it after `directLinks()`
+        static handleTitle(title) {
             // if not a opened tweet
             if (!location.href.match(/twitter\.com\/[^\/]+\/status\/\d+/)) {
                 return;
             }
 
-            let titleText = document.title;
+            let titleText = title || document.title;
             if (titleText === Features.lastHandledTitle) {
                 return;
             }
+            Features.originalTitle = titleText;
 
             const [OPEN_QUOTE, CLOSE_QUOTE] = I18N.QUOTES;
             const urlsToReplace = [
@@ -343,7 +342,7 @@ function hoistFeatures() {
             Features.lastHandledTitle = document.title;
         }
         static lastHandledTitle = "";
-
+        static originalTitle = "";
 
         static directLinks() {
             const anchors = xpathAll(`.//a[@dir="ltr" and child::span and not(@data-handled)]`);
@@ -356,6 +355,9 @@ function hoistFeatures() {
                 const url = nodes.map(node => node.textContent).join("");
                 anchor.href = url;
                 anchor.rel = "nofollow noopener noreferrer";
+            }
+            if (anchors.length) {
+                Features.handleTitle(Features.originalTitle);
             }
         }
 
