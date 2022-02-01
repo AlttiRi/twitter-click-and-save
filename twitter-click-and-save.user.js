@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.4.1-2021.12.26
+// @version     0.4.2-2022.02.01
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -868,15 +868,13 @@ function getUtils({verbose}) {
     }
 
     // the original download url will be posted as hash of the blob url, so you can check it in the download manager's history
-    function download(blob, name = "", url = "") {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob) + "#" + url;
-        a.download = name;
-        a.click();
-
-        setTimeout(_ => {
-            URL.revokeObjectURL(a.href);
-        }, 1000 * 30);
+    function download(blob, name, url) {
+        const anchor = document.createElement("a");
+        anchor.setAttribute("download", name || "");
+        const blobUrl = URL.createObjectURL(blob);
+        anchor.href = blobUrl + (url ? ("#" + url) : "");
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
     }
 
     // "Sun, 10 Jan 2021 22:22:22 GMT" -> "2021.01.10"
