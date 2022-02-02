@@ -6,6 +6,7 @@
 // @match       https://twitter.com/*
 // @homepageURL https://github.com/AlttiRi/twitter-click-and-save
 // @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
+// @license     GPL-3.0
 // ==/UserScript==
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
