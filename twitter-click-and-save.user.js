@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.4.3-2022.02.02
+// @version     0.4.4-2022.02.04
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -376,6 +376,17 @@ function hoistFeatures() {
                 if (button) {
                     button.click();
                 }
+                
+                // "Content warning: Nudity"
+                // "The Tweet author flagged this Tweet as showing sensitive content.""
+                // "Show"
+                const buttonShow = elems.find(el => el.textContent === I18N.SHOW_NUDITY);
+                if (buttonShow) {
+                    //const verifing = a.previousSibling.textContent.includes("Nudity"); // todo?
+                    //if (verifing) {
+                        buttonShow.click();
+                    //}
+                }
             }
             
             // todo: expand spoiler commentary in photo view mode (.../photo/1)
@@ -580,7 +591,7 @@ function getUserScriptCSS() {
 }
 
 // --- Twitter.LangConstants --- //
-function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
+function getLanguageConstants() { //todo: "ja", "de", "fr"
     const defaultQuotes = [`"`, `"`];
 
     const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               ];
@@ -595,6 +606,7 @@ function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
     const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         "在 Twitter",       ];
     const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            "Twitter",          ];
     const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             "图像",             ];
+    const SHOW_NUDITY         = ["Show",                                                                                                       ]; // todo
 
     const lang = document.querySelector("html").getAttribute("lang");
     const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
@@ -612,6 +624,7 @@ function getLanguageConstants() { //todo: "ja", "zh", "de", "fr"
         ON_TWITTER: ON_TWITTER[langIndex],
         TWITTER: TWITTER[langIndex],
         IMAGE: IMAGE[langIndex],
+        SHOW_NUDITY: SHOW_NUDITY[langIndex],
     }
 }
 
