@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.4.6-2022.02.05
+// @version     0.4.7-2022.02.05
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -331,7 +331,7 @@ function hoistFeatures() {
                 titleText = titleText.replaceAll(key, value + ` (${key})`);
             }
 
-            titleText = titleText.replace(new RegExp(`${I18N.ON_TWITTER}(?=: ${OPEN_QUOTE})`), "");
+            titleText = titleText.replace(new RegExp(`${I18N.ON_TWITTER}(?= ${OPEN_QUOTE})`), ":");
             titleText = titleText.replace(new RegExp(`(?<=${CLOSE_QUOTE}) \\\/ ${I18N.TWITTER}$`), "");
             if (!lastUrlIsAttachment) {
                 const regExp = new RegExp(`(?<short> https:\\/\\/t\\.co\\/.{6,14})${CLOSE_QUOTE}$`);
@@ -607,9 +607,9 @@ function getLanguageConstants() { //todo: "ja", "de", "fr"
     const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     "推荐关注",          "おすすめユーザー"             ];
     const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      "页脚",             "フッター",                   ];
     // *1 — it's a suggestion, need to recheck. But I can't find a page where I can check it. Was it deleted?  
-    // document.title
+    // document.title "{AUTHOR}{ON_TWITTER} {QUOTES[0]}{TEXT}{QUOTES[1]} / {TWITTER}"
     const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        defaultQuotes,      [`「`, `」`],                ];
-    const ON_TWITTER          = [" on Twitter",            " в Твиттере",            " en Twitter",                        " 在 Twitter",      "さんはTwitterを使っています", ];
+    const ON_TWITTER          = [" on Twitter:",           " в Твиттере:",           " en Twitter:",                       " 在 Twitter:",      "さんはTwitterを使っています", ];
     const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            "Twitter",          "Twitter",                  ];
     
   
