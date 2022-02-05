@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.4.5-2022.02.05
+// @version     0.4.6-2022.02.05
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -331,7 +331,7 @@ function hoistFeatures() {
                 titleText = titleText.replaceAll(key, value + ` (${key})`);
             }
 
-            titleText = titleText.replace(new RegExp(` ${I18N.ON_TWITTER}(?=: ${OPEN_QUOTE})`), "");
+            titleText = titleText.replace(new RegExp(`${I18N.ON_TWITTER}(?=: ${OPEN_QUOTE})`), "");
             titleText = titleText.replace(new RegExp(`(?<=${CLOSE_QUOTE}) \\\/ ${I18N.TWITTER}$`), "");
             if (!lastUrlIsAttachment) {
                 const regExp = new RegExp(`(?<short> https:\\/\\/t\\.co\\/.{6,14})${CLOSE_QUOTE}$`);
@@ -594,20 +594,24 @@ function getUserScriptCSS() {
 function getLanguageConstants() { //todo: "ja", "de", "fr"
     const defaultQuotes = [`"`, `"`];
 
-    const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               ];
-    const VIEW                = ["View",                   "Посмотреть",             "Ver",                                "查看",             ];
-    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     "是，查看个人资料", ];
-    const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         "注册",             ];
-    const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", "时间线：当前趋势", ];
-    const TOPICS_TO_FOLLOW    = ["Timeline: ",             "Лента: ",                "Cronología: ",                       "时间线：", /*[1]*/];
-    const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     "推荐关注",         ];
-    const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      "页脚",             ];
-    const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        defaultQuotes,      ];
-    const ON_TWITTER          = ["on Twitter",             "в Твиттере",             "en Twitter",                         "在 Twitter",       ];
-    const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            "Twitter",          ];
-    const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             "图像",             ];
-    const SHOW_NUDITY         = ["Show",                   "Показать",               "Mostrar",                            "显示",               ];
-    // *1 — a suggestion, need to recheck. 
+    const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               "ja",                       ];  
+    // texts
+    const VIEW                = ["View",                   "Посмотреть",             "Ver",                                "查看",             "表示",                      ];
+    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     "是，查看个人资料",   "プロフィールを表示する",      ];    
+    const SHOW_NUDITY         = ["Show",                   "Показать",               "Mostrar",                            "显示",              "表示",                     ];
+    // aria-label texts
+    const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             "图像",              "画像",                     ];
+    const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         "注册",             "アカウント作成",              ];
+    const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", "时间线：当前趋势",   "タイムライン: トレンド",      ];
+    const TOPICS_TO_FOLLOW    = ["Timeline: ",             "Лента: ",                "Cronología: ",                       "时间线：", /*[1]*/  "タイムライン: ",  /*[1]*/    ];
+    const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     "推荐关注",          "おすすめユーザー"             ];
+    const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      "页脚",             "フッター",                   ];
+    // *1 — it's a suggestion, need to recheck. But I can't find a page where I can check it. Was it deleted?  
+    // document.title
+    const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        defaultQuotes,      [`「`, `」`],                ];
+    const ON_TWITTER          = [" on Twitter",            " в Твиттере",            " en Twitter",                        " 在 Twitter",      "さんはTwitterを使っています", ];
+    const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            "Twitter",          "Twitter",                  ];
+    
   
     const lang = document.querySelector("html").getAttribute("lang");
     const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
