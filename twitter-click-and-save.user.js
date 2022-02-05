@@ -591,7 +591,7 @@ function getUserScriptCSS() {
 }
 
 // --- Twitter.LangConstants --- //
-function getLanguageConstants() { //todo: "ja", "de", "fr"
+function getLanguageConstants() { //todo: "de", "fr"
     const defaultQuotes = [`"`, `"`];
 
     const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               "ja",                       ];  
