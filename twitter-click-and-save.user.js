@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.2-2022.02.20-beta
+// @version     0.5.3-2022.02.20-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -735,6 +735,22 @@ function getUserScriptCSS() {
         `;
     return css.replaceAll(" ".repeat(8), "");
 }
+
+/*
+Features depend on:
+
+getUserScriptCSS: IMAGE
+
+expandSpoilers:     YES_VIEW_PROFILE,   SHOW_NUDITY,  VIEW
+handleTitle:        QUOTES,             ON_TWITTER,   TWITTER
+hideSignUpSection:  SIGNUP
+hideTrends:         TRENDS
+hideTopicsToFollowInstantly: TOPICS_TO_FOLLOW, 
+hideTopicsToFollow:          TOPICS_TO_FOLLOW, 
+
+[unused]
+hideAndMoveFooter:  FOOTER
+*/
 
 // --- Twitter.LangConstants --- //
 function getLanguageConstants() { //todo: "de", "fr"
