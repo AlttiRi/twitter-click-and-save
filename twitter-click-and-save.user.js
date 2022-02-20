@@ -1,39 +1,169 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.4.9-2022.02.20-beta
+// @version     0.5.1-2022.02.20-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
+// @match       https://mobile.twitter.com/*
 // @homepageURL https://github.com/AlttiRi/twitter-click-and-save
 // @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
 // @license     GPL-3.0
+// @grant       GM_registerMenuCommand
 // ==/UserScript==
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
+if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM*/ || typeof GM_registerMenuCommand === "function") {
+  GM_registerMenuCommand("Show settings", showSettings);
+}
+
+
+const settings = loadSettings();
+
+function loadSettings() {
+  const defaultSettings = {
+    hideTrends: true,
+    hideSignUpSection: true,
+    hideTopicsToFollow: true,
+    hideTopicsToFollowInstantly: true,
+    hideSignUpBottomBarAndMessages: true,
+    doNotPlayVideosAutomatically: false,
+    goFromMobileToMainSite: false,
+
+    highlightVisitedLinks: true,
+    expandSpoilers: true,    
+
+    directLinks: true,
+    handleTitle: true,
+
+    imagesHandler: true,
+    videoHandler: true,
+    addRequiredCSS: true,
+  };
+
+  let savedSettings;
+  try {
+    savedSettings = JSON.parse(localStorage.getItem("ujs-click-n-save-settings")) || {};
+  } catch (e) {
+    console.error(e);
+    localStorage.removeItem("ujs-click-n-save-settings");
+    savedSettings = {};
+  }
+  savedSettings = Object.assign(defaultSettings, savedSettings);
+  return savedSettings;
+}
+function showSettings() {
+  closeSetting();
+
+  const modalWrapperStyle = `
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    backdrop-filter: blur(4px);
+  `;
+  const modalSettingsStyle = `
+    background-color: white;
+    min-width: 320px;
+    min-height: 320px;
+    border: 1px solid darkgray;
+    padding: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  `;
+  const s = settings;
+  document.body.insertAdjacentHTML("afterbegin", `
+  <div class="ujs-modal-wrapper" style="${modalWrapperStyle}">
+      <div class="ujs-modal-settings" style="${modalSettingsStyle}">
+          <fieldset>
+              <legend>Optional</legend>
+              <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b><br/></label>
+              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b>Sign Up</b> Section<br/></label>
+              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b><br/></label>
+              <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly<br/></label>
+              <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bottom Bar</b> And <b>Messages</b><br/></label>
+              <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
+              <label><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
+          </fieldset>
+          <fieldset>
+              <legend>Recommended</legend>
+              <label><input type="checkbox" ${s.highlightVisitedLinks ? "checked" : ""} name="highlightVisitedLinks">Highlight Visited Links<br/></label>
+              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers<br/></label>              
+          </fieldset>
+          <fieldset>
+              <legend>Highly Recommended</legend>
+              <label><input type="checkbox" ${s.directLinks ? "checked" : ""} name="directLinks">Direct Links</label><br/>
+              <label><input type="checkbox" ${s.handleTitle ? "checked" : ""} name="handleTitle">Enchance Title<br/></label>
+          </fieldset>
+          <fieldset>
+              <legend>Main</legend>
+              <label><input type="checkbox" ${s.imagesHandler ? "checked" : ""} name="imagesHandler">Image Download Button<br/></label>
+              <label><input type="checkbox" ${s.videoHandler ? "checked" : ""} name="videoHandler">Video Download Button<br/></label>
+              <label hidden><input type="checkbox" ${s.addRequiredCSS ? "checked" : ""} name="addRequiredCSS">Add Required CSS<br/></label>
+          </fieldset>
+          <hr>
+          <div style="display: flex; justify-content: space-around;">
+              <button class="ujs-save-setting-button"  style="padding: 5px">Save Settings</button>
+              <button class="ujs-close-setting-button" style="padding: 5px">Close Settings</button>
+          </div>
+          <hr>
+          <h4 style="margin: 0; padding-left: 8px;">Notes:</h4>
+          <i>
+            <ul style="margin: 2px; padding-left: 16px;">
+              <li>Click on <b>Save Settings</b> and reload the page to apply changes.</li>
+              <li>Full supported languages are only: "en", "ru", "es", "zh", "ja".</li>
+              <li>The extension downloads only from twitter.com, not from <b>mobile</b>.twitter.com</li>
+            </ul>
+          </i>
+      </div>
+  </div>`);
+
+  document.querySelector("body > .ujs-modal-wrapper .ujs-save-setting-button").addEventListener("click", saveSetting);
+  document.querySelector("body > .ujs-modal-wrapper .ujs-close-setting-button").addEventListener("click", closeSetting);
+
+  function saveSetting() {
+    const entries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=checkbox]")]
+        .map(checkbox => [checkbox.name, checkbox.checked]);
+    const settings = Object.fromEntries(entries);
+    settings.hideTopicsToFollowInstantly = settings.hideTopicsToFollow;
+    console.log(settings);
+    localStorage.setItem("ujs-click-n-save-settings", JSON.stringify(settings));
+  }
+
+  function closeSetting() {
+    document.querySelector("body > .ujs-modal-wrapper")?.remove();
+  }
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 // --- Features to execute --- //
 const doNotPlayVideosAutomatically = false;
 
 function execFeaturesOnce() {
-    Features.goFromMobileToMainSite();
-    Features.addRequiredCSS();
-    Features.hideSignUpBottomBarAndMessages(doNotPlayVideosAutomatically);
-    Features.hideTrends();
-    Features.highlightVisitedLinks();
-    Features.hideTopicsToFollowInstantly();
+    settings.goFromMobileToMainSite         && Features.goFromMobileToMainSite();
+    settings.addRequiredCSS                 && Features.addRequiredCSS();
+    settings.hideSignUpBottomBarAndMessages && Features.hideSignUpBottomBarAndMessages(doNotPlayVideosAutomatically);
+    settings.hideTrends                     && Features.hideTrends();
+    settings.highlightVisitedLinks          && Features.highlightVisitedLinks();
+    settings.hideTopicsToFollowInstantly    && Features.hideTopicsToFollowInstantly();
 }
 function execFeaturesImmediately() {
-    Features.expandSpoilers();
+    settings.expandSpoilers     && Features.expandSpoilers();
 }
 function execFeatures() {
-    Features.imagesHandler();
-    Features.videoHandler();
-    Features.expandSpoilers();
-    Features.hideSignUpSection();
-    Features.hideTopicsToFollow();
-    Features.directLinks();
-    Features.handleTitle();
+    settings.imagesHandler      && Features.imagesHandler();
+    settings.videoHandler       && Features.videoHandler();
+    settings.expandSpoilers     && Features.expandSpoilers();
+    settings.expandSpoilers     && Features.hideSignUpSection();
+    settings.hideTopicsToFollow && Features.hideTopicsToFollow();
+    settings.directLinks        && Features.directLinks();
+    settings.handleTitle        && Features.handleTitle();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -42,6 +172,10 @@ function execFeatures() {
 
 // --- For debug --- //
 const verbose = false;
+if (verbose) {
+  console.log(settings);
+  showSettings();
+}
 
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
