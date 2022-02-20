@@ -54,6 +54,7 @@ function loadSettings() {
 }
 function showSettings() {
   closeSetting();
+  document.body.classList.add("ujs-no-scroll");
 
   const modalWrapperStyle = `
     width: 100%;
@@ -133,6 +134,7 @@ function showSettings() {
   }
 
   function closeSetting() {
+    document.body.classList.remove("ujs-no-scroll");
     document.querySelector("body > .ujs-modal-wrapper")?.remove();
   }
 }
@@ -646,6 +648,9 @@ function getUserScriptCSS() {
     const css = `
         .ujs-hidden {
             display: none;
+        }
+        .ujs-no-scroll {
+            overflow: hidden;
         }
         
         .ujs-show-on-hover:hover {
