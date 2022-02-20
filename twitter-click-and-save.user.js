@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.3-2022.02.20-beta
+// @version     0.5.4-2022.02.20-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -739,7 +739,7 @@ function getUserScriptCSS() {
 /*
 Features depend on:
 
-getUserScriptCSS: IMAGE
+addRequiredCSS: IMAGE
 
 expandSpoilers:     YES_VIEW_PROFILE,   SHOW_NUDITY,  VIEW
 handleTitle:        QUOTES,             ON_TWITTER,   TWITTER
