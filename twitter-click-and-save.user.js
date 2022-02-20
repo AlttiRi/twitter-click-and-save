@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.7-2022.02.20-beta
+// @version     0.5.8-2022.02.20-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -428,7 +428,11 @@ function hoistFeatures() {
         }
 
         // it depends of `directLinks()` use only it after `directLinks()`
-        static handleTitle(title) {
+        static handleTitle(title) {          
+            if (!I18N.QUOTES) { // Unsupported lang, no QUOTES, ON_TWITTER, TWITTER constants
+                return;
+            }
+          
             // if not a opened tweet
             if (!location.href.match(/twitter\.com\/[^\/]+\/status\/\d+/)) {
                 return;
@@ -508,6 +512,10 @@ function hoistFeatures() {
             if (!main) {
                 return;
             }
+          
+            if (!I18N.YES_VIEW_PROFILE) { // Unsupported lang, no YES_VIEW_PROFILE, SHOW_NUDITY, VIEW constants
+                return;
+            }
 
             const a = main.querySelectorAll("[data-testid=primaryColumn] [role=button]");
             if (a) {
@@ -541,7 +549,9 @@ function hoistFeatures() {
         }
 
         static hideSignUpSection() { // "New to Twitter?"
-            if (!I18N.SIGNUP) { return; }
+            if (!I18N.SIGNUP) {// Unsupported lang, no SIGNUP constant
+                return;
+            }
             const elem = document.querySelector(`section[aria-label="${I18N.SIGNUP}"][role=region]`);
             if (elem) {
                 elem.parentNode.classList.add("ujs-hidden");
@@ -570,7 +580,9 @@ function hoistFeatures() {
 
         // "Trends for you"
         static hideTrends() {
-            if (!I18N.TRENDS) { return; }
+            if (!I18N.TRENDS) { // Unsupported lang, no TRENDS constant
+                return;
+            }
             addCSS(`
                 [aria-label="${I18N.TRENDS}"]
                 {
@@ -589,7 +601,9 @@ function hoistFeatures() {
 
         // Use it once. To prevent blinking.
         static hideTopicsToFollowInstantly() {
-            if (!I18N.TOPICS_TO_FOLLOW) { return; }
+            if (!I18N.TOPICS_TO_FOLLOW) { // Unsupported lang, no TOPICS_TO_FOLLOW constant
+                return;
+            }
             addCSS(`
                 div[aria-label="${I18N.TOPICS_TO_FOLLOW}"] {
                     display: none;
@@ -598,7 +612,9 @@ function hoistFeatures() {
         }
         // Hides container and "separator line"
         static hideTopicsToFollow() {
-            if (!I18N.TOPICS_TO_FOLLOW) { return; }
+            if (!I18N.TOPICS_TO_FOLLOW) { // Unsupported lang, no TOPICS_TO_FOLLOW constant
+                return;
+            }
             const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${I18N.TOPICS_TO_FOLLOW}"]]/../..`);
             if (!elem) {
                 return;
