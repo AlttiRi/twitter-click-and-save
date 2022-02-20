@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.4-2022.02.20-beta
+// @version     0.5.5-2022.02.20-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -31,7 +31,7 @@ function loadSettings() {
     goFromMobileToMainSite: false,
 
     highlightVisitedLinks: true,
-    expandSpoilers: true,    
+    expandSpoilers: true,
 
     directLinks: true,
     handleTitle: true,
@@ -80,10 +80,10 @@ function showSettings() {
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
           <fieldset>
               <legend>Optional</legend>
-              <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b><br/></label>
-              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b>Sign Up</b> Section<br/></label>
-              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b><br/></label>
-              <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly<br/></label>
+              <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b>*<br/></label>
+              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b>Sign Up</b> Section*<br/></label>
+              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b>*<br/></label>
+              <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
               <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bottom Bar</b> And <b>Messages</b><br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
@@ -91,18 +91,18 @@ function showSettings() {
           <fieldset>
               <legend>Recommended</legend>
               <label><input type="checkbox" ${s.highlightVisitedLinks ? "checked" : ""} name="highlightVisitedLinks">Highlight Visited Links<br/></label>
-              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers<br/></label>              
+              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers*<br/></label>
           </fieldset>
           <fieldset>
               <legend>Highly Recommended</legend>
               <label><input type="checkbox" ${s.directLinks ? "checked" : ""} name="directLinks">Direct Links</label><br/>
-              <label><input type="checkbox" ${s.handleTitle ? "checked" : ""} name="handleTitle">Enchance Title<br/></label>
+              <label><input type="checkbox" ${s.handleTitle ? "checked" : ""} name="handleTitle">Enchance Title*<br/></label>
           </fieldset>
           <fieldset>
               <legend>Main</legend>
               <label><input type="checkbox" ${s.imagesHandler ? "checked" : ""} name="imagesHandler">Image Download Button<br/></label>
               <label><input type="checkbox" ${s.videoHandler ? "checked" : ""} name="videoHandler">Video Download Button<br/></label>
-              <label hidden><input type="checkbox" ${s.addRequiredCSS ? "checked" : ""} name="addRequiredCSS">Add Required CSS<br/></label>
+              <label hidden><input type="checkbox" ${s.addRequiredCSS ? "checked" : ""} name="addRequiredCSS">Add Required CSS*<br/></label><!-- * Only for the image download button in /photo/1 mode -->
           </fieldset>
           <hr>
           <div style="display: flex; justify-content: space-around;">
@@ -110,14 +110,12 @@ function showSettings() {
               <button class="ujs-close-setting-button" style="padding: 5px">Close Settings</button>
           </div>
           <hr>
-          <h4 style="margin: 0; padding-left: 8px;">Notes:</h4>
-          <i>
-            <ul style="margin: 2px; padding-left: 16px;">
-              <li>Click on <b>Save Settings</b> and reload the page to apply changes.</li>
-              <li>Full supported languages are only: "en", "ru", "es", "zh", "ja".</li>
-              <li>The extension downloads only from twitter.com, not from <b>mobile</b>.twitter.com</li>
-            </ul>
-          </i>
+          <h4 style="margin: 0; padding-left: 8px; color: #444;">Notes:</h4>
+          <ul style="margin: 2px; padding-left: 16px; color: #444;">
+            <li>Click on <b>Save Settings</b> and reload the page to apply changes.</li>
+            <li><b>*</b>-marked settings are language dependent. Currently, the follow languages are supported:<br/> "en", "ru", "es", "zh", "ja".</li>
+            <li>The extension downloads only from twitter.com, not from <b>mobile</b>.twitter.com</li>
+          </ul>
       </div>
   </div>`);
 
