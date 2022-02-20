@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.8-2022.02.20-beta
+// @version     0.5.8-2022.02.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -12,7 +12,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
-if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM*/ || typeof GM_registerMenuCommand === "function") {
+if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
   GM_registerMenuCommand("Show settings", showSettings);
 }
 
