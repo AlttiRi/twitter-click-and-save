@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.14-2022.02.21
+// @version     0.5.15-2022.02.21
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -55,6 +55,7 @@ function showSettings() {
   closeSetting();
   if (window.scrollY > 0) {
       document.querySelector("html").classList.add("ujs-scroll-initial");
+      document.body.classList.add("ujs-scrollbar-width-margin-right");
   }
   document.body.classList.add("ujs-no-scroll");
   
@@ -137,6 +138,7 @@ function showSettings() {
 
   function closeSetting() {
     document.body.classList.remove("ujs-no-scroll");
+    document.body.classList.remove("ujs-scrollbar-width-margin-right");
     document.querySelector("html").classList.remove("ujs-scroll-initial");
     document.querySelector("body > .ujs-modal-wrapper")?.remove();
   }
@@ -665,6 +667,11 @@ function hoistFeatures() {
 // --- Twitter.RequiredCSS --- //
 function getUserScriptCSS() {
     const labelText = I18N.IMAGE || "Image";
+  
+    // By default the scroll is showed all time, since <html style="overflow-y: scroll;>,
+    // so it works — no need to use `getScrollbarWidth` function from SO (13382516).
+    const scrollbarWidth = window.innerWidth - document.body.offsetWidth;
+  
     const css = `
         .ujs-hidden {
             display: none;
@@ -674,6 +681,9 @@ function getUserScriptCSS() {
         }
         .ujs-scroll-initial {
             overflow-y: initial!important;
+        }
+        .ujs-scrollbar-width-margin-right {
+            margin-right: ${scrollbarWidth}px;
         }
         
         .ujs-show-on-hover:hover {
