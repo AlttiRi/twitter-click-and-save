@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.9-2022.02.20
+// @version     0.5.10-2022.02.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -79,11 +79,11 @@ function showSettings() {
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
           <fieldset>
               <legend>Optional</legend>
-              <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b>*<br/></label>
-              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b>Sign Up</b> Section*<br/></label>
+              <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b> (in the right column)*<br/></label>              
               <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
+              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b title='"New to Twitter?"'>Sign Up</b> section (in the right column)*<br/></label>
               <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
-              <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bottom Bar</b> And <b>Messages</b><br/></label>
+              <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bar</b> and <b>Messages</b> (in the botton)<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
           </fieldset>
