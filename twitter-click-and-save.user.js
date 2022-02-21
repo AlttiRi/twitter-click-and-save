@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.12-2022.02.21
+// @version     0.5.13-2022.02.21
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -64,6 +64,7 @@ function showSettings() {
     align-items: center;
     z-index: 99999;
     backdrop-filter: blur(4px);
+    background-color: rgba(255, 255, 255, 0.5);
   `;
   const modalSettingsStyle = `
     background-color: white;
@@ -71,7 +72,7 @@ function showSettings() {
     min-height: 320px;
     border: 1px solid darkgray;
     padding: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   `;
   const s = settings;
   document.body.insertAdjacentHTML("afterbegin", `
