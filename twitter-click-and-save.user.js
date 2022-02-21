@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.13-2022.02.21
+// @version     0.5.14-2022.02.21
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -53,12 +53,16 @@ function loadSettings() {
 }
 function showSettings() {
   closeSetting();
+  if (window.scrollY > 0) {
+      document.querySelector("html").classList.add("ujs-scroll-initial");
+  }
   document.body.classList.add("ujs-no-scroll");
+  
 
   const modalWrapperStyle = `
     width: 100%;
     height: 100%;
-    position: absolute;
+    position: fixed;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -133,6 +137,7 @@ function showSettings() {
 
   function closeSetting() {
     document.body.classList.remove("ujs-no-scroll");
+    document.querySelector("html").classList.remove("ujs-scroll-initial");
     document.querySelector("body > .ujs-modal-wrapper")?.remove();
   }
 }
@@ -665,7 +670,10 @@ function getUserScriptCSS() {
             display: none;
         }
         .ujs-no-scroll {
-            overflow: hidden;
+            overflow-y: hidden;
+        }
+        .ujs-scroll-initial {
+            overflow-y: initial!important;
         }
         
         .ujs-show-on-hover:hover {
