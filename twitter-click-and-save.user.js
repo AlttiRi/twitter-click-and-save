@@ -83,7 +83,7 @@ function showSettings() {
               <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
               <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b title='"New to Twitter?"'>Sign Up</b> section (in the right column)*<br/></label>
               <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
-              <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bar</b> and <b>Messages</b> (in the botton)<br/></label>
+              <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bar</b> and <b>Messages</b> (in the bottom)<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
           </fieldset>
