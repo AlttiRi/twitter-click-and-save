@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.11-2022.02.21
+// @version     0.5.12-2022.02.21
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -44,7 +44,7 @@ function loadSettings() {
   try {
     savedSettings = JSON.parse(localStorage.getItem("ujs-click-n-save-settings")) || {};
   } catch (e) {
-    console.error(e);
+    console.error("[ujs]", e);
     localStorage.removeItem("ujs-click-n-save-settings");
     savedSettings = {};
   }
@@ -126,7 +126,7 @@ function showSettings() {
         .map(checkbox => [checkbox.name, checkbox.checked]);
     const settings = Object.fromEntries(entries);
     settings.hideTopicsToFollowInstantly = settings.hideTopicsToFollow;
-    console.log(settings);
+    // console.log("[ujs]", settings);
     localStorage.setItem("ujs-click-n-save-settings", JSON.stringify(settings));
   }
 
