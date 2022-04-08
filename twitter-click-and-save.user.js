@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.15-2022.02.21
+// @version     0.5.16-2022.04.08-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -318,6 +318,7 @@ function hoistFeatures() {
                     anchor = img.parentNode;
                 }
                 anchor.append(btn);
+                Features._preventBlinking(btn);
 
                 const downloaded = Features._ImageHistory.isDownloaded({
                     id: Tweet.of(btn).id,
@@ -328,6 +329,53 @@ function hoistFeatures() {
                 }
             }
         }
+        
+        static hasBlinkListenerWeakSet;
+        static _preventBlinking(clickBtnElem) {
+            const weakSet = Features.hasBlinkListenerWeakSet || (Features.hasBlinkListenerWeakSet = new WeakSet());
+            let wrapper;
+            clickBtnElem.addEventListener("mouseenter", () => {
+                if (!weakSet.has(clickBtnElem)) {
+                    wrapper = Features._preventBlinkingHandler(clickBtnElem);
+                    weakSet.add(clickBtnElem);
+                }
+            });
+            clickBtnElem.addEventListener("mouseleave", () => {
+                if (wrapper.observer && wrapper.observer.disconnect) { // Just in case
+                    weakSet.delete(clickBtnElem);
+                    wrapper.observer.disconnect();
+                }
+            });
+        }
+        static _preventBlinkingHandler(clickBtnElem) {
+            let targetNode = clickBtnElem.closest("[aria-labelledby]");
+            if (!targetNode) {
+                return;
+            }
+            let config = {attributes: true, subtree: true, attributeOldValue: true};
+            const wrapper = {};
+            wrapper.observer = new MutationObserver(callback);
+            wrapper.observer.observe(targetNode, config);
+            
+            function callback(mutationsList, observer) {
+                for (const mutation of mutationsList) {
+                    if (mutation.type === "attributes" && mutation.attributeName === "class") {
+                        if (mutation.target.classList.contains("ujs-btn-download")) {
+                            return;
+                        }
+                        // Don't allow to change classList
+                        mutation.target.className = mutation.oldValue;
+                        
+                        // Recreate, to prevent an infinity loop
+                        wrapper.observer.disconnect();
+                        wrapper.observer = new MutationObserver(callback);
+                        wrapper.observer.observe(targetNode, config);
+                    }
+                }
+            }
+            return wrapper;
+        }
+        
         static async _imageClickHandler(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
