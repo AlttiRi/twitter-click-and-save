@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.17-2022.04.10-beta
+// @version     0.5.18-2022.04.10-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -22,9 +22,9 @@ const settings = loadSettings();
 function loadSettings() {
   const defaultSettings = {
     hideTrends: true,
-    hideSignUpSection: true,
-    hideTopicsToFollow: true,
-    hideTopicsToFollowInstantly: true,
+    hideSignUpSection: false,
+    hideTopicsToFollow: false,
+    hideTopicsToFollowInstantly: false,
     hideSignUpBottomBarAndMessages: true,
     doNotPlayVideosAutomatically: false,
     goFromMobileToMainSite: false,
@@ -86,10 +86,7 @@ function showSettings() {
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
           <fieldset>
               <legend>Optional</legend>
-              <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b> (in the right column)*<br/></label>              
-              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
-              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b title='"New to Twitter?"'>Sign Up</b> section (in the right column)*<br/></label>
-              <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
+              <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b> (in the right column)*<br/></label>
               <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bar</b> and <b>Messages</b> (in the bottom)<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
@@ -111,8 +108,13 @@ function showSettings() {
               <label hidden><input type="checkbox" ${s.addRequiredCSS ? "checked" : ""} name="addRequiredCSS">Add Required CSS*<br/></label><!-- * Only for the image download button in /photo/1 mode -->
           </fieldset>
             <fieldset>
-              <legend>Outdated</legend>
-              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers"><strike>Expand Spoilers*</strike><br/></label>
+              <legend title="Outdated due to Twitter's updates, impossible to reimplement">Outdated</legend>
+              <strike>
+              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers*<br/></label>
+              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
+              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b title='"New to Twitter?"'>Sign Up</b> section (in the right column)*<br/></label>
+              <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
+              </strike>
           </fieldset>
           <hr>
           <div style="display: flex; justify-content: space-around;">
@@ -186,7 +188,7 @@ function execFeatures() {
 const verbose = false;
 if (verbose) {
   console.log(settings);
-  showSettings();
+  // showSettings();
 }
 
 
