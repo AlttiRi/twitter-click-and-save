@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.18-2022.04.10-beta
+// @version     0.5.19-2022.04.10-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -22,7 +22,7 @@ const settings = loadSettings();
 function loadSettings() {
   const defaultSettings = {
     hideTrends: true,
-    hideSignUpSection: false,
+    hideSignUpSection: true,
     hideTopicsToFollow: false,
     hideTopicsToFollowInstantly: false,
     hideSignUpBottomBarAndMessages: true,
@@ -30,7 +30,7 @@ function loadSettings() {
     goFromMobileToMainSite: false,
 
     highlightVisitedLinks: true,
-    expandSpoilers: false,
+    expandSpoilers: true,
 
     directLinks: true,
     handleTitle: true,
@@ -87,6 +87,7 @@ function showSettings() {
           <fieldset>
               <legend>Optional</legend>
               <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b> (in the right column)*<br/></label>
+              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b title='"New to Twitter?" (If yoy are not logged in)'>Sign Up</b> section (in the right column)*<br/></label>
               <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bar</b> and <b>Messages</b> (in the bottom)<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
@@ -94,6 +95,7 @@ function showSettings() {
           <fieldset>
               <legend>Recommended</legend>
               <label><input type="checkbox" ${s.highlightVisitedLinks ? "checked" : ""} name="highlightVisitedLinks">Highlight Visited Links<br/></label>
+              <label title="Note: since the recent update the most NSFW spoilers are impossible to expand without an account"><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers (if possible)*<br/></label>
           </fieldset>
           <fieldset>
               <legend>Highly Recommended</legend>
@@ -109,10 +111,8 @@ function showSettings() {
           </fieldset>
             <fieldset>
               <legend title="Outdated due to Twitter's updates, impossible to reimplement">Outdated</legend>
-              <strike>
-              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers*<br/></label>
-              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
-              <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b title='"New to Twitter?"'>Sign Up</b> section (in the right column)*<br/></label>
+              <strike>              
+              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>              
               <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
               </strike>
           </fieldset>
@@ -174,7 +174,7 @@ function execFeatures() {
     settings.imagesHandler      && Features.imagesHandler(settings.preventBlinking);
     settings.videoHandler       && Features.videoHandler(settings.preventBlinking);
     settings.expandSpoilers     && Features.expandSpoilers();
-    settings.expandSpoilers     && Features.hideSignUpSection();
+    settings.hideSignUpSection  && Features.hideSignUpSection();
     settings.hideTopicsToFollow && Features.hideTopicsToFollow();
     settings.directLinks        && Features.directLinks();
     settings.handleTitle        && Features.handleTitle();
