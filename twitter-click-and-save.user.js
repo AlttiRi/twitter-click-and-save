@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.5.16-2022.04.08-beta
+// @version     0.5.17-2022.04.10-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -30,7 +30,7 @@ function loadSettings() {
     goFromMobileToMainSite: false,
 
     highlightVisitedLinks: true,
-    expandSpoilers: true,
+    expandSpoilers: false,
 
     directLinks: true,
     handleTitle: true,
@@ -38,6 +38,7 @@ function loadSettings() {
     imagesHandler: true,
     videoHandler: true,
     addRequiredCSS: true,
+    preventBlinking: true,
   };
 
   let savedSettings;
@@ -96,7 +97,6 @@ function showSettings() {
           <fieldset>
               <legend>Recommended</legend>
               <label><input type="checkbox" ${s.highlightVisitedLinks ? "checked" : ""} name="highlightVisitedLinks">Highlight Visited Links<br/></label>
-              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers*<br/></label>
           </fieldset>
           <fieldset>
               <legend>Highly Recommended</legend>
@@ -107,7 +107,12 @@ function showSettings() {
               <legend>Main</legend>
               <label><input type="checkbox" ${s.imagesHandler ? "checked" : ""} name="imagesHandler">Image Download Button<br/></label>
               <label><input type="checkbox" ${s.videoHandler ? "checked" : ""} name="videoHandler">Video Download Button<br/></label>
+              <label title="Prevent the tweet backgroubd blinking on the button click"><input type="checkbox" ${s.preventBlinking ? "checked" : ""} name="preventBlinking">Prevent blinking on click<br/></label>
               <label hidden><input type="checkbox" ${s.addRequiredCSS ? "checked" : ""} name="addRequiredCSS">Add Required CSS*<br/></label><!-- * Only for the image download button in /photo/1 mode -->
+          </fieldset>
+            <fieldset>
+              <legend>Outdated</legend>
+              <label><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers"><strike>Expand Spoilers*</strike><br/></label>
           </fieldset>
           <hr>
           <div style="display: flex; justify-content: space-around;">
@@ -164,8 +169,8 @@ function execFeaturesImmediately() {
     settings.expandSpoilers     && Features.expandSpoilers();
 }
 function execFeatures() {
-    settings.imagesHandler      && Features.imagesHandler();
-    settings.videoHandler       && Features.videoHandler();
+    settings.imagesHandler      && Features.imagesHandler(settings.preventBlinking);
+    settings.videoHandler       && Features.videoHandler(settings.preventBlinking);
     settings.expandSpoilers     && Features.expandSpoilers();
     settings.expandSpoilers     && Features.hideSignUpSection();
     settings.hideTopicsToFollow && Features.hideTopicsToFollow();
@@ -295,7 +300,7 @@ function hoistFeatures() {
                 }
             }
         }
-        static async imagesHandler() {
+        static async imagesHandler(preventBlinking) {
             const images = document.querySelectorAll("img");
             for (const img of images) {
 
@@ -318,7 +323,9 @@ function hoistFeatures() {
                     anchor = img.parentNode;
                 }
                 anchor.append(btn);
-                Features._preventBlinking(btn);
+                if (preventBlinking) {
+                  Features._preventBlinking(btn);
+                }
 
                 const downloaded = Features._ImageHistory.isDownloaded({
                     id: Tweet.of(btn).id,
@@ -429,7 +436,7 @@ function hoistFeatures() {
         }
 
 
-        static async videoHandler() {
+        static async videoHandler(preventBlinking) {
             const videos = document.querySelectorAll("video");
 
             for (const vid of videos) {
@@ -446,6 +453,9 @@ function hoistFeatures() {
 
                 let elem = vid.parentNode.parentNode.parentNode;
                 elem.after(btn);
+                if (preventBlinking) {
+                  Features._preventBlinking(btn);
+                }
 
                 const id = Tweet.of(btn).id;
                 const downloaded = downloadedVideoTweetIds.hasItem(id);
