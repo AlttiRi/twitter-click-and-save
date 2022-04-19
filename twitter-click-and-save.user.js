@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.2-2022.04.10
+// @version     0.6.3-2022.04.19
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -193,7 +193,7 @@ if (verbose) {
 
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
-const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init) {
+const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
     verbose && console.log("wrappedJSObject.fetch", resource, init);
 
     if (init.headers instanceof Headers) {
