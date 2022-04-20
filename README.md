@@ -194,6 +194,11 @@ The entire config file will look, for example, so:
 
 _Do not forget to add a comma (`,`) if you put this in the middle of the json file._
 
+To download `someone`'s media use (`/media` endpoint):
+- `gallery-dl https://twitter.com/someone/media`
+
+If `someone`'s has a lot of posts (more than 1000) use a search result downloading:
+- `gallery-dl "https://twitter.com/search?q=from:someone"`
 
 ---
 
