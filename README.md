@@ -138,30 +138,30 @@ UPD. Hiding of the Sign Up bottom bar also hides "Messages" block. In additional
 ## Gallery-dl config
 This userscript is suited for single media downloading. If you want to download a balk of media, use [gallery-dl](https://github.com/mikf/gallery-dl).
 
-Update: Since March 2022 Twitter now requires an account to watch NSFW content, so you need to use in gallery-dl **either** `"auth_token"` cookie from the browser where you are logged in, **or** `"username"` and `"password"`. (It's optionally, if you are going to download NSFW content.)
-
 To have [the same filenames ↑](#filename-format) use the follow config:
 ```json
 "twitter": {
     "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
     "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}",
     "retweets": "original",
-    "videos": true,
-    
-    "cookies": {
-        "auth_token": "ABCDEF"
-    }
+    "videos": true
 }
 ```
 
-Replace the example `"auth_token"`'s value with yours, or use `"username"` and `"password"` instead:
+Update: Since March 2022 Twitter now requires an account to watch NSFW content, so you need to use in gallery-dl **either** `"auth_token"` cookie from the browser where you are logged in, **or** `"username"` and `"password"`. (It's optionally, if you are going to download NSFW content.)
+```json
+    "cookies": {
+        "auth_token": "ABCDEF"
+    }
 ```
+Only replace the example `"auth_token"`'s value with yours, or use `"username"` and `"password"` instead:
+```json
     "username": "admin",
     "password": "123"
 ```
 
 
-Replace with it the default settings for [`"twitter"`](https://github.com/mikf/gallery-dl/blob/5eca3781be862e80d871bd6e51fc26e1ff73f0db/docs/gallery-dl.conf#L255-L268) in your [`%HOMEPATH%/gallery-dl.conf`](https://github.com/mikf/gallery-dl/blob/master/docs/gallery-dl.conf) config file, so it will look so:
+The entire config file will look, for example, so:
   
 ```json
 {
@@ -177,7 +177,10 @@ Replace with it the default settings for [`"twitter"`](https://github.com/mikf/g
             "directory": ["[gallery-dl]", "[{category}] {author[name]}"],
             "filename": "[{category}] {author[name]}—{date:%Y.%m.%d}—{retweet_id|tweet_id}—{filename}.{extension}",
             "retweets": "original",
-            "videos": true
+            "videos": true,
+            "cookies": {
+                "auth_token": ""
+            }
         },
 
         "tumblr": {
@@ -187,6 +190,8 @@ Replace with it the default settings for [`"twitter"`](https://github.com/mikf/g
     }
 }
 ```
+(Just replace the default settings for [`"twitter"`](https://github.com/mikf/gallery-dl/blob/5eca3781be862e80d871bd6e51fc26e1ff73f0db/docs/gallery-dl.conf#L255-L268) in your [`%HOMEPATH%/gallery-dl.conf`](https://github.com/mikf/gallery-dl/blob/master/docs/gallery-dl.conf) config file.)
+
 _Do not forget to add a comma (`,`) if you put this in the middle of the json file._
 
 
