@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.5-2022.05.20
+// @version     0.6.6-2022.05.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -15,6 +15,9 @@
 if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
     GM_registerMenuCommand("Show settings", showSettings);
 }
+
+// --- For debug --- //
+const verbose = false;
 
 
 const settings = loadSettings();
@@ -183,14 +186,10 @@ function execFeatures() {
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
-
-// --- For debug --- //
-const verbose = false;
 if (verbose) {
-  console.log(settings);
+  console.log("[ujs][settings]", settings);
   // showSettings();
 }
-
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
 const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
@@ -351,7 +350,8 @@ function hoistFeatures() {
                 }
             });
             clickBtnElem.addEventListener("mouseleave", () => {
-                if (wrapper.observer && wrapper.observer.disconnect) { // Just in case
+                verbose && console.log("[ujs] Btn mouseleave");
+                if (wrapper?.observer?.disconnect) {
                     weakSet.delete(clickBtnElem);
                     wrapper.observer.disconnect();
                 }
@@ -558,7 +558,7 @@ function hoistFeatures() {
         static lastHandledTitle = "";
         static originalTitle = "";
 
-        static directLinks() {
+        static async directLinks() {
             const anchors = xpathAll(`.//a[@dir="ltr" and child::span and not(@data-handled)]`);
             for (const anchor of anchors) {
                 const redirectUrl = new URL(anchor.href);
@@ -576,6 +576,13 @@ function hoistFeatures() {
                     // Restore if URL's text content is too long
                     if (anchor.textContent.endsWith("…")) {
                         anchor.href = anchor.dataset.redirect;
+                        
+                        try {
+                            const author = location.pathname.slice(1).match(/[^\/]+/)[0];
+                            anchor.href = await API.getUserInfo(author); // todo: make lazy
+                        } catch (e) {
+                            verbose && console.error(e);
+                        }
                     }
                 }
             }
@@ -974,6 +981,7 @@ function hoistAPI() {
 
         static async apiRequest(url) {
             const _url = url.toString();
+            verbose && console.log("[ujs][apiRequest]", _url);
             
             // Hm... it always is the same. Even for a logged user.
             // const authorization = API.guestToken ? API.guestAuthorization : await API.getAuthorization();
@@ -1005,7 +1013,7 @@ function hoistAPI() {
                 throw e;
             }
 
-            verbose && console.warn(JSON.stringify(json, null, " "));
+            verbose && console.log("[ujs][apiRequest]", JSON.stringify(json, null, " "));
             // 429 - [{code: 88, message: "Rate limit exceeded"}] — for suspended accounts
             
             return json;
@@ -1027,6 +1035,15 @@ function hoistAPI() {
                 .filter(el => el.bitrate !== undefined) // if content_type: "application/x-mpegURL" // .m3u8
                 .reduce((acc, cur) => cur.bitrate > acc.bitrate ? cur : acc);
             return video;
+        }
+        
+        static async getUserInfo(username) {
+            const qHash = "Bhlf1dYJ3bYCKmLfeEQ31A"; // todo: change
+            const variables = JSON.stringify({"screen_name": username, "withSafetyModeUserFields": true, "withSuperFollowsUserFields": true});
+            const url = `https://twitter.com/i/api/graphql/${qHash}/UserByScreenName?variables=${encodeURIComponent(variables)}`;
+            const json = await API.apiRequest(url);
+            verbose && console.log("[getUserInfo]", json);
+            return json.data.user.result.legacy.entities.url?.urls[0].expanded_url;
         }
     }
     return API;
