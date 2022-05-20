@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.6-2022.05.20
+// @version     0.6.7-2022.05.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -558,28 +558,37 @@ function hoistFeatures() {
         static lastHandledTitle = "";
         static originalTitle = "";
 
+        static profileUrlCache = new Map();
         static async directLinks() {
             const anchors = xpathAll(`.//a[@dir="ltr" and child::span and not(@data-handled)]`);
             for (const anchor of anchors) {
                 const redirectUrl = new URL(anchor.href);
-                anchor.dataset.redirect = redirectUrl.origin + redirectUrl.pathname; // remove "?amp=1"
+                const shortUrl = redirectUrl.origin + redirectUrl.pathname; // remove "?amp=1"
+                anchor.dataset.redirect = shortUrl;
                 anchor.dataset.handled = "true";
+                anchor.rel = "nofollow noopener noreferrer";
+
+                if (Features.profileUrlCache.has(shortUrl)) {
+                    anchor.href = Features.profileUrlCache.get(shortUrl);
+                    continue;
+                }
 
                 const nodes = xpathAll(`./span[text() != "…"]|./text()`, anchor);
                 const url = nodes.map(node => node.textContent).join("");
                 anchor.href = url;
-                anchor.rel = "nofollow noopener noreferrer";
                 
                 if (anchor.dataset?.testid === "UserUrl") {
                     anchor.href = "https://" + anchor.getAttribute("href");
                     
                     // Restore if URL's text content is too long
                     if (anchor.textContent.endsWith("…")) {
-                        anchor.href = anchor.dataset.redirect;
+                        anchor.href = shortUrl;
                         
                         try {
                             const author = location.pathname.slice(1).match(/[^\/]+/)[0];
-                            anchor.href = await API.getUserInfo(author); // todo: make lazy
+                            const expanded_url = await API.getUserInfo(author); // todo: make lazy
+                            anchor.href = expanded_url;
+                            Features.profileUrlCache.set(shortUrl, expanded_url);
                         } catch (e) {
                             verbose && console.error(e);
                         }
@@ -1036,7 +1045,7 @@ function hoistAPI() {
                 .reduce((acc, cur) => cur.bitrate > acc.bitrate ? cur : acc);
             return video;
         }
-        
+
         static async getUserInfo(username) {
             const qHash = "Bhlf1dYJ3bYCKmLfeEQ31A"; // todo: change
             const variables = JSON.stringify({"screen_name": username, "withSafetyModeUserFields": true, "withSuperFollowsUserFields": true});
