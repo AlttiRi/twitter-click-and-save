@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.4-2022.05.20
+// @version     0.6.5-2022.05.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -946,6 +946,7 @@ function hoistAPI() {
         // Guest/Suspended account Bearer token
         static guestAuthorization = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 
+        // Seems to be outdated at 2022.05
         static async _requestBearerToken() {
             const scriptSrc = [...document.querySelectorAll("script")]
                 .find(el => el.src.match(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web\/main[\w\d\.]*\.js/)).src;
@@ -971,8 +972,9 @@ function hoistAPI() {
             return API.authorization;
         }
 
-        // @return {bitrate, content_type, url}
-        static async getVideoInfo(tweetId) {
+        static async apiRequest(url) {
+            const _url = url.toString();
+            
             // Hm... it always is the same. Even for a logged user.
             // const authorization = API.guestToken ? API.guestAuthorization : await API.getAuthorization();
             const authorization = API.guestAuthorization;
@@ -982,10 +984,6 @@ function hoistAPI() {
             verbose && sessionStorage.setItem("authorization", API.authorization);
             verbose && sessionStorage.setItem("x-csrf-token", API.csrfToken);
             verbose && sessionStorage.setItem("x-guest-token", API.guestToken);
-
-            // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
-            const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
-            url.searchParams.set("tweet_mode", "extended");
 
             const headers = new Headers({
                 authorization,
@@ -998,7 +996,6 @@ function hoistAPI() {
                 headers.append("x-twitter-auth-type", "OAuth2Session");
             }
 
-            const _url = url.toString();
             let json;
             try {
                 const response = await fetch(_url, {headers});
@@ -1010,8 +1007,17 @@ function hoistAPI() {
 
             verbose && console.warn(JSON.stringify(json, null, " "));
             // 429 - [{code: 88, message: "Rate limit exceeded"}] — for suspended accounts
+            
+            return json;
+        }
 
+        // @return {bitrate, content_type, url}
+        static async getVideoInfo(tweetId) {
+         // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
+            const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
+            url.searchParams.set("tweet_mode", "extended");
 
+            const json = await API.apiRequest(url);
             const tweetData = json.globalObjects.tweets[tweetId];
             const videoVariants = tweetData.extended_entities.media[0].video_info.variants;
             verbose && console.log(videoVariants);
