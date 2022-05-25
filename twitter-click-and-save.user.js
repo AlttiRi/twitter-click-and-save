@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.8-2022.05.25
+// @version     0.6.9-2022.05.25
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -561,6 +561,7 @@ function hoistFeatures() {
         static profileUrlCache = new Map();
         static async directLinks() {
             verbose && console.log("[ujs][directLinks]");
+            const hasHttp = url => Boolean(url.match(/^https?:\/\//));
             const anchors = xpathAll(`.//a[@dir="ltr" and child::span and not(@data-handled)]`);
             for (const anchor of anchors) {
                 const redirectUrl = new URL(anchor.href);
@@ -585,7 +586,8 @@ function hoistFeatures() {
                 anchor.href = url;
                 
                 if (anchor.dataset?.testid === "UserUrl") {
-                    const profileUrl = "https://" + anchor.getAttribute("href");
+                    const href = anchor.getAttribute("href");
+                    const profileUrl = hasHttp(href) ? href : "https://" + href;
                     anchor.href = profileUrl;
                     verbose && console.log("[ujs][directLinks][UserUrl]", profileUrl);
                     
