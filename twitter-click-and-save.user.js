@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.7.3-2022.08.06
+// @version     0.7.4-2022.08.06
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -44,6 +44,7 @@ function loadSettings() {
     preventBlinking: true,
     
     hideLoginPopup: false,
+    addBorder: false,
   };
 
   let savedSettings;
@@ -96,6 +97,7 @@ function showSettings() {
               <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bar</b> and <b>Messages</b> (in the bottom)<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
+              <label title="Makes the button more visible"><input type="checkbox" ${s.addBorder ? "checked" : ""} name="addBorder">Add a white border to the download button<br/></label>
               <label title="Hides the modal login pop up. Useful if you have no account. \nWARNING: Currently it will close any popup, not only the login one."><input type="checkbox" ${s.hideLoginPopup ? "checked" : ""} name="hideLoginPopup">Hide <strike>Login</strike> Popups (beta)<br/></label>
           </fieldset>
           <fieldset>
@@ -867,6 +869,7 @@ function getUserScriptCSS() {
             position: absolute;
             border-radius: 0.3em;
             background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
+            ${settings.addBorder ? "border: 2px solid white;" : ""}
         }
         article[role=article]:hover .ujs-btn-download {
             opacity: 1;
