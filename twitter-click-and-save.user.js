@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.11-2022.08.06-beta
+// @version     0.6.12-2022.08.06-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -211,7 +211,7 @@ const {
     getCookie,
     throttle,
     xpath, xpathAll,
-    getNearestElementByType, getParentWithSiblingDataset,
+    getNearestElementByType,
 } = getUtils({verbose});
 const LS = hoistLS({verbose});
 
@@ -1341,22 +1341,6 @@ function getUtils({verbose}) {
         }
         return getNearestElementByType(parent, type);
     }
-    function getParentWithSiblingDataset(node, name, value) {
-        const parent = node.parentNode;
-        if (parent === document) {
-            return null;
-        }
-        // console.log(parent, parent.childNodes);
-        const elem = [...parent.childNodes].find(el => {
-            if (el.dataset?.[name] === value) {
-                return true;
-            }
-        });
-        if (!elem) {
-            return getParentWithSiblingDataset(parent, name, value);
-        }
-        return parent;
-    }
 
     return {
         sleep, fetchResource, extensionFromMime, download, dateToDayDateString,
@@ -1364,7 +1348,7 @@ function getUtils({verbose}) {
         getCookie,
         throttle, throttleWithResult,
         xpath, xpathAll,
-        getNearestElementByType, getParentWithSiblingDataset,
+        getNearestElementByType,
     }
 }
 
