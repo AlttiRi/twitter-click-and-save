@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.13-2022.08.06-beta
+// @version     0.6.14-2022.08.06
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -42,6 +42,8 @@ function loadSettings() {
     videoHandler: true,
     addRequiredCSS: true,
     preventBlinking: true,
+    
+    hideLoginPopup: false,
   };
 
   let savedSettings;
@@ -94,6 +96,7 @@ function showSettings() {
               <label><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <b>Sign Up Bar</b> and <b>Messages</b> (in the bottom)<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
+              <label title="Hides the modal login pop up. Useful if you have no account"><input type="checkbox" ${s.hideLoginPopup ? "checked" : ""} name="hideLoginPopup">Hide Login Popup (beta)<br/></label>
           </fieldset>
           <fieldset>
               <legend>Recommended</legend>
@@ -169,6 +172,7 @@ function execFeaturesOnce() {
     settings.hideTrends                     && Features.hideTrends();
     settings.highlightVisitedLinks          && Features.highlightVisitedLinks();
     settings.hideTopicsToFollowInstantly    && Features.hideTopicsToFollowInstantly();
+    settings.hideLoginPopup                 && Features.hideLoginPopup();
 }
 function execFeaturesImmediately() {
     settings.expandSpoilers     && Features.expandSpoilers();
@@ -231,6 +235,11 @@ const imagesHistoryBy = LS.getItem("ujs-images-history-by", "IMAGE_NAME");
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Script runner --- //
+
+
+
+
+
 
 (function starter(feats) {
     const {once, onChangeImmediate, onChange} = feats;
@@ -760,6 +769,33 @@ function hoistFeatures() {
                 Features.footerHandled = true;
             }
         }
+        
+        static hideLoginPopup() { // When you are not logged in
+            const targetNode = document.querySelector("html");
+            const observerOptions = {
+                attributes: true,
+            };
+            const observer = new MutationObserver(callback);
+            observer.observe(targetNode, observerOptions);
+            function callback(mutationList, observer) {
+                const html = document.querySelector("html");
+                console.log(mutationList);
+                // overflow-y: scroll; overscroll-behavior-y: none; font-size: 15px;                     // default
+                // overflow: hidden; overscroll-behavior-y: none; font-size: 15px; margin-right: 15px;   // popup
+                if (html.style["overflow"]     === "hidden") {
+                    html.style["overflow"]     = "";
+                    html.style["overflow-y"]   = "scroll";
+                    html.style["margin-right"] = "";
+                }
+                const popup = document.querySelector(`#layers div[data-testid="sheetDialog"]`);
+                if (popup) {
+                    popup.closest(`div[role="dialog"]`).remove();
+                    verbose && (document.title = "⚒" + document.title);
+                    // observer.disconnect();
+                }
+            }
+        }
+        
     }
     return Features;
 }
