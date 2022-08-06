@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.10-2022.05.25
+// @version     0.6.11-2022.08.06-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -932,16 +932,28 @@ function getLanguageConstants() { //todo: "de", "fr"
 // --- Twitter.Tweet --- //
 function hoistTweet() {
     class Tweet {
-        constructor(elem) {
-            this.elem = elem;
-            this.url = Tweet.getUrl(elem);
+        constructor({elem, url}) {
+            if (url) {
+                this.elem = null;
+                this.url = url;
+            } else {
+                this.elem = elem;
+                this.url = Tweet.getUrl(elem);
+            }
         }
         static of(innerElem) {
-            const elem = getParentWithSiblingDataset(innerElem, "testid", "tweet");
+            
+            // Workaround for media from a quoted tweet
+            const url = innerElem.closest(`a[href^="/"]`)?.href;
+            if (url && url.includes("/status/")) {
+                return new Tweet({url}); 
+            }
+            
+            const elem = innerElem.closest(`[data-testid="tweet"]`);
             if (!elem) { // opened image
                 verbose && console.log("no-tweet elem");
             }
-            return new Tweet(elem);
+            return new Tweet({elem});
         }
         static getUrl(elem) {
             if (!elem) { // if opened image
