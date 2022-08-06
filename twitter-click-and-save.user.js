@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.7.4-2022.08.06
+// @version     0.7.5-2022.08.06
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -237,11 +237,6 @@ const imagesHistoryBy = LS.getItem("ujs-images-history-by", "IMAGE_NAME");
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Script runner --- //
-
-
-
-
-
 
 (function starter(feats) {
     const {once, onChangeImmediate, onChange} = feats;
