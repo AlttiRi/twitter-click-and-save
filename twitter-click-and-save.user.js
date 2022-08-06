@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.7.5-2022.08.06
+// @version     0.7.6-2022.08.06
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -804,7 +804,7 @@ function hoistFeatures() {
                 console.log(mutationList);
                 // overflow-y: scroll; overscroll-behavior-y: none; font-size: 15px;                     // default
                 // overflow: hidden; overscroll-behavior-y: none; font-size: 15px; margin-right: 15px;   // popup
-                if (html.style["overflow"]     === "hidden") {
+                if (html.style["overflow"] === "hidden") {
                     html.style["overflow"]     = "";
                     html.style["overflow-y"]   = "scroll";
                     html.style["margin-right"] = "";
