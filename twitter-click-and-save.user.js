@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.14-2022.08.06
+// @version     0.7.1-2022.08.06
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -394,13 +394,36 @@ function hoistFeatures() {
             return wrapper;
         }
         
+        // Banner/Backgroud
+        static async _downloadBanner(url, btn) {
+            const username = location.pathname.slice(1).split("/")[0];
+            
+            btn.classList.add("ujs-downloading");
+            
+            // https://pbs.twimg.com/profile_banners/34743251/1596331248/1500x500
+            const {id, seconds, res} = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
+            
+            const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
+            const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
+            download(blob, filename, url);
+            
+            btn.classList.remove("ujs-downloading");
+            btn.classList.add("ujs-downloaded");
+        }
+        
         static async _imageClickHandler(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
 
             const btn = event.currentTarget;
-            const url = handleImgUrl(btn.dataset.url);
+            let url = btn.dataset.url;
+            
+            const isBanner = url.includes("/profile_banners/");
+            return Features._downloadBanner(url, btn);
+            
+            url = handleImgUrl(url);
             verbose && console.log(url);
+            
 
             function handleImgUrl(url) {
                 const urlObj = new URL(url);
@@ -1222,7 +1245,7 @@ function getUtils({verbose}) {
             const contentType = response.headers.get("content-type");
 
             const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
-            const extension = extensionFromMime(contentType);
+            const extension = contentType ? extensionFromMime(contentType) : null;
             const blob = await response.blob();
 
             // https://pbs.twimg.com/media/AbcdEFgijKL01_9?format=jpg&name=orig                                     -> AbcdEFgijKL01_9
