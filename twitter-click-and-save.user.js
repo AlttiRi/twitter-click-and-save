@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.6.12-2022.08.06-beta
+// @version     0.6.13-2022.08.06-beta
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -211,7 +211,6 @@ const {
     getCookie,
     throttle,
     xpath, xpathAll,
-    getNearestElementByType,
 } = getUtils({verbose});
 const LS = hoistLS({verbose});
 
@@ -319,7 +318,7 @@ function hoistFeatures() {
 
                 btn.addEventListener("click", Features._imageClickHandler);
 
-                let anchor = getNearestElementByType(img, "a");
+                let anchor = img.closest("a");
                 // if an image is _opened_ "https://twitter.com/UserName/status/1234567890123456789/photo/1" [fake-url]
                 if (!anchor) {
                     anchor = img.parentNode;
@@ -1330,25 +1329,12 @@ function getUtils({verbose}) {
         }
     }
 
-
-    function getNearestElementByType(elem, type) {
-        const parent = elem.parentNode;
-        if (parent === document) {
-            return null;
-        }
-        if (parent.nodeName === type.toUpperCase()) {
-            return parent;
-        }
-        return getNearestElementByType(parent, type);
-    }
-
     return {
         sleep, fetchResource, extensionFromMime, download, dateToDayDateString,
         addCSS,
         getCookie,
         throttle, throttleWithResult,
         xpath, xpathAll,
-        getNearestElementByType,
     }
 }
 
