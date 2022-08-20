@@ -206,3 +206,7 @@ If `someone`'s has a lot of posts (more than 1000) use a search result downloadi
 1. Some features are language dependent. Currently the script works fully with `"en"`, `"es"`, `"ru"`, `"zh"`, `"ja"`. See `getLanguageConstants` function. You can add `?lang=en` in the address bar to temporary change your language to check the work of the script.
 
 2. The script uses `LocalStorage` to keep the download history.
+
+### Recommendations
+- Use [uBlock Origin](https://github.com/gorhill/uBlock) web extension for an advertisement blocking.
+- For bulk download use [gallery-dl](https://github.com/mikf/gallery-dl) console program as mentioned [above](#gallery-dl-config).
