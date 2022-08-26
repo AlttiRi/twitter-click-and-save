@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.7.6-2022.08.06
+// @version     0.8.0-2022.08.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1239,7 +1239,7 @@ function getUtils({verbose}) {
     async function fetchResource(url) {
         try {
             const response = await fetch(url, {
-                cache: "force-cache",
+                // cache: "force-cache",
             });
             const lastModifiedDateSeconds = response.headers.get("last-modified");
             const contentType = response.headers.get("content-type");
