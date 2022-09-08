@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.1-2022.08.08-dev
+// @version     0.8.2-2022.08.08-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -401,10 +401,11 @@ function hoistFeatures() {
             const {id, seconds, res} = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
             
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
-            const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
-            download(blob, filename, url);
             
             Features.verifyBlob(blob, url);
+            
+            const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
+            download(blob, filename, url);
             
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
@@ -459,10 +460,10 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloading");
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
 
+            Features.verifyBlob(blob, url);
+
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             download(blob, filename, url);
-
-            Features.verifyBlob(blob, url);
 
             const downloaded = btn.classList.contains("already-downloaded");
             if (!downloaded) {
@@ -514,11 +515,11 @@ function hoistFeatures() {
             const url = video.url;
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
 
+            Features.verifyBlob(blob, url);
+
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             download(blob, filename, url);
             
-            Features.verifyBlob(blob, url);
-
             const downloaded = btn.classList.contains("ujs-already-downloaded");
             if (!downloaded) {
                 await downloadedVideoTweetIds.pushItem(id);
