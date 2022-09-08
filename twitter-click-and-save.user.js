@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.0-2022.08.26
+// @version     0.8.1-2022.08.08-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -404,6 +404,8 @@ function hoistFeatures() {
             const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
             download(blob, filename, url);
             
+            Features.verifyBlob(blob, url);
+            
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
         }
@@ -460,6 +462,8 @@ function hoistFeatures() {
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             download(blob, filename, url);
 
+            Features.verifyBlob(blob, url);
+
             const downloaded = btn.classList.contains("already-downloaded");
             if (!downloaded) {
                 await Features._ImageHistory.markDownloaded({id, url});
@@ -512,6 +516,8 @@ function hoistFeatures() {
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             download(blob, filename, url);
+            
+            Features.verifyBlob(blob, url);
 
             const downloaded = btn.classList.contains("ujs-already-downloaded");
             if (!downloaded) {
@@ -521,6 +527,11 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloaded");
         }
 
+        static verifyBlob(blob, url) {
+            if (!blob.size) {
+                throw new Error("Zero size blob: " + url);
+            }
+        }
 
         static addRequiredCSS() {
             addCSS(getUserScriptCSS());
