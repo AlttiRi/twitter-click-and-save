@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.2-2022.08.08-dev
+// @version     0.8.3-2022.08.08-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -402,7 +402,7 @@ function hoistFeatures() {
             
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
             
-            Features.verifyBlob(blob, url);
+            Features.verifyBlob(blob, url, btn);
             
             const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
             download(blob, filename, url);
@@ -444,7 +444,9 @@ function hoistFeatures() {
                         return await fetchResource(url);
                     } catch (e) {
                         if (fallbackUsed) {
-                            throw "Fallback URL failed";
+                            btn.classList.add("ujs-btn-error");
+                            btn.title = "Download Error";
+                            throw new Error("Fallback URL failed");
                         }
                         const _url = new URL(url);
                         _url.searchParams.set("name", "4096x4096");
@@ -460,7 +462,7 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloading");
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
 
-            Features.verifyBlob(blob, url);
+            Features.verifyBlob(blob, url, btn);
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             download(blob, filename, url);
@@ -515,7 +517,7 @@ function hoistFeatures() {
             const url = video.url;
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
 
-            Features.verifyBlob(blob, url);
+            Features.verifyBlob(blob, url, btn);
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             download(blob, filename, url);
@@ -528,8 +530,10 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloaded");
         }
 
-        static verifyBlob(blob, url) {
+        static verifyBlob(blob, url, btn) {
             if (!blob.size) {
+                btn.classList.add("ujs-btn-error");
+                btn.title = "Download Error";
                 throw new Error("Zero size blob: " + url);
             }
         }
@@ -936,6 +940,9 @@ function getUserScriptCSS() {
         
         /* -------------------------------------------------------- */
         
+        .ujs-btn-error {
+            background: pink;
+        }
         `;
     return css.replaceAll(" ".repeat(8), "");
 }
