@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.4-2022.09.20
+// @version     0.8.5-2022.09.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -405,7 +405,7 @@ function hoistFeatures() {
             Features.verifyBlob(blob, url, btn);
             
             const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
-            download(blob, filename, url);
+            downloadBlob(blob, filename, url);
             
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
@@ -465,7 +465,7 @@ function hoistFeatures() {
             Features.verifyBlob(blob, url, btn);
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
-            download(blob, filename, url);
+            downloadBlob(blob, filename, url);
 
             const downloaded = btn.classList.contains("already-downloaded");
             if (!downloaded) {
@@ -527,7 +527,7 @@ function hoistFeatures() {
             Features.verifyBlob(blob, url, btn);
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
-            download(blob, filename, url);
+            downloadBlob(blob, filename, url);
             
             const downloaded = btn.classList.contains("ujs-already-downloaded");
             if (!downloaded) {
@@ -1295,7 +1295,7 @@ function getUtils({verbose}) {
     }
 
     // the original download url will be posted as hash of the blob url, so you can check it in the download manager's history
-    function download(blob, name, url) {
+    function downloadBlob(blob, name, url) {
         const anchor = document.createElement("a");
         anchor.setAttribute("download", name || "");
         const blobUrl = URL.createObjectURL(blob);
