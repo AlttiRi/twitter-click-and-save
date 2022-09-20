@@ -1415,7 +1415,7 @@ function getUtils({verbose}) {
     }
 
     return {
-        sleep, fetchResource, extensionFromMime, download, dateToDayDateString,
+        sleep, fetchResource, extensionFromMime, downloadBlob, dateToDayDateString,
         addCSS,
         getCookie,
         throttle, throttleWithResult,
