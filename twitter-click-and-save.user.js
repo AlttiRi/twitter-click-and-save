@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.3-2022.08.09
+// @version     0.8.4-2022.09.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -510,8 +510,15 @@ function hoistFeatures() {
 
             const btn = event.currentTarget;
             const {id, author} = Tweet.of(btn);
-            const video = await API.getVideoInfo(id); // {bitrate, content_type, url}
-            verbose && console.log(video);
+            let video;
+            try {
+                video = await API.getVideoInfo(id); // {bitrate, content_type, url}
+                verbose && console.log(video);
+            } catch(e) {
+                btn.classList.add("ujs-btn-error");
+                btn.title = "API.getVideoInfo Error";
+                throw new Error("API.getVideoInfo Error");
+            }
 
             btn.classList.add("ujs-downloading");
             const url = video.url;
