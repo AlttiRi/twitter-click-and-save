@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.6-2022.09.20
+// @version     0.8.7-2022.09.20
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -212,7 +212,7 @@ const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.f
 
 // --- "Imports" --- //
 const {
-    sleep, fetchResource, download,
+    sleep, fetchResource, downloadBlob,
     addCSS,
     getCookie,
     throttle,
