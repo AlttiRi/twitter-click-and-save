@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.7-2022.09.20
+// @version     0.8.8-2022.09.24-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -11,6 +11,73 @@
 // ==/UserScript==
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+
+const identityContentEncodings = new Set([null, "identity", "no encoding"]);
+function getOnProgressProps(response) {
+    const {headers, status, statusText, url, redirected, ok} = response;
+    const isIdentity = identityContentEncodings.has(headers.get("Content-Encoding"));
+    const compressed = !isIdentity;
+    const _contentLength = parseInt(headers.get("Content-Length")); // `get()` returns `null` if no header present
+    const contentLength = isNaN(_contentLength) ? null : _contentLength;
+    const lengthComputable = isIdentity && _contentLength !== null;
+
+    // Original XHR behaviour; in TM it equals to `contentLength`, or `-1` if `contentLength` is `null` (and `0`?).
+    const total = lengthComputable ? contentLength : 0;
+    const gmTotal = contentLength > 0 ? contentLength : -1; // Like `total` is in TM and GM.
+
+    return {
+        gmTotal, total, lengthComputable,
+        compressed, contentLength,
+        headers, status, statusText, url, redirected, ok
+    };
+}
+function responseProgressProxy(response, onProgress) {
+    const onProgressProps = getOnProgressProps(response);
+    let loaded = 0;
+    const reader = response.body.getReader();
+    const readableStream = new ReadableStream({
+        async start(controller) {
+            while (true) {
+                const {done, /** @type {Uint8Array} */ value} = await reader.read();
+                if (done) {
+                    break;
+                }
+                loaded += value.length;
+                try {
+                    onProgress({loaded, ...onProgressProps});
+                } catch (e) {
+                    console.error("[onProgress]:", e);
+                }
+                controller.enqueue(value);
+            }
+            controller.close();
+            reader.releaseLock();
+        },
+        cancel() {
+            void reader.cancel();
+        }
+    });
+    return new ResponseEx(readableStream, response);
+}
+class ResponseEx extends Response {
+    [Symbol.toStringTag] = "ResponseEx";
+    constructor(body, {headers, status, statusText, url, redirected, type}) {
+        super(body, {status, statusText, headers: {
+                ...headers,
+                "content-type": headers.get("content-type").split("; ")[0] // Fixes Blob type ("text/html; charset=UTF-8") in TM
+            }});
+        this._url = url;
+        this._redirected = redirected;
+        this._headers = headers; // `HeadersLike` is more user-friendly for debug than the original `Headers` object
+    }
+    get redirected() { return this._redirected; }
+    get url() { return this._url; }
+    get type() { return type || "basic"; }
+    /** @returns {HeadersLike} */
+    get headers() { return this._headers; }
+}
+
+
 
 if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
     GM_registerMenuCommand("Show settings", showSettings);
@@ -322,6 +389,7 @@ function hoistFeatures() {
                 btn.classList.add("ujs-btn-download");
                 btn.dataset.url = img.src;
 
+
                 btn.addEventListener("click", Features._imageClickHandler);
 
                 let anchor = img.closest("a");
@@ -435,13 +503,22 @@ function hoistFeatures() {
 
             const {id, author} = Tweet.of(btn);
             verbose && console.log(id, author);
+            
+            let btnProgress = btn.querySelector(".ujs-btn-download-progress");
+            if (!btnProgress) {
+                btnProgress = document.createElement("div");
+                btnProgress.classList.add("ujs-btn-download-progress");
+                btn.append(btnProgress);
+            }
+
+            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded/total * 90 + "%";
 
             async function safeFetchResource(url) {
                 let fallbackUsed = false;
                 retry:
                 while (true) {
                     try {
-                        return await fetchResource(url);
+                        return await fetchResource(url, onProgress);
                     } catch (e) {
                         if (fallbackUsed) {
                             btn.classList.add("ujs-btn-error");
@@ -463,6 +540,8 @@ function hoistFeatures() {
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
 
             Features.verifyBlob(blob, url, btn);
+            
+            btnProgress.style.width = "100%";
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             downloadBlob(blob, filename, url);
@@ -510,6 +589,7 @@ function hoistFeatures() {
 
             const btn = event.currentTarget;
             const {id, author} = Tweet.of(btn);
+            
             let video;
             try {
                 video = await API.getVideoInfo(id); // {bitrate, content_type, url}
@@ -520,9 +600,23 @@ function hoistFeatures() {
                 throw new Error("API.getVideoInfo Error");
             }
 
+            btn.classList.remove("ujs-btn-error");
             btn.classList.add("ujs-downloading");
+            
+            let btnProgress = btn.querySelector(".ujs-btn-download-progress");
+            if (!btnProgress) {
+                btnProgress = document.createElement("div");
+                btnProgress.classList.add("ujs-btn-download-progress");
+                btn.append(btnProgress);
+            }
+            
             const url = video.url;
-            const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
+            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded/total * 90 + "%";
+
+            
+            const {blob, lastModifiedDate, extension, name} = await fetchResource(url, onProgress);
+
+            btnProgress.style.width = "100%";
 
             Features.verifyBlob(blob, url, btn);
 
@@ -542,11 +636,14 @@ function hoistFeatures() {
                 btn.classList.add("ujs-btn-error");
                 btn.title = "Download Error";
                 throw new Error("Zero size blob: " + url);
+            } else {
+                btn.classList.remove("ujs-btn-error");
+                btn.title = "";
             }
         }
 
         static addRequiredCSS() {
-            addCSS(getUserScriptCSS());
+            getUserScriptCSS().then(code => addCSS(code));
         }
 
         // it depends of `directLinks()` use only it after `directLinks()`
@@ -846,7 +943,7 @@ function hoistFeatures() {
 }
 
 // --- Twitter.RequiredCSS --- //
-function getUserScriptCSS() {
+async function getUserScriptCSS() {
     const labelText = I18N.IMAGE || "Image";
   
     // By default the scroll is showed all time, since <html style="overflow-y: scroll;>,
@@ -948,7 +1045,15 @@ function getUserScriptCSS() {
         /* -------------------------------------------------------- */
         
         .ujs-btn-error {
-            background: pink;
+            background: white;
+            background-image: url("${await emojiToBlobURL("Err")}");
+            background-size: cover;
+        }
+        
+        .ujs-btn-download-progress {
+            height: 100%;
+            width: 0%;
+            background: #4caf50; /*green*/
         }
         `;
     return css.replaceAll(" ".repeat(8), "");
@@ -1262,9 +1367,9 @@ function getUtils({verbose}) {
         return new Promise(resolve => setTimeout(resolve, time));
     }
 
-    async function fetchResource(url) {
+    async function fetchResource(url, onProgress = props => console.log(props)) {
         try {
-            const response = await fetch(url, {
+            let response = await fetch(url, {
                 // cache: "force-cache",
             });
             const lastModifiedDateSeconds = response.headers.get("last-modified");
@@ -1272,6 +1377,9 @@ function getUtils({verbose}) {
 
             const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
             const extension = contentType ? extensionFromMime(contentType) : null;
+            
+            response = responseProgressProxy(response, onProgress)
+            
             const blob = await response.blob();
 
             // https://pbs.twimg.com/media/AbcdEFgijKL01_9?format=jpg&name=orig                                     -> AbcdEFgijKL01_9
@@ -1426,3 +1534,40 @@ function getUtils({verbose}) {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+
+
+function emojiToBlob(emoji, size, multiplier) {
+    const {canvas} = emojiTo(emoji, size, multiplier);
+    return new Promise(resolve => canvas.toBlob(resolve));
+}
+
+/** @return {{canvas: HTMLCanvasElement, context: CanvasRenderingContext2D}} */
+function emojiTo(emoji = "⬜", size = 64, multiplier = 1.01) {
+
+    /** @type {HTMLCanvasElement} */
+    const canvas = document.createElement("canvas");
+    canvas.width  = size;
+    canvas.height = size;
+    /** @type {CanvasRenderingContext2D} */
+    const context = canvas.getContext("2d");
+
+    context.font = size * 0.875 * multiplier + "px serif";
+    context.textBaseline = "middle";
+    context.textAlign = "center";
+
+    const x = size / 2;
+    const y = size / 2 + Math.round(size - size * 0.925);
+
+    context.fillText(emoji, x, y);
+
+    return {canvas, context};
+}
+async function emojiToBlobURL(emoji, size, multiplier, revokeDelay = 100000) {
+    const blob = await emojiToBlob(emoji, size, multiplier);
+    const url = URL.createObjectURL(blob);
+    // console.log(url, blob, await blob.arrayBuffer());
+    setTimeout(_ => URL.revokeObjectURL(url), revokeDelay);
+    return url;
+}
+
+
