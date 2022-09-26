@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.13-2022.09.26-dev
+// @version     0.8.14-2022.09.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1008,6 +1008,7 @@ async function getUserScriptCSS() {
             height: 100%;
             width: 0%;
             background: #4caf50; /*green*/
+            border-radius: 0.3em;
         }
         `;
     return css.replaceAll(" ".repeat(8), "");
