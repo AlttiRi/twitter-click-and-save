@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.16-2022.09.26-dev
+// @version     0.8.17-2022.09.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -191,8 +191,8 @@ function execFeatures() {
 // ---------------------------------------------------------------------------------------------------------------------
 
 if (verbose) {
-  console.log("[ujs][settings]", settings);
-  // showSettings();
+    console.log("[ujs][settings]", settings);
+    // showSettings();
 }
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
@@ -278,6 +278,7 @@ function hoistFeatures() {
             }
             // TODO: add #redirected, remove by timer // to prevent a potential infinity loop
         }
+
         static _ImageHistory = class {
             static getImageNameFromUrl(url) {
                 const _url = new URL(url);
@@ -383,17 +384,20 @@ function hoistFeatures() {
                     }
                 }
             }
+
             return wrapper;
         }
 
-        // Banner/Backgroud
+        // Banner/Background
         static async _downloadBanner(url, btn) {
             const username = location.pathname.slice(1).split("/")[0];
 
             btn.classList.add("ujs-downloading");
 
             // https://pbs.twimg.com/profile_banners/34743251/1596331248/1500x500
-            const {id, seconds, res} = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
+            const {
+                id, seconds, res
+            } = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
 
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
 
@@ -443,11 +447,10 @@ function hoistFeatures() {
                 btn.append(btnProgress);
             }
 
-            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded/total * 90 + "%";
+            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded / total * 90 + "%";
 
             async function safeFetchResource(url) {
                 let fallbackUsed = false;
-                retry:
                 while (true) {
                     try {
                         return await fetchResource(url, onProgress);
@@ -463,10 +466,8 @@ function hoistFeatures() {
                         url = _url.href;
                         verbose && console.warn("[safeFetchResource] Fallback URL:", url);
                         fallbackUsed = true;
-                        continue retry;
                     }
                 }
-
             }
 
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
@@ -534,7 +535,7 @@ function hoistFeatures() {
             try {
                 video = await API.getVideoInfo(id); // {bitrate, content_type, url}
                 verbose && console.log(video);
-            } catch(e) {
+            } catch (e) {
                 btn.classList.add("ujs-btn-error");
                 btn.textContent = "Error";
                 btn.title = "API.getVideoInfo Error";
@@ -549,7 +550,7 @@ function hoistFeatures() {
             }
 
             const url = video.url;
-            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded/total * 90 + "%";
+            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded / total * 90 + "%";
 
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url, onProgress);
 
@@ -727,10 +728,10 @@ function hoistFeatures() {
                 // "Show"
                 const buttonShow = elems.find(el => el.textContent === I18N.SHOW_NUDITY);
                 if (buttonShow) {
-                    //const verifing = a.previousSibling.textContent.includes("Nudity"); // todo?
-                    //if (verifing) {
+                    // const verifying = a.previousSibling.textContent.includes("Nudity"); // todo?
+                    // if (verifying) {
                         buttonShow.click();
-                    //}
+                    // }
                 }
             }
 
@@ -787,6 +788,7 @@ function hoistFeatures() {
                 }
             `);
         }
+
         static highlightVisitedLinks() {
             addCSS(`
                 a:visited {
@@ -807,6 +809,7 @@ function hoistFeatures() {
                 }
             `);
         }
+
         // Hides container and "separator line"
         static hideTopicsToFollow() {
             if (!I18N.TOPICS_TO_FOLLOW) { // Unsupported lang, no TOPICS_TO_FOLLOW constant
@@ -857,14 +860,15 @@ function hoistFeatures() {
             };
             const observer = new MutationObserver(callback);
             observer.observe(targetNode, observerOptions);
+
             function callback(mutationList, observer) {
                 const html = document.querySelector("html");
                 console.log(mutationList);
                 // overflow-y: scroll; overscroll-behavior-y: none; font-size: 15px;                     // default
                 // overflow: hidden; overscroll-behavior-y: none; font-size: 15px; margin-right: 15px;   // popup
                 if (html.style["overflow"] === "hidden") {
-                    html.style["overflow"]     = "";
-                    html.style["overflow-y"]   = "scroll";
+                    html.style["overflow"] = "";
+                    html.style["overflow-y"] = "scroll";
                     html.style["margin-right"] = "";
                 }
                 const popup = document.querySelector(`#layers div[data-testid="sheetDialog"]`);
@@ -877,6 +881,7 @@ function hoistFeatures() {
         }
 
     }
+
     return Features;
 }
 
@@ -884,7 +889,7 @@ function hoistFeatures() {
 async function getUserScriptCSS() {
     const labelText = I18N.IMAGE || "Image";
 
-    // By default the scroll is showed all time, since <html style="overflow-y: scroll;>,
+    // By default, the scroll is showed all time, since <html style="overflow-y: scroll;>,
     // so it works — no need to use `getScrollbarWidth` function from SO (13382516).
     const scrollbarWidth = window.innerWidth - document.body.offsetWidth;
 
@@ -1076,8 +1081,8 @@ function hoistTweet() {
                 this.url = Tweet.getUrl(elem);
             }
         }
-        static of(innerElem) {
 
+        static of(innerElem) {
             // Workaround for media from a quoted tweet
             const url = innerElem.closest(`a[href^="/"]`)?.href;
             if (url && url.includes("/status/")) {
@@ -1091,6 +1096,7 @@ function hoistTweet() {
             }
             return new Tweet({elem});
         }
+
         static getUrl(elem) {
             if (!elem) { // if opened image
                 return location.href;
@@ -1110,10 +1116,12 @@ function hoistTweet() {
         get author() {
             return this.url.match(/(?<=twitter\.com\/).+?(?=\/)/)?.[0];
         }
+
         get id() {
             return this.url.match(/(?<=\/status\/)\d+/)?.[0];
         }
     }
+
     return Tweet;
 }
 
@@ -1128,7 +1136,7 @@ function hoistAPI() {
         // Seems to be outdated at 2022.05
         static async _requestBearerToken() {
             const scriptSrc = [...document.querySelectorAll("script")]
-                .find(el => el.src.match(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web\/main[\w\d\.]*\.js/)).src;
+                .find(el => el.src.match(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web\/main[\w.]*\.js/)).src;
 
             let text;
             try {
@@ -1155,7 +1163,7 @@ function hoistAPI() {
             const _url = url.toString();
             verbose && console.log("[ujs][apiRequest]", _url);
 
-            // Hm... it always is the same. Even for a logged user.
+            // Hm... it is always the same. Even for a logged user.
             // const authorization = API.guestToken ? API.guestAuthorization : await API.getAuthorization();
             const authorization = API.guestAuthorization;
 
@@ -1210,13 +1218,18 @@ function hoistAPI() {
 
         static async getUserInfo(username) {
             const qHash = "Bhlf1dYJ3bYCKmLfeEQ31A"; // todo: change
-            const variables = JSON.stringify({"screen_name": username, "withSafetyModeUserFields": true, "withSuperFollowsUserFields": true});
+            const variables = JSON.stringify({
+                "screen_name": username,
+                "withSafetyModeUserFields": true,
+                "withSuperFollowsUserFields": true
+            });
             const url = `https://twitter.com/i/api/graphql/${qHash}/UserByScreenName?variables=${encodeURIComponent(variables)}`;
             const json = await API.apiRequest(url);
             verbose && console.log("[getUserInfo]", json);
             return json.data.user.result.legacy.entities.url?.urls[0].expanded_url;
         }
     }
+
     return API;
 }
 
@@ -1229,6 +1242,7 @@ function hoistLS(settings = {}) {
     const {
         verbose, // debug "messages" in the document.title
     } = settings;
+
     class LS {
         constructor(name) {
             this.name = name;
@@ -1304,6 +1318,7 @@ function hoistLS(settings = {}) {
             return array.indexOf(value) !== -1;
         }
     }
+
     return LS;
 }
 
@@ -1334,7 +1349,7 @@ function getUtils({verbose}) {
             const _url = new URL(url);
             const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
 
-            const {name} = filename.match(/(?<name>^[^\.]+)/).groups;
+            const {name} = filename.match(/(?<name>^[^.]+)/).groups;
             return {blob, lastModifiedDate, contentType, extension, name};
         } catch (error) {
             verbose && console.error("[fetchResource]", url, error);
@@ -1409,6 +1424,7 @@ function getUtils({verbose}) {
             }
         }
     }
+
     function throttleWithResult(func, time = 50) {
         let waiting = false;
         let args;
@@ -1457,8 +1473,7 @@ function getUtils({verbose}) {
                 node = xPathResult.iterateNext();
             }
             return nodes;
-        }
-        catch (e) {
+        } catch (e) {
             // todo need investigate it
             console.error(e); // "The document has mutated since the result was returned."
             return [];
@@ -1514,18 +1529,22 @@ function getUtils({verbose}) {
     }
     class ResponseEx extends Response {
         [Symbol.toStringTag] = "ResponseEx";
+
         constructor(body, {headers, status, statusText, url, redirected, type}) {
-            super(body, {status, statusText, headers: {
+            super(body, {
+                status, statusText, headers: {
                     ...headers,
                     "content-type": headers.get("content-type").split("; ")[0] // Fixes Blob type ("text/html; charset=UTF-8") in TM
-                }});
+                }
+            });
+            this._type = type;
             this._url = url;
             this._redirected = redirected;
             this._headers = headers; // `HeadersLike` is more user-friendly for debug than the original `Headers` object
         }
         get redirected() { return this._redirected; }
         get url() { return this._url; }
-        get type() { return type || "basic"; }
+        get type() { return this._type || "basic"; }
         /** @returns {HeadersLike} */
         get headers() { return this._headers; }
     }
