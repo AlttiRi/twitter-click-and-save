@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.12-2022.09.26-dev
+// @version     0.8.13-2022.09.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -11,72 +11,6 @@
 // ==/UserScript==
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-
-const identityContentEncodings = new Set([null, "identity", "no encoding"]);
-function getOnProgressProps(response) {
-    const {headers, status, statusText, url, redirected, ok} = response;
-    const isIdentity = identityContentEncodings.has(headers.get("Content-Encoding"));
-    const compressed = !isIdentity;
-    const _contentLength = parseInt(headers.get("Content-Length")); // `get()` returns `null` if no header present
-    const contentLength = isNaN(_contentLength) ? null : _contentLength;
-    const lengthComputable = isIdentity && _contentLength !== null;
-
-    // Original XHR behaviour; in TM it equals to `contentLength`, or `-1` if `contentLength` is `null` (and `0`?).
-    const total = lengthComputable ? contentLength : 0;
-    const gmTotal = contentLength > 0 ? contentLength : -1; // Like `total` is in TM and GM.
-
-    return {
-        gmTotal, total, lengthComputable,
-        compressed, contentLength,
-        headers, status, statusText, url, redirected, ok
-    };
-}
-function responseProgressProxy(response, onProgress) {
-    const onProgressProps = getOnProgressProps(response);
-    let loaded = 0;
-    const reader = response.body.getReader();
-    const readableStream = new ReadableStream({
-        async start(controller) {
-            while (true) {
-                const {done, /** @type {Uint8Array} */ value} = await reader.read();
-                if (done) {
-                    break;
-                }
-                loaded += value.length;
-                try {
-                    onProgress({loaded, ...onProgressProps});
-                } catch (e) {
-                    console.error("[onProgress]:", e);
-                }
-                controller.enqueue(value);
-            }
-            controller.close();
-            reader.releaseLock();
-        },
-        cancel() {
-            void reader.cancel();
-        }
-    });
-    return new ResponseEx(readableStream, response);
-}
-class ResponseEx extends Response {
-    [Symbol.toStringTag] = "ResponseEx";
-    constructor(body, {headers, status, statusText, url, redirected, type}) {
-        super(body, {status, statusText, headers: {
-                ...headers,
-                "content-type": headers.get("content-type").split("; ")[0] // Fixes Blob type ("text/html; charset=UTF-8") in TM
-            }});
-        this._url = url;
-        this._redirected = redirected;
-        this._headers = headers; // `HeadersLike` is more user-friendly for debug than the original `Headers` object
-    }
-    get redirected() { return this._redirected; }
-    get url() { return this._url; }
-    get type() { return type || "basic"; }
-    /** @returns {HeadersLike} */
-    get headers() { return this._headers; }
-}
-
 
 
 if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
@@ -284,6 +218,7 @@ const {
     getCookie,
     throttle,
     xpath, xpathAll,
+    responseProgressProxy,
 } = getUtils({verbose});
 const LS = hoistLS({verbose});
 
@@ -1541,12 +1476,79 @@ function getUtils({verbose}) {
         }
     }
 
+    const identityContentEncodings = new Set([null, "identity", "no encoding"]);
+    function getOnProgressProps(response) {
+        const {headers, status, statusText, url, redirected, ok} = response;
+        const isIdentity = identityContentEncodings.has(headers.get("Content-Encoding"));
+        const compressed = !isIdentity;
+        const _contentLength = parseInt(headers.get("Content-Length")); // `get()` returns `null` if no header present
+        const contentLength = isNaN(_contentLength) ? null : _contentLength;
+        const lengthComputable = isIdentity && _contentLength !== null;
+    
+        // Original XHR behaviour; in TM it equals to `contentLength`, or `-1` if `contentLength` is `null` (and `0`?).
+        const total = lengthComputable ? contentLength : 0;
+        const gmTotal = contentLength > 0 ? contentLength : -1; // Like `total` is in TM and GM.
+    
+        return {
+            gmTotal, total, lengthComputable,
+            compressed, contentLength,
+            headers, status, statusText, url, redirected, ok
+        };
+    }
+    function responseProgressProxy(response, onProgress) {
+        const onProgressProps = getOnProgressProps(response);
+        let loaded = 0;
+        const reader = response.body.getReader();
+        const readableStream = new ReadableStream({
+            async start(controller) {
+                while (true) {
+                    const {done, /** @type {Uint8Array} */ value} = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    loaded += value.length;
+                    try {
+                        onProgress({loaded, ...onProgressProps});
+                    } catch (e) {
+                        console.error("[onProgress]:", e);
+                    }
+                    controller.enqueue(value);
+                }
+                controller.close();
+                reader.releaseLock();
+            },
+            cancel() {
+                void reader.cancel();
+            }
+        });
+        return new ResponseEx(readableStream, response);
+    }
+    class ResponseEx extends Response {
+        [Symbol.toStringTag] = "ResponseEx";
+        constructor(body, {headers, status, statusText, url, redirected, type}) {
+            super(body, {status, statusText, headers: {
+                    ...headers,
+                    "content-type": headers.get("content-type").split("; ")[0] // Fixes Blob type ("text/html; charset=UTF-8") in TM
+                }});
+            this._url = url;
+            this._redirected = redirected;
+            this._headers = headers; // `HeadersLike` is more user-friendly for debug than the original `Headers` object
+        }
+        get redirected() { return this._redirected; }
+        get url() { return this._url; }
+        get type() { return type || "basic"; }
+        /** @returns {HeadersLike} */
+        get headers() { return this._headers; }
+    }
+
+
     return {
         sleep, fetchResource, extensionFromMime, downloadBlob, dateToDayDateString,
         addCSS,
         getCookie,
         throttle, throttleWithResult,
         xpath, xpathAll,
+        responseProgressProxy,
     }
 }
 
