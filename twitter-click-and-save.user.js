@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.14-2022.09.26-dev
+// @version     0.8.16-2022.09.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -12,14 +12,12 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
-
 if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
     GM_registerMenuCommand("Show settings", showSettings);
 }
 
 // --- For debug --- //
 const verbose = false;
-
 
 const settings = loadSettings();
 
@@ -43,7 +41,7 @@ function loadSettings() {
     videoHandler: true,
     addRequiredCSS: true,
     preventBlinking: true,
-    
+
     hideLoginPopup: false,
     addBorder: false,
   };
@@ -66,7 +64,6 @@ function showSettings() {
       document.body.classList.add("ujs-scrollbar-width-margin-right");
   }
   document.body.classList.add("ujs-no-scroll");
-  
 
   const modalWrapperStyle = `
     width: 100%;
@@ -120,8 +117,10 @@ function showSettings() {
           </fieldset>
             <fieldset>
               <legend title="Outdated due to Twitter's updates, impossible to reimplement">Outdated</legend>
-              <strike>              
-              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>              
+              <strike>
+
+              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
+
               <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
               </strike>
           </fieldset>
@@ -159,8 +158,6 @@ function showSettings() {
     document.querySelector("body > .ujs-modal-wrapper")?.remove();
   }
 }
-
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -210,7 +207,6 @@ const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.f
     return globalThis.wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
 } : globalThis.fetch;
 
-
 // --- "Imports" --- //
 const {
     sleep, fetchResource, downloadBlob,
@@ -227,14 +223,12 @@ const Tweet = hoistTweet();
 const Features = hoistFeatures();
 const I18N = getLanguageConstants();
 
-
 // --- That to use for the image history --- //
 // "TWEET_ID" or "IMAGE_NAME"
 const imagesHistoryBy = LS.getItem("ujs-images-history-by", "IMAGE_NAME");
 // With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
 // on the next time when the tweet will appear.
 // "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -270,7 +264,6 @@ const imagesHistoryBy = LS.getItem("ujs-images-history-by", "IMAGE_NAME");
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Twitter Specific code --- //
-
 
 const downloadedImages = new LS("ujs-twitter-downloaded-images-names");
 const downloadedImageTweetIds = new LS("ujs-twitter-downloaded-image-tweet-ids");
@@ -324,7 +317,6 @@ function hoistFeatures() {
                 btn.classList.add("ujs-btn-download");
                 btn.dataset.url = img.src;
 
-
                 btn.addEventListener("click", Features._imageClickHandler);
 
                 let anchor = img.closest("a");
@@ -346,7 +338,7 @@ function hoistFeatures() {
                 }
             }
         }
-        
+
         static hasBlinkListenerWeakSet;
         static _preventBlinking(clickBtnElem) {
             const weakSet = Features.hasBlinkListenerWeakSet || (Features.hasBlinkListenerWeakSet = new WeakSet());
@@ -374,7 +366,7 @@ function hoistFeatures() {
             const wrapper = {};
             wrapper.observer = new MutationObserver(callback);
             wrapper.observer.observe(targetNode, config);
-            
+
             function callback(mutationsList, observer) {
                 for (const mutation of mutationsList) {
                     if (mutation.type === "attributes" && mutation.attributeName === "class") {
@@ -383,7 +375,7 @@ function hoistFeatures() {
                         }
                         // Don't allow to change classList
                         mutation.target.className = mutation.oldValue;
-                        
+
                         // Recreate, to prevent an infinity loop
                         wrapper.observer.disconnect();
                         wrapper.observer = new MutationObserver(callback);
@@ -393,42 +385,41 @@ function hoistFeatures() {
             }
             return wrapper;
         }
-        
+
         // Banner/Backgroud
         static async _downloadBanner(url, btn) {
             const username = location.pathname.slice(1).split("/")[0];
-            
+
             btn.classList.add("ujs-downloading");
-            
+
             // https://pbs.twimg.com/profile_banners/34743251/1596331248/1500x500
             const {id, seconds, res} = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
-            
+
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
-            
+
             Features.verifyBlob(blob, url, btn);
-            
+
             const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
             downloadBlob(blob, filename, url);
-            
+
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
         }
-        
+
         static async _imageClickHandler(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
 
             const btn = event.currentTarget;
             let url = btn.dataset.url;
-            
+
             const isBanner = url.includes("/profile_banners/");
             if (isBanner) {
                 return Features._downloadBanner(url, btn);
             }
-            
+
             url = handleImgUrl(url);
             verbose && console.log(url);
-            
 
             function handleImgUrl(url) {
                 const urlObj = new URL(url);
@@ -438,13 +429,13 @@ function hoistFeatures() {
 
             const {id, author} = Tweet.of(btn);
             verbose && console.log(id, author);
-            
+
             if (btn.textContent !== "") {
                 btn.textContent = "";
             }
             btn.classList.remove("ujs-btn-error");
             btn.classList.add("ujs-downloading");
-            
+
             let btnProgress = btn.querySelector(".ujs-btn-download-progress");
             if (!btnProgress) {
                 btnProgress = document.createElement("div");
@@ -481,7 +472,7 @@ function hoistFeatures() {
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
 
             Features.verifyBlob(blob, url, btn);
-            
+
             btnProgress.style.width = "100%";
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
@@ -493,11 +484,10 @@ function hoistFeatures() {
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
-            
+
             await sleep(40);
             btnProgress.style.width = "0%";
         }
-
 
         static async videoHandler(preventBlinking) {
             const videos = document.querySelectorAll("video");
@@ -533,13 +523,13 @@ function hoistFeatures() {
 
             const btn = event.currentTarget;
             const {id, author} = Tweet.of(btn);
-            
+
             if (btn.textContent !== "") {
                 btn.textContent = "";
             }
             btn.classList.remove("ujs-btn-error");
             btn.classList.add("ujs-downloading");
-            
+
             let video;
             try {
                 video = await API.getVideoInfo(id); // {bitrate, content_type, url}
@@ -551,18 +541,16 @@ function hoistFeatures() {
                 throw new Error("API.getVideoInfo Error");
             }
 
-            
             let btnProgress = btn.querySelector(".ujs-btn-download-progress");
             if (!btnProgress) {
                 btnProgress = document.createElement("div");
                 btnProgress.classList.add("ujs-btn-download-progress");
                 btn.append(btnProgress);
             }
-            
+
             const url = video.url;
             const onProgress = ({loaded, total}) => btnProgress.style.width = loaded/total * 90 + "%";
 
-            
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url, onProgress);
 
             btnProgress.style.width = "100%";
@@ -571,14 +559,14 @@ function hoistFeatures() {
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             downloadBlob(blob, filename, url);
-            
+
             const downloaded = btn.classList.contains("ujs-already-downloaded");
             if (!downloaded) {
                 await downloadedVideoTweetIds.pushItem(id);
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
-            
+
             await sleep(40);
             btnProgress.style.width = "0%";
         }
@@ -597,11 +585,12 @@ function hoistFeatures() {
         }
 
         // it depends of `directLinks()` use only it after `directLinks()`
-        static handleTitle(title) {          
+        static handleTitle(title) {
+
             if (!I18N.QUOTES) { // Unsupported lang, no QUOTES, ON_TWITTER, TWITTER constants
                 return;
             }
-          
+
             // if not a opened tweet
             if (!location.href.match(/twitter\.com\/[^\/]+\/status\/\d+/)) {
                 return;
@@ -638,7 +627,6 @@ function hoistFeatures() {
                     attachmentDescription = attachmentDescription.replaceAll("\n", " — ");
                 }
             }
-
 
             for (const [key, value] of map.entries()) {
                 titleText = titleText.replaceAll(key, value + ` (${key})`);
@@ -677,7 +665,7 @@ function hoistFeatures() {
 
                 const nodes = xpathAll(`./span[text() != "…"]|./text()`, anchor);
                 let url = nodes.map(node => node.textContent).join("");
-                
+
                 const doubleProtocolPrefix = url.match(/(?<dup>^https?:\/\/)(?=https?:)/)?.groups.dup;
                 if (doubleProtocolPrefix) {
                     url = url.slice(doubleProtocolPrefix.length);
@@ -686,19 +674,19 @@ function hoistFeatures() {
                         span.style = "display: none;";
                     }
                 }
-                
+
                 anchor.href = url;
-                
+
                 if (anchor.dataset?.testid === "UserUrl") {
                     const href = anchor.getAttribute("href");
                     const profileUrl = hasHttp(href) ? href : "https://" + href;
                     anchor.href = profileUrl;
                     verbose && console.log("[ujs][directLinks][UserUrl]", profileUrl);
-                    
+
                     // Restore if URL's text content is too long
                     if (anchor.textContent.endsWith("…")) {
                         anchor.href = shortUrl;
-                        
+
                         try {
                             const author = location.pathname.slice(1).match(/[^\/]+/)[0];
                             const expanded_url = await API.getUserInfo(author); // todo: make lazy
@@ -721,7 +709,7 @@ function hoistFeatures() {
             if (!main) {
                 return;
             }
-          
+
             if (!I18N.YES_VIEW_PROFILE) { // Unsupported lang, no YES_VIEW_PROFILE, SHOW_NUDITY, VIEW constants
                 return;
             }
@@ -733,7 +721,7 @@ function hoistFeatures() {
                 if (button) {
                     button.click();
                 }
-                
+
                 // "Content warning: Nudity"
                 // "The Tweet author flagged this Tweet as showing sensitive content.""
                 // "Show"
@@ -745,7 +733,7 @@ function hoistFeatures() {
                     //}
                 }
             }
-            
+
             // todo: expand spoiler commentary in photo view mode (.../photo/1)
             const b = main.querySelectorAll("article [role=presentation] div[role=button]");
             if (b) {
@@ -824,7 +812,7 @@ function hoistFeatures() {
             if (!I18N.TOPICS_TO_FOLLOW) { // Unsupported lang, no TOPICS_TO_FOLLOW constant
                 return;
             }
-          
+
             const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${I18N.TOPICS_TO_FOLLOW}"]]/../..`);
             if (!elem) {
                 return;
@@ -861,7 +849,7 @@ function hoistFeatures() {
                 Features.footerHandled = true;
             }
         }
-        
+
         static hideLoginPopup() { // When you are not logged in
             const targetNode = document.querySelector("html");
             const observerOptions = {
@@ -887,7 +875,7 @@ function hoistFeatures() {
                 }
             }
         }
-        
+
     }
     return Features;
 }
@@ -895,11 +883,11 @@ function hoistFeatures() {
 // --- Twitter.RequiredCSS --- //
 async function getUserScriptCSS() {
     const labelText = I18N.IMAGE || "Image";
-  
+
     // By default the scroll is showed all time, since <html style="overflow-y: scroll;>,
     // so it works — no need to use `getScrollbarWidth` function from SO (13382516).
     const scrollbarWidth = window.innerWidth - document.body.offsetWidth;
-  
+
     const css = `
         .ujs-hidden {
             display: none;
@@ -913,7 +901,7 @@ async function getUserScriptCSS() {
         .ujs-scrollbar-width-margin-right {
             margin-right: ${scrollbarWidth}px;
         }
-        
+
         .ujs-show-on-hover:hover {
             opacity: 1;
             transition: opacity 1s ease-out 0.1s;
@@ -922,7 +910,7 @@ async function getUserScriptCSS() {
             opacity: 0;
             transition: opacity 0.5s ease-out;
         }
-        
+
         .ujs-btn-download {
             cursor: pointer;
             top: 0.5em;
@@ -934,7 +922,7 @@ async function getUserScriptCSS() {
             position: absolute;
             border-radius: 0.3em;
             background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
-            ${settings.addBorder ? "border: 2px solid white;" : ""}
+            ${settings.addBorder ? "border: 2px solid white;" : "border: 1px solid rgb(207, 217, 222);"}
         }
         article[role=article]:hover .ujs-btn-download {
             opacity: 1;
@@ -942,7 +930,7 @@ async function getUserScriptCSS() {
         div[aria-label="${labelText}"]:hover .ujs-btn-download {
             opacity: 1;
         }
-        
+
         .ujs-btn-download.ujs-downloaded {
             background: #4caf50; /*green*/
             background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
@@ -959,7 +947,7 @@ async function getUserScriptCSS() {
             background: #1da1f2; /*blue*/
             background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
         }
-        
+
         /* -------------------------------------------------------- */
         /* Shadow the button on hover, active and while downloading */
         .ujs-btn-download:hover {
@@ -972,7 +960,7 @@ async function getUserScriptCSS() {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
             opacity: 1;
         }
-        
+
         article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded):hover {
             background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
         }
@@ -982,7 +970,7 @@ async function getUserScriptCSS() {
         article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
-        
+
         div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):hover {
             background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
         }
@@ -992,9 +980,9 @@ async function getUserScriptCSS() {
         div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
             background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
         }
-        
+
         /* -------------------------------------------------------- */
-        
+
         .ujs-btn-error {
             background: white;
             background-size: cover;
@@ -1003,12 +991,12 @@ async function getUserScriptCSS() {
             justify-content: center;
             color: black;
         }
-        
+
         .ujs-btn-download-progress {
             height: 100%;
             width: 0%;
             background: #4caf50; /*green*/
-            border-radius: 0.3em;
+            ${settings.addBorder ? "" : "border-radius: 0.3em;"}
         }
         `;
     return css.replaceAll(" ".repeat(8), "");
@@ -1023,8 +1011,9 @@ expandSpoilers:     YES_VIEW_PROFILE,   SHOW_NUDITY,  VIEW
 handleTitle:        QUOTES,             ON_TWITTER,   TWITTER
 hideSignUpSection:  SIGNUP
 hideTrends:         TRENDS
-hideTopicsToFollowInstantly: TOPICS_TO_FOLLOW, 
-hideTopicsToFollow:          TOPICS_TO_FOLLOW, 
+hideTopicsToFollowInstantly: TOPICS_TO_FOLLOW,
+
+hideTopicsToFollow:          TOPICS_TO_FOLLOW,
 
 [unused]
 hideAndMoveFooter:  FOOTER
@@ -1034,10 +1023,12 @@ hideAndMoveFooter:  FOOTER
 function getLanguageConstants() { //todo: "de", "fr"
     const defaultQuotes = [`"`, `"`];
 
-    const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               "ja",                       ];  
+    const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               "ja",                       ];
+
     // texts
     const VIEW                = ["View",                   "Посмотреть",             "Ver",                                "查看",             "表示",                      ];
-    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     "是，查看个人资料",   "プロフィールを表示する",      ];    
+    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     "是，查看个人资料",   "プロフィールを表示する",      ];
+
     const SHOW_NUDITY         = ["Show",                   "Показать",               "Mostrar",                            "显示",              "表示",                     ];
     // aria-label texts
     const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             "图像",              "画像",                     ];
@@ -1046,13 +1037,13 @@ function getLanguageConstants() { //todo: "de", "fr"
     const TOPICS_TO_FOLLOW    = ["Timeline: ",             "Лента: ",                "Cronología: ",                       "时间线：", /*[1]*/  "タイムライン: ",  /*[1]*/    ];
     const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     "推荐关注",          "おすすめユーザー"             ];
     const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      "页脚",             "フッター",                   ];
-    // *1 — it's a suggestion, need to recheck. But I can't find a page where I can check it. Was it deleted?  
+    // *1 — it's a suggestion, need to recheck. But I can't find a page where I can check it. Was it deleted?
+
     // document.title "{AUTHOR}{ON_TWITTER} {QUOTES[0]}{TEXT}{QUOTES[1]} / {TWITTER}"
     const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        defaultQuotes,      [`「`, `」`],                ];
     const ON_TWITTER          = [" on Twitter:",           " в Твиттере:",           " en Twitter:",                       " 在 Twitter:",      "さんはTwitterを使っています", ];
     const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            "Twitter",          "Twitter",                  ];
-    
-  
+
     const lang = document.querySelector("html").getAttribute("lang");
     const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
 
@@ -1086,13 +1077,14 @@ function hoistTweet() {
             }
         }
         static of(innerElem) {
-            
+
             // Workaround for media from a quoted tweet
             const url = innerElem.closest(`a[href^="/"]`)?.href;
             if (url && url.includes("/status/")) {
-                return new Tweet({url}); 
+                return new Tweet({url});
+
             }
-            
+
             const elem = innerElem.closest(`[data-testid="tweet"]`);
             if (!elem) { // opened image
                 verbose && console.log("no-tweet elem");
@@ -1162,7 +1154,7 @@ function hoistAPI() {
         static async apiRequest(url) {
             const _url = url.toString();
             verbose && console.log("[ujs][apiRequest]", _url);
-            
+
             // Hm... it always is the same. Even for a logged user.
             // const authorization = API.guestToken ? API.guestAuthorization : await API.getAuthorization();
             const authorization = API.guestAuthorization;
@@ -1195,7 +1187,7 @@ function hoistAPI() {
 
             verbose && console.log("[ujs][apiRequest]", JSON.stringify(json, null, " "));
             // 429 - [{code: 88, message: "Rate limit exceeded"}] — for suspended accounts
-            
+
             return json;
         }
 
@@ -1209,7 +1201,6 @@ function hoistAPI() {
             const tweetData = json.globalObjects.tweets[tweetId];
             const videoVariants = tweetData.extended_entities.media[0].video_info.variants;
             verbose && console.log(videoVariants);
-
 
             const video = videoVariants
                 .filter(el => el.bitrate !== undefined) // if content_type: "application/x-mpegURL" // .m3u8
@@ -1332,9 +1323,9 @@ function getUtils({verbose}) {
 
             const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
             const extension = contentType ? extensionFromMime(contentType) : null;
-            
+
             response = responseProgressProxy(response, onProgress)
-            
+
             const blob = await response.blob();
 
             // https://pbs.twimg.com/media/AbcdEFgijKL01_9?format=jpg&name=orig                                     -> AbcdEFgijKL01_9
@@ -1381,14 +1372,12 @@ function getUtils({verbose}) {
         return year + "." + pad(month) + "." + pad(date);
     }
 
-
     function addCSS(css) {
         const styleElem = document.createElement("style");
         styleElem.textContent = css;
         document.body.append(styleElem);
         return styleElem;
     }
-
 
     function getCookie(name) {
         verbose && console.log(document.cookie);
@@ -1453,7 +1442,6 @@ function getUtils({verbose}) {
         }
     }
 
-
     function xpath(path, node = document) {
         let xPathResult = document.evaluate(path, node, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         return xPathResult.singleNodeValue;
@@ -1485,11 +1473,11 @@ function getUtils({verbose}) {
         const _contentLength = parseInt(headers.get("Content-Length")); // `get()` returns `null` if no header present
         const contentLength = isNaN(_contentLength) ? null : _contentLength;
         const lengthComputable = isIdentity && _contentLength !== null;
-    
+
         // Original XHR behaviour; in TM it equals to `contentLength`, or `-1` if `contentLength` is `null` (and `0`?).
         const total = lengthComputable ? contentLength : 0;
         const gmTotal = contentLength > 0 ? contentLength : -1; // Like `total` is in TM and GM.
-    
+
         return {
             gmTotal, total, lengthComputable,
             compressed, contentLength,
@@ -1542,7 +1530,6 @@ function getUtils({verbose}) {
         get headers() { return this._headers; }
     }
 
-
     return {
         sleep, fetchResource, extensionFromMime, downloadBlob, dateToDayDateString,
         addCSS,
@@ -1552,7 +1539,6 @@ function getUtils({verbose}) {
         responseProgressProxy,
     }
 }
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
