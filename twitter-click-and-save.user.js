@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.17-2022.09.26-dev
+// @version     0.8.18-2022.09.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -894,6 +894,16 @@ async function getUserScriptCSS() {
     const scrollbarWidth = window.innerWidth - document.body.offsetWidth;
 
     const css = `
+        :root {
+            --ujs-shadow-1: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
+            --ujs-shadow-2: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+            --ujs-shadow-3: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+            --ujs-shadow-4: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+            --ujs-red:   #e0245e;
+            --ujs-blue:  #1da1f2;
+            --ujs-green: #4caf50;
+            --ujs-gray:  #c2cbd0;
+        }
         .ujs-hidden {
             display: none;
         }
@@ -922,12 +932,12 @@ async function getUserScriptCSS() {
             left: 0.5em;
             width: 33px;
             height: 33px;
-            background: #e0245e; /*red*/
+            background: var(--ujs-red);
             opacity: 0;
             position: absolute;
             border-radius: 0.3em;
-            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
-            ${settings.addBorder ? "border: 2px solid white;" : "border: 1px solid rgb(207, 217, 222);"}
+            background-image: var(--ujs-shadow-1);
+            ${settings.addBorder ? "border: 2px solid white;" : "border: 1px solid var(--ujs-gray);"}
         }
         article[role=article]:hover .ujs-btn-download {
             opacity: 1;
@@ -937,53 +947,53 @@ async function getUserScriptCSS() {
         }
 
         .ujs-btn-download.ujs-downloaded {
-            background: #4caf50; /*green*/
-            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
+            background: var(--ujs-green);
+            background-image: var(--ujs-shadow-1);
             opacity: 1;
         }
         .ujs-btn-download.ujs-video {
             left: calc(0.5em + 33px + 3px);
         }
         article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded):not(.ujs-btn-error) {
-            background: #1da1f2; /*blue*/
-            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
+            background: var(--ujs-blue);
+            background-image: var(--ujs-shadow-1);
         }
         div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):not(.ujs-btn-error) {
-            background: #1da1f2; /*blue*/
-            background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
+            background: var(--ujs-blue);
+            background-image: var(--ujs-shadow-1);
         }
 
         /* -------------------------------------------------------- */
         /* Shadow the button on hover, active and while downloading */
         .ujs-btn-download:hover {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+            background-image: var(--ujs-shadow-2);
         }
         .ujs-btn-download:active {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+            background-image: var(--ujs-shadow-4);
         }
         .ujs-btn-download.ujs-downloading {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+            background-image: var(--ujs-shadow-3);
             opacity: 1;
         }
 
         article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded):hover {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+            background-image: var(--ujs-shadow-2);
         }
         article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded):active {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+            background-image: var(--ujs-shadow-4);
         }
         article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+            background-image: var(--ujs-shadow-3);
         }
 
         div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):hover {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+            background-image: var(--ujs-shadow-2);
         }
         div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):active {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+            background-image: var(--ujs-shadow-4);
         }
         div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
-            background-image: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+            background-image: var(--ujs-shadow-3);
         }
 
         /* -------------------------------------------------------- */
@@ -1000,7 +1010,7 @@ async function getUserScriptCSS() {
         .ujs-btn-download-progress {
             height: 100%;
             width: 0%;
-            background: #4caf50; /*green*/
+            background: var(--ujs-green);
             ${settings.addBorder ? "" : "border-radius: 0.3em;"}
         }
         `;
