@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.9-2022.09.24-dev
+// @version     0.8.10-2022.09.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -522,6 +522,7 @@ function hoistFeatures() {
                     } catch (e) {
                         if (fallbackUsed) {
                             btn.classList.add("ujs-btn-error");
+                            btn.textContent = "Error";
                             btn.title = "Download Error";
                             throw new Error("Fallback URL failed");
                         }
@@ -536,7 +537,10 @@ function hoistFeatures() {
 
             }
 
+            btn.textContent = "";
+            btn.classList.remove("ujs-btn-error");
             btn.classList.add("ujs-downloading");
+            
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
 
             Features.verifyBlob(blob, url, btn);
@@ -590,18 +594,21 @@ function hoistFeatures() {
             const btn = event.currentTarget;
             const {id, author} = Tweet.of(btn);
             
+            btn.textContent = "";
+            btn.classList.remove("ujs-btn-error");
+            btn.classList.add("ujs-downloading");
+            
             let video;
             try {
                 video = await API.getVideoInfo(id); // {bitrate, content_type, url}
                 verbose && console.log(video);
             } catch(e) {
                 btn.classList.add("ujs-btn-error");
+                btn.textContent = "Error";
                 btn.title = "API.getVideoInfo Error";
                 throw new Error("API.getVideoInfo Error");
             }
 
-            btn.classList.remove("ujs-btn-error");
-            btn.classList.add("ujs-downloading");
             
             let btnProgress = btn.querySelector(".ujs-btn-download-progress");
             if (!btnProgress) {
@@ -634,11 +641,9 @@ function hoistFeatures() {
         static verifyBlob(blob, url, btn) {
             if (!blob.size) {
                 btn.classList.add("ujs-btn-error");
+                btn.textContent = "Error";
                 btn.title = "Download Error";
                 throw new Error("Zero size blob: " + url);
-            } else {
-                btn.classList.remove("ujs-btn-error");
-                btn.title = "";
             }
         }
 
@@ -1001,11 +1006,11 @@ async function getUserScriptCSS() {
         .ujs-btn-download.ujs-video {
             left: calc(0.5em + 33px + 3px);
         }
-        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
+        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded):not(.ujs-btn-error) {
             background: #1da1f2; /*blue*/
             background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
         }
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded) {
+        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):not(.ujs-btn-error) {
             background: #1da1f2; /*blue*/
             background-image: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
         }
@@ -1047,8 +1052,11 @@ async function getUserScriptCSS() {
         
         .ujs-btn-error {
             background: white;
-            background-image: url("${await emojiToBlobURL("Err")}");
             background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
         }
         
         .ujs-btn-download-progress {
@@ -1535,40 +1543,3 @@ function getUtils({verbose}) {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-
-
-function emojiToBlob(emoji, size, multiplier) {
-    const {canvas} = emojiTo(emoji, size, multiplier);
-    return new Promise(resolve => canvas.toBlob(resolve));
-}
-
-/** @return {{canvas: HTMLCanvasElement, context: CanvasRenderingContext2D}} */
-function emojiTo(emoji = "⬜", size = 64, multiplier = 1.01) {
-
-    /** @type {HTMLCanvasElement} */
-    const canvas = document.createElement("canvas");
-    canvas.width  = size;
-    canvas.height = size;
-    /** @type {CanvasRenderingContext2D} */
-    const context = canvas.getContext("2d");
-
-    context.font = size * 0.875 * multiplier + "px serif";
-    context.textBaseline = "middle";
-    context.textAlign = "center";
-
-    const x = size / 2;
-    const y = size / 2 + Math.round(size - size * 0.925);
-
-    context.fillText(emoji, x, y);
-
-    return {canvas, context};
-}
-async function emojiToBlobURL(emoji, size, multiplier, revokeDelay = 100000) {
-    const blob = await emojiToBlob(emoji, size, multiplier);
-    const url = URL.createObjectURL(blob);
-    // console.log(url, blob, await blob.arrayBuffer());
-    setTimeout(_ => URL.revokeObjectURL(url), revokeDelay);
-    return url;
-}
-
-
