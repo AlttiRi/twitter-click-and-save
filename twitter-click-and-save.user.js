@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.8.18-2022.09.26-dev
+// @version     0.9.1-2022.09.27-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -279,65 +279,27 @@ function hoistFeatures() {
             // TODO: add #redirected, remove by timer // to prevent a potential infinity loop
         }
 
-        static _ImageHistory = class {
-            static getImageNameFromUrl(url) {
-                const _url = new URL(url);
-                const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
-                return filename.match(/^[^\.]+/)[0]; // remove extension
+        static createButton({url, downloaded, isVideo}) {
+            const btn = document.createElement("div");
+            btn.innerHTML = `
+<div class="ujs-btn-common ujs-btn-background"></div>
+<div class="ujs-btn-common ujs-hover"></div>
+<div class="ujs-btn-common ujs-shadow"></div>
+<div class="ujs-btn-common ujs-progress" style="--progress: 0%"></div>  
+<div class="ujs-btn-common ujs-btn-error-text"></div>`.slice(1);
+            btn.classList.add("ujs-btn-download");
+            if (!downloaded) {
+                btn.classList.add("ujs-not-downloaded");
+            } else {
+                btn.classList.add("ujs-already-downloaded");
             }
-            static isDownloaded({id, url}) {
-                if (imagesHistoryBy === "TWEET_ID") {
-                    return downloadedImageTweetIds.hasItem(id);
-                } else if (imagesHistoryBy === "IMAGE_NAME") {
-                    const name = Features._ImageHistory.getImageNameFromUrl(url);
-                    return downloadedImages.hasItem(name);
-                }
+            if (isVideo) {
+                btn.classList.add("ujs-video");
             }
-            static async markDownloaded({id, url}) {
-                if (imagesHistoryBy === "TWEET_ID") {
-                    await downloadedImageTweetIds.pushItem(id);
-                } else if (imagesHistoryBy === "IMAGE_NAME") {
-                    const name = Features._ImageHistory.getImageNameFromUrl(url);
-                    await downloadedImages.pushItem(name);
-                }
+            if (url) {
+                btn.dataset.url = url;
             }
-        }
-        static async imagesHandler(preventBlinking) {
-            verbose && console.log("[ujs-cns][imagesHandler]");
-            const images = document.querySelectorAll("img");
-            for (const img of images) {
-
-                if (img.width < 150 || img.dataset.handled) {
-                    continue;
-                }
-                verbose && console.log(img, img.width);
-
-                img.dataset.handled = "true";
-
-                const btn = document.createElement("div");
-                btn.classList.add("ujs-btn-download");
-                btn.dataset.url = img.src;
-
-                btn.addEventListener("click", Features._imageClickHandler);
-
-                let anchor = img.closest("a");
-                // if an image is _opened_ "https://twitter.com/UserName/status/1234567890123456789/photo/1" [fake-url]
-                if (!anchor) {
-                    anchor = img.parentNode;
-                }
-                anchor.append(btn);
-                if (preventBlinking) {
-                    Features._preventBlinking(btn);
-                }
-
-                const downloaded = Features._ImageHistory.isDownloaded({
-                    id: Tweet.of(btn).id,
-                    url: btn.dataset.url
-                });
-                if (downloaded) {
-                    btn.classList.add("ujs-already-downloaded");
-                }
-            }
+            return btn;
         }
 
         static hasBlinkListenerWeakSet;
@@ -410,11 +372,70 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloaded");
         }
 
+        static _ImageHistory = class {
+            static getImageNameFromUrl(url) {
+                const _url = new URL(url);
+                const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
+                return filename.match(/^[^.]+/)[0]; // remove extension
+            }
+            static isDownloaded({id, url}) {
+                if (imagesHistoryBy === "TWEET_ID") {
+                    return downloadedImageTweetIds.hasItem(id);
+                } else if (imagesHistoryBy === "IMAGE_NAME") {
+                    const name = Features._ImageHistory.getImageNameFromUrl(url);
+                    return downloadedImages.hasItem(name);
+                }
+            }
+            static async markDownloaded({id, url}) {
+                if (imagesHistoryBy === "TWEET_ID") {
+                    await downloadedImageTweetIds.pushItem(id);
+                } else if (imagesHistoryBy === "IMAGE_NAME") {
+                    const name = Features._ImageHistory.getImageNameFromUrl(url);
+                    await downloadedImages.pushItem(name);
+                }
+            }
+        }
+        static async imagesHandler(preventBlinking) {
+            verbose && console.log("[ujs-cns][imagesHandler]");
+            const images = document.querySelectorAll("img");
+            for (const img of images) {
+
+                if (img.width < 150 || img.dataset.handled) {
+                    continue;
+                }
+                verbose && console.log(img, img.width);
+
+                img.dataset.handled = "true";
+
+
+                const btn = Features.createButton({url: img.src});
+                btn.addEventListener("click", Features._imageClickHandler);
+
+                let anchor = img.closest("a");
+                // if an image is _opened_ "https://twitter.com/UserName/status/1234567890123456789/photo/1" [fake-url]
+                if (!anchor) {
+                    anchor = img.parentNode;
+                }
+                anchor.append(btn);
+                if (preventBlinking) {
+                    Features._preventBlinking(btn);
+                }
+
+                const downloaded = Features._ImageHistory.isDownloaded({
+                    id: Tweet.of(btn).id,
+                    url: btn.dataset.url
+                });
+                if (downloaded) {
+                    btn.classList.add("ujs-already-downloaded");
+                }
+            }
+        }
         static async _imageClickHandler(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
 
             const btn = event.currentTarget;
+            const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
             let url = btn.dataset.url;
 
             const isBanner = url.includes("/profile_banners/");
@@ -434,20 +455,13 @@ function hoistFeatures() {
             const {id, author} = Tweet.of(btn);
             verbose && console.log(id, author);
 
+            const btnProgress = btn.querySelector(".ujs-progress");
             if (btn.textContent !== "") {
-                btn.textContent = "";
+                btnErrorTextElem.textContent = "";
             }
-            btn.classList.remove("ujs-btn-error");
+            btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
-
-            let btnProgress = btn.querySelector(".ujs-btn-download-progress");
-            if (!btnProgress) {
-                btnProgress = document.createElement("div");
-                btnProgress.classList.add("ujs-btn-download-progress");
-                btn.append(btnProgress);
-            }
-
-            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded / total * 90 + "%";
+            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
 
             async function safeFetchResource(url) {
                 let fallbackUsed = false;
@@ -456,8 +470,8 @@ function hoistFeatures() {
                         return await fetchResource(url, onProgress);
                     } catch (e) {
                         if (fallbackUsed) {
-                            btn.classList.add("ujs-btn-error");
-                            btn.textContent = "Error";
+                            btn.classList.add("ujs-error");
+                            btnErrorTextElem.textContent = "Error";
                             btn.title = "Download Error";
                             throw new Error("Fallback URL failed");
                         }
@@ -474,7 +488,7 @@ function hoistFeatures() {
 
             Features.verifyBlob(blob, url, btn);
 
-            btnProgress.style.width = "100%";
+            btnProgress.style.cssText = "--progress: 100%";
 
             const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             downloadBlob(blob, filename, url);
@@ -487,7 +501,7 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloaded");
 
             await sleep(40);
-            btnProgress.style.width = "0%";
+            btnProgress.style.cssText = "--progress: 0%";
         }
 
         static async videoHandler(preventBlinking) {
@@ -500,9 +514,7 @@ function hoistFeatures() {
                 verbose && console.log(vid);
                 vid.dataset.handled = "true";
 
-                const btn = document.createElement("div");
-                btn.classList.add("ujs-btn-download");
-                btn.classList.add("ujs-video");
+                const btn = Features.createButton({isVideo: true});
                 btn.addEventListener("click", Features._videoClickHandler);
 
                 let elem = vid.parentNode.parentNode.parentNode;
@@ -523,12 +535,13 @@ function hoistFeatures() {
             event.stopImmediatePropagation();
 
             const btn = event.currentTarget;
+            const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
             const {id, author} = Tweet.of(btn);
 
             if (btn.textContent !== "") {
-                btn.textContent = "";
+                btnErrorTextElem.textContent = "";
             }
-            btn.classList.remove("ujs-btn-error");
+            btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
 
             let video;
@@ -536,25 +549,20 @@ function hoistFeatures() {
                 video = await API.getVideoInfo(id); // {bitrate, content_type, url}
                 verbose && console.log(video);
             } catch (e) {
-                btn.classList.add("ujs-btn-error");
-                btn.textContent = "Error";
+                btn.classList.add("ujs-error");
+                btnErrorTextElem.textContent = "Error";
                 btn.title = "API.getVideoInfo Error";
                 throw new Error("API.getVideoInfo Error");
             }
 
-            let btnProgress = btn.querySelector(".ujs-btn-download-progress");
-            if (!btnProgress) {
-                btnProgress = document.createElement("div");
-                btnProgress.classList.add("ujs-btn-download-progress");
-                btn.append(btnProgress);
-            }
+            const btnProgress = btn.querySelector(".ujs-progress");
 
             const url = video.url;
-            const onProgress = ({loaded, total}) => btnProgress.style.width = loaded / total * 90 + "%";
+            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
 
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url, onProgress);
 
-            btnProgress.style.width = "100%";
+            btnProgress.style.cssText = "--progress: 100%";
 
             Features.verifyBlob(blob, url, btn);
 
@@ -569,13 +577,13 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloaded");
 
             await sleep(40);
-            btnProgress.style.width = "0%";
+            btnProgress.style.cssText = "--progress: 0%";
         }
 
         static verifyBlob(blob, url, btn) {
             if (!blob.size) {
-                btn.classList.add("ujs-btn-error");
-                btn.textContent = "Error";
+                btn.classList.add("ujs-error");
+                btn.querySelector(".ujs-btn-error-text").textContent = "Error";
                 btn.title = "Download Error";
                 throw new Error("Zero size blob: " + url);
             }
@@ -894,127 +902,110 @@ async function getUserScriptCSS() {
     const scrollbarWidth = window.innerWidth - document.body.offsetWidth;
 
     const css = `
-        :root {
-            --ujs-shadow-1: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
-            --ujs-shadow-2: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
-            --ujs-shadow-3: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
-            --ujs-shadow-4: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
-            --ujs-red:   #e0245e;
-            --ujs-blue:  #1da1f2;
-            --ujs-green: #4caf50;
-            --ujs-gray:  #c2cbd0;
-        }
-        .ujs-hidden {
-            display: none;
-        }
-        .ujs-no-scroll {
-            overflow-y: hidden;
-        }
-        .ujs-scroll-initial {
-            overflow-y: initial!important;
-        }
-        .ujs-scrollbar-width-margin-right {
-            margin-right: ${scrollbarWidth}px;
-        }
+.ujs-hidden {
+    display: none;
+}
+.ujs-no-scroll {
+    overflow-y: hidden;
+}
+.ujs-scroll-initial {
+    overflow-y: initial!important;
+}
+.ujs-scrollbar-width-margin-right {
+    margin-right: ${scrollbarWidth}px;
+}
 
-        .ujs-show-on-hover:hover {
-            opacity: 1;
-            transition: opacity 1s ease-out 0.1s;
-        }
-        .ujs-show-on-hover {
-            opacity: 0;
-            transition: opacity 0.5s ease-out;
-        }
+.ujs-show-on-hover:hover {
+    opacity: 1;
+    transition: opacity 1s ease-out 0.1s;
+}
+.ujs-show-on-hover {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
 
-        .ujs-btn-download {
-            cursor: pointer;
-            top: 0.5em;
-            left: 0.5em;
-            width: 33px;
-            height: 33px;
-            background: var(--ujs-red);
-            opacity: 0;
-            position: absolute;
-            border-radius: 0.3em;
-            background-image: var(--ujs-shadow-1);
-            ${settings.addBorder ? "border: 2px solid white;" : "border: 1px solid var(--ujs-gray);"}
-        }
-        article[role=article]:hover .ujs-btn-download {
-            opacity: 1;
-        }
-        div[aria-label="${labelText}"]:hover .ujs-btn-download {
-            opacity: 1;
-        }
+:root {
+    --ujs-shadow-1: linear-gradient(to top, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
+    --ujs-shadow-2: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0.05));
+    --ujs-shadow-3: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.15));
+    --ujs-shadow-4: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+    --ujs-red:   #e0245e;
+    --ujs-blue:  #1da1f2;
+    --ujs-green: #4caf50;
+    --ujs-gray:  #c2cbd0;
+}
 
-        .ujs-btn-download.ujs-downloaded {
-            background: var(--ujs-green);
-            background-image: var(--ujs-shadow-1);
-            opacity: 1;
-        }
-        .ujs-btn-download.ujs-video {
-            left: calc(0.5em + 33px + 3px);
-        }
-        article[role=article]:hover .ujs-already-downloaded:not(.ujs-downloaded):not(.ujs-btn-error) {
-            background: var(--ujs-blue);
-            background-image: var(--ujs-shadow-1);
-        }
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):not(.ujs-btn-error) {
-            background: var(--ujs-blue);
-            background-image: var(--ujs-shadow-1);
-        }
+.ujs-progress {
+  background-image: linear-gradient(to right, var(--ujs-green) var(--progress), transparent 0%);
+}
 
-        /* -------------------------------------------------------- */
-        /* Shadow the button on hover, active and while downloading */
-        .ujs-btn-download:hover {
-            background-image: var(--ujs-shadow-2);
-        }
-        .ujs-btn-download:active {
-            background-image: var(--ujs-shadow-4);
-        }
-        .ujs-btn-download.ujs-downloading {
-            background-image: var(--ujs-shadow-3);
-            opacity: 1;
-        }
+.ujs-shadow {
+  background-image: var(--ujs-shadow-1);
+}
+.ujs-btn-download:hover .ujs-hover {
+  background-image: var(--ujs-shadow-2);
+}
+.ujs-btn-download.ujs-downloading .ujs-shadow {
+  background-image: var(--ujs-shadow-3);
+}
+.ujs-btn-download:active .ujs-shadow {
+  background-image: var(--ujs-shadow-4);
+}
 
-        article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded):hover {
-            background-image: var(--ujs-shadow-2);
-        }
-        article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded):active {
-            background-image: var(--ujs-shadow-4);
-        }
-        article[role=article]:hover  .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
-            background-image: var(--ujs-shadow-3);
-        }
+article[role=article]:hover .ujs-btn-download {
+    opacity: 1;
+}
+div[aria-label="${labelText}"]:hover .ujs-btn-download {
+    opacity: 1;
+}        
+.ujs-btn-download.ujs-downloaded {
+    opacity: 1;
+}
+.ujs-btn-download.ujs-downloading {
+    opacity: 1;
+}
 
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):hover {
-            background-image: var(--ujs-shadow-2);
-        }
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded):active {
-            background-image: var(--ujs-shadow-4);
-        }
-        div[aria-label="${labelText}"]:hover .ujs-already-downloaded:not(.ujs-downloaded).ujs-downloading {
-            background-image: var(--ujs-shadow-3);
-        }
+.ujs-btn-download {
+  cursor: pointer;
+  top: 0.5em;
+  left: 0.5em;
+  position: absolute;
+  opacity: 0;
+}
+.ujs-btn-common {
+  width: 33px;
+  height: 33px;
+  border-radius: 0.3em;
+  top: 0;
+  position: absolute;
+  border: 1px solid transparent;
+  border-color: var(--ujs-gray);
+  ${settings.addBorder ? "border: 2px solid white;" : "border-color: var(--ujs-gray);"}
+}
+.ujs-not-downloaded .ujs-btn-background {  
+  background: var(--ujs-red);
+}
 
-        /* -------------------------------------------------------- */
+.ujs-already-downloaded .ujs-btn-background {  
+  background: var(--ujs-blue);
+}
 
-        .ujs-btn-error {
-            background: white;
-            background-size: cover;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: black;
-        }
+.ujs-downloaded .ujs-btn-background {  
+  background: var(--ujs-green);
+}
 
-        .ujs-btn-download-progress {
-            height: 100%;
-            width: 0%;
-            background: var(--ujs-green);
-            ${settings.addBorder ? "" : "border-radius: 0.3em;"}
-        }
-        `;
-    return css.replaceAll(" ".repeat(8), "");
+.ujs-error .ujs-btn-background {
+  background: var(--ujs-error);
+}
+
+.ujs-btn-error-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  font-size: 100%;
+}`;
+    return css.slice(1);
 }
 
 /*
