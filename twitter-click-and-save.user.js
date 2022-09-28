@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.9.3-2022.09.28
+// @version     0.10.0-2022.09.28-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -536,7 +536,7 @@ function hoistFeatures() {
 
             const btn = event.currentTarget;
             const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
-            const {id, author} = Tweet.of(btn);
+            let {id, author} = Tweet.of(btn);
 
             if (btn.textContent !== "") {
                 btnErrorTextElem.textContent = "";
@@ -544,9 +544,9 @@ function hoistFeatures() {
             btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
 
-            let video;
+            let video; // {bitrate, content_type, url}
             try {
-                video = await API.getVideoInfo(id); // {bitrate, content_type, url}
+                ({video, tweetId: id, screenName: author} = await API.getVideoInfo(id, author));
                 verbose && console.log(video);
             } catch (e) {
                 btn.classList.add("ujs-error");
@@ -1178,11 +1178,12 @@ function hoistAPI() {
             const headers = new Headers({
                 authorization,
                 "x-csrf-token": API.csrfToken,
+                "x-twitter-client-language": "en",
+                "x-twitter-active-user": "yes"
             });
             if (API.guestToken) {
                 headers.append("x-guest-token", API.guestToken);
             } else { // may be skipped
-                headers.append("x-twitter-active-user", "yes");
                 headers.append("x-twitter-auth-type", "OAuth2Session");
             }
 
@@ -1202,20 +1203,35 @@ function hoistAPI() {
         }
 
         // @return {bitrate, content_type, url}
-        static async getVideoInfo(tweetId) {
+        static async getVideoInfo(tweetId, screenName) {
          // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
             const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
             url.searchParams.set("tweet_mode", "extended");
 
             const json = await API.apiRequest(url);
-            const tweetData = json.globalObjects.tweets[tweetId];
+            let tweetData = json.globalObjects.tweets[tweetId];
+
+            if (tweetData.quoted_status_id_str) {
+                tweetId = tweetData.quoted_status_id_str;
+                const userIdStr = json.globalObjects.tweets[tweetId].user_id_str;
+                screenName = json.globalObjects.users[userIdStr].screen_name;
+                tweetData = json.globalObjects.tweets[tweetId];
+            }
+
             const videoVariants = tweetData.extended_entities.media[0].video_info.variants;
-            verbose && console.log(videoVariants);
+            verbose && console.log("[getVideoInfo]", videoVariants);
+
+            // await API.getVideoInfoWithGraphQL(tweetId);
 
             const video = videoVariants
                 .filter(el => el.bitrate !== undefined) // if content_type: "application/x-mpegURL" // .m3u8
                 .reduce((acc, cur) => cur.bitrate > acc.bitrate ? cur : acc);
-            return video;
+
+            if (!video) {
+                throw new Error("No video URL");
+            }
+
+            return {video, tweetId, screenName};
         }
 
         static async getUserInfo(username) {
