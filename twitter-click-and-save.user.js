@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.9.2-2022.09.28
+// @version     0.9.3-2022.09.28
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -285,7 +285,7 @@ function hoistFeatures() {
 <div class="ujs-btn-common ujs-btn-background"></div>
 <div class="ujs-btn-common ujs-hover"></div>
 <div class="ujs-btn-common ujs-shadow"></div>
-<div class="ujs-btn-common ujs-progress" style="--progress: 0%"></div>  
+<div class="ujs-btn-common ujs-progress" style="--progress: 0%"></div>
 <div class="ujs-btn-common ujs-btn-error-text"></div>`.slice(1);
             btn.classList.add("ujs-btn-download");
             if (!downloaded) {
@@ -933,6 +933,7 @@ async function getUserScriptCSS() {
     --ujs-blue:  #1da1f2;
     --ujs-green: #4caf50;
     --ujs-gray:  #c2cbd0;
+    --ujs-error: white;
 }
 
 .ujs-progress {
@@ -957,7 +958,7 @@ article[role=article]:hover .ujs-btn-download {
 }
 div[aria-label="${labelText}"]:hover .ujs-btn-download {
     opacity: 1;
-}        
+}
 .ujs-btn-download.ujs-downloaded {
     opacity: 1;
 }
@@ -982,15 +983,15 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
   border-color: var(--ujs-gray);
   ${settings.addBorder ? "border: 2px solid white;" : "border-color: var(--ujs-gray);"}
 }
-.ujs-not-downloaded .ujs-btn-background {  
+.ujs-not-downloaded .ujs-btn-background {
   background: var(--ujs-red);
 }
 
-.ujs-already-downloaded .ujs-btn-background {  
+.ujs-already-downloaded .ujs-btn-background {
   background: var(--ujs-blue);
 }
 
-.ujs-downloaded .ujs-btn-background {  
+.ujs-downloaded .ujs-btn-background {
   background: var(--ujs-green);
 }
 
