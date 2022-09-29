@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.10.9-2022.09.29
+// @version     0.10.10-2022.09.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -610,7 +610,8 @@ function hoistFeatures() {
         }
 
         static addRequiredCSS() {
-            getUserScriptCSS().then(code => addCSS(code));
+            const code = getUserScriptCSS();
+            addCSS(code);
         }
 
         // it depends of `directLinks()` use only it after `directLinks()`
@@ -914,7 +915,7 @@ function hoistFeatures() {
 }
 
 // --- Twitter.RequiredCSS --- //
-async function getUserScriptCSS() {
+function getUserScriptCSS() {
     const labelText = I18N.IMAGE || "Image";
 
     // By default, the scroll is showed all time, since <html style="overflow-y: scroll;>,
