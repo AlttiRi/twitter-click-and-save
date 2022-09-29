@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.10.1-2022.09.28-dev
+// @version     0.10.2-2022.09.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -40,7 +40,7 @@ function loadSettings() {
     imagesHandler: true,
     videoHandler: true,
     addRequiredCSS: true,
-    preventBlinking: true,
+    preventBlinking: false,
 
     hideLoginPopup: false,
     addBorder: false,
@@ -96,7 +96,7 @@ function showSettings() {
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
               <label title="Makes the button more visible"><input type="checkbox" ${s.addBorder ? "checked" : ""} name="addBorder">Add a white border to the download button<br/></label>
-              <label title="Hides the modal login pop up. Useful if you have no account. \nWARNING: Currently it will close any popup, not only the login one."><input type="checkbox" ${s.hideLoginPopup ? "checked" : ""} name="hideLoginPopup">Hide <strike>Login</strike> Popups (beta)<br/></label>
+              <label title="Hides the modal login pop up. Useful if you have no account. \nWARNING: Currently it will close any popup, not only the login one.\nIt's reccommended to use only if you do not have an account to hide the annoiyng login popup."><input type="checkbox" ${s.hideLoginPopup ? "checked" : ""} name="hideLoginPopup">Hide <strike>Login</strike> Popups (beta)<br/></label>
           </fieldset>
           <fieldset>
               <legend>Recommended</legend>
@@ -112,15 +112,15 @@ function showSettings() {
               <legend>Main</legend>
               <label><input type="checkbox" ${s.imagesHandler ? "checked" : ""} name="imagesHandler">Image Download Button<br/></label>
               <label><input type="checkbox" ${s.videoHandler ? "checked" : ""} name="videoHandler">Video Download Button<br/></label>
-              <label title="Prevent the tweet backgroubd blinking on the button click"><input type="checkbox" ${s.preventBlinking ? "checked" : ""} name="preventBlinking">Prevent blinking on click<br/></label>
               <label hidden><input type="checkbox" ${s.addRequiredCSS ? "checked" : ""} name="addRequiredCSS">Add Required CSS*<br/></label><!-- * Only for the image download button in /photo/1 mode -->
           </fieldset>
             <fieldset>
-              <legend title="Outdated due to Twitter's updates, impossible to reimplement">Outdated</legend>
+              <legend title="Outdated due to Twitter's updates, or impossible to reimplement">Outdated</legend>
               <strike>
 
-              <label><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
-
+              <label title="It seems Twitter no more shows this section."><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
+              <label title="Prevent the tweet backgroubd blinking on the button/image click. \nOutdated. \nTwitter have removed this disgusting behavior. This option is more no need."><input type="checkbox" ${s.preventBlinking ? "checked" : ""} name="preventBlinking">Prevent blinking on click (outdated)<br/></label>
+              
               <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
               </strike>
           </fieldset>
