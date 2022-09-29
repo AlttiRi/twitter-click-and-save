@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.10.2-2022.09.29
+// @version     0.10.3-2022.09.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -443,15 +443,6 @@ function hoistFeatures() {
                 return Features._downloadBanner(url, btn);
             }
 
-            url = handleImgUrl(url);
-            verbose && console.log(url);
-
-            function handleImgUrl(url) {
-                const urlObj = new URL(url);
-                urlObj.searchParams.set("name", "orig");
-                return urlObj.toString();
-            }
-
             const {id, author} = Tweet.of(btn);
             verbose && console.log(id, author);
 
@@ -463,23 +454,47 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloading");
             const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
 
+
+            const originals = ["orig", "4096x4096"];
+            const samples = ["large", "medium", "small"];
+            let isSample = false;
+
+            url = handleImgUrl(url);
+            verbose && console.log(url);
+
+            function handleImgUrl(url) {
+                const urlObj = new URL(url);
+                if (originals.length) {
+                    urlObj.searchParams.set("name", originals.shift());
+                } else if (samples.length) {
+                    isSample = true;
+                    urlObj.searchParams.set("name", samples.shift());
+                } else {
+                    throw new Error("All fallback URLs are failed to download.");
+                }
+                return urlObj.toString();
+            }
+
             async function safeFetchResource(url) {
-                let fallbackUsed = false;
                 while (true) {
+                    url = handleImgUrl(url);
                     try {
                         return await fetchResource(url, onProgress);
                     } catch (e) {
-                        if (fallbackUsed) {
+                        if (!originals.length) {
                             btn.classList.add("ujs-error");
-                            btnErrorTextElem.textContent = "Error";
-                            btn.title = "Download Error";
-                            throw new Error("Fallback URL failed");
+                            btnErrorTextElem.textContent = "";
+                            // Add ⚠
+                            btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/26a0.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;btn.title = "Original images are not available.";
+                            btn.title = "Original images are not available.";
                         }
-                        const _url = new URL(url);
-                        _url.searchParams.set("name", "4096x4096");
-                        url = _url.href;
-                        verbose && console.warn("[safeFetchResource] Fallback URL:", url);
-                        fallbackUsed = true;
+                        if (!samples.length) {
+                            btnErrorTextElem.textContent = "";
+                            // Add ❌
+                            btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/274c.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;btn.title = "Original images are not available.";
+                            btn.title = "Failed to download the image.";
+                            throw new Error("Fallback URLs are failed.");
+                        }
                     }
                 }
             }
@@ -490,11 +505,12 @@ function hoistFeatures() {
 
             btnProgress.style.cssText = "--progress: 100%";
 
-            const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
+            const sampleText = !isSample ? "" : "[sample]";
+            const filename = `[twitter]${sampleText} ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
             downloadBlob(blob, filename, url);
 
             const downloaded = btn.classList.contains("already-downloaded");
-            if (!downloaded) {
+            if (!downloaded && !isSample) {
                 await Features._ImageHistory.markDownloaded({id, url});
             }
             btn.classList.remove("ujs-downloading");
