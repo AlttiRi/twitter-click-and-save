@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.10.5-2022.09.29
+// @version     0.10.6-2022.09.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -486,14 +486,14 @@ function hoistFeatures() {
                             btnErrorTextElem.textContent = "";
                             // Add ⚠
                             btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/26a0.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;btn.title = "Original images are not available.";
-                            btn.title = "Original images are not available.";
+                            btn.title = "[warning] Original images are not available.";
                         }
                         if (!samples.length) {
                             btnErrorTextElem.textContent = "";
                             // Add ❌
                             btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/274c.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;btn.title = "Original images are not available.";
                             btn.title = "Failed to download the image.";
-                            throw new Error("Fallback URLs are failed.");
+                            throw new Error("[error] Fallback URLs are failed.");
                         }
                     }
                 }
