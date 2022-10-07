@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.10.11-2022.09.29
+// @version     0.11.0-2022.10.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -120,7 +120,7 @@ function showSettings() {
 
               <label title="It seems Twitter no more shows this section."><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
               <label title="Prevent the tweet backgroubd blinking on the button/image click. \nOutdated. \nTwitter have removed this disgusting behavior. This option is more no need."><input type="checkbox" ${s.preventBlinking ? "checked" : ""} name="preventBlinking">Prevent blinking on click (outdated)<br/></label>
-              
+
               <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
               </strike>
           </fieldset>
@@ -196,16 +196,16 @@ if (verbose) {
 }
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
-const fetch = (globalThis.wrappedJSObject && typeof globalThis.wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
-    verbose && console.log("wrappedJSObject.fetch", resource, init);
+const fetch = (typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
 
     if (init.headers instanceof Headers) {
         // Since `Headers` are not allowed for structured cloning.
         init.headers = Object.fromEntries(init.headers.entries());
     }
 
-    return globalThis.wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
+    return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
 } : globalThis.fetch;
+
 
 // --- "Imports" --- //
 const {
