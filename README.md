@@ -210,3 +210,8 @@ If `someone`'s has a lot of posts (more than 1000) use a search result downloadi
 ### Recommendations
 - Use [uBlock Origin](https://github.com/gorhill/uBlock) web extension for an advertisement blocking.
 - For bulk download use [gallery-dl](https://github.com/mikf/gallery-dl) console program as mentioned [above](#gallery-dl-config).
+
+### If the script does not work
+
+The userscript may does not work if you have set `"Enhanced Tracking Protection"` to `"Strict"` in Firefox (`"Tracking content"` option) in `about:preferences#privacy`.
+
