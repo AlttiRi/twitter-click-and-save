@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.11.3-2022.10.07
+// @version     0.11.4-2022.10.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -116,7 +116,7 @@ function showSettings() {
           <fieldset ${isFirefox ? '': 'style="display: none"'}>
               <legend>Firefox only</legend>
               <label title='${downloadProgressFFTitle}'><input type="radio" ${s.downloadProgress ? "checked" : ""} name="firefoxDownloadProgress" value="downloadProgress">Download Progress<br/></label>
-              <label title=''><input type="radio" ${s.strictTrackingProtectionFix ? "checked" : ""} name="firefoxDownloadProgress" value="strictTrackingProtectionFix">Strict Tracking Protection Fix<br/></label>
+              <label title="Choose this if you use ViolentMonkey. It's not required in case you use TamperMonkey."><input type="radio" ${s.strictTrackingProtectionFix ? "checked" : ""} name="firefoxDownloadProgress" value="strictTrackingProtectionFix">Strict Tracking Protection Fix<br/></label>
           </fieldset>
           <fieldset>
               <legend>Main</legend>
