@@ -197,7 +197,8 @@ if (verbose) {
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
 const fetch = (typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
-
+    verbose && console.log("wrappedJSObject.fetch", resource, init);
+    
     if (init.headers instanceof Headers) {
         // Since `Headers` are not allowed for structured cloning.
         init.headers = Object.fromEntries(init.headers.entries());
