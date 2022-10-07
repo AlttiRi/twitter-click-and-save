@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.11.2-2022.10.07
+// @version     0.11.3-2022.10.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -18,7 +18,6 @@ if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || type
 
 // --- For debug --- //
 const verbose = false;
-
 
 const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
 const settings = loadSettings();
@@ -46,7 +45,9 @@ function loadSettings() {
 
     hideLoginPopup: false,
     addBorder: false,
+
     downloadProgress: true,
+    strictTrackingProtectionFix: false,
   };
 
   let savedSettings;
@@ -88,7 +89,7 @@ function showSettings() {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   `;
   const s = settings;
-  const downloadProgressFF = isFirefox ? ' <i>(Disable if you use Firefox with "Enhanced Tracking Protection" set to "Strict")</i>' : "";
+  const downloadProgressFFTitle = isFirefox ? '(Disable the download progress if you use Firefox with "Enhanced Tracking Protection" set to "Strict")' : "";
   document.body.insertAdjacentHTML("afterbegin", `
   <div class="ujs-modal-wrapper" style="${modalWrapperStyle}">
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
@@ -111,7 +112,11 @@ function showSettings() {
               <legend>Highly Recommended</legend>
               <label><input type="checkbox" ${s.directLinks ? "checked" : ""} name="directLinks">Direct Links</label><br/>
               <label><input type="checkbox" ${s.handleTitle ? "checked" : ""} name="handleTitle">Enchance Title*<br/></label>
-              <label title='Disable if you use Firefox with "Enhanced Tracking Protection" set to "Strict"'><input type="checkbox" ${s.downloadProgress ? "checked" : ""} name="downloadProgress">Download Progress${downloadProgressFF}<br/></label>
+          </fieldset>
+          <fieldset ${isFirefox ? '': 'style="display: none"'}>
+              <legend>Firefox only</legend>
+              <label title='${downloadProgressFFTitle}'><input type="radio" ${s.downloadProgress ? "checked" : ""} name="firefoxDownloadProgress" value="downloadProgress">Download Progress<br/></label>
+              <label title=''><input type="radio" ${s.strictTrackingProtectionFix ? "checked" : ""} name="firefoxDownloadProgress" value="strictTrackingProtectionFix">Strict Tracking Protection Fix<br/></label>
           </fieldset>
           <fieldset>
               <legend>Main</legend>
@@ -137,7 +142,7 @@ function showSettings() {
           <hr>
           <h4 style="margin: 0; padding-left: 8px; color: #444;">Notes:</h4>
           <ul style="margin: 2px; padding-left: 16px; color: #444;">
-            <li>Click on <b>Save Settings</b> and reload the page to apply changes.</li>
+            <li>Click on <b>Save Settings</b> and <b>reload the page</b> to apply changes.</li>
             <li><b>*</b>-marked settings are language dependent. Currently, the follow languages are supported:<br/> "en", "ru", "es", "zh", "ja".</li>
             <li hidden>The extension downloads only from twitter.com, not from <b>mobile</b>.twitter.com</li>
           </ul>
@@ -150,7 +155,9 @@ function showSettings() {
   function saveSetting() {
     const entries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=checkbox]")]
         .map(checkbox => [checkbox.name, checkbox.checked]);
-    const settings = Object.fromEntries(entries);
+    const radioEntries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=radio]")]
+        .map(checkbox => [checkbox.value, checkbox.checked])
+    const settings = Object.fromEntries([entries, radioEntries].flat());
     settings.hideTopicsToFollowInstantly = settings.hideTopicsToFollow;
     // console.log("[ujs]", settings);
     localStorage.setItem("ujs-click-n-save-settings", JSON.stringify(settings));
@@ -201,7 +208,7 @@ if (verbose) {
 }
 
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
-const fetch = (typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
+const fetch = (settings.strictTrackingProtectionFix && typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
     verbose && console.log("wrappedJSObject.fetch", resource, init);
 
     if (init.headers instanceof Headers) {
@@ -211,7 +218,6 @@ const fetch = (typeof wrappedJSObject === "object" && typeof wrappedJSObject.fet
 
     return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
 } : globalThis.fetch;
-
 
 // --- "Imports" --- //
 const {
@@ -413,7 +419,6 @@ function hoistFeatures() {
 
                 img.dataset.handled = "true";
 
-
                 const btn = Features.createButton({url: img.src});
                 btn.addEventListener("click", Features._imageClickHandler);
 
@@ -464,7 +469,6 @@ function hoistFeatures() {
                 onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
             }
 
-
             const originals = ["orig", "4096x4096"];
             const samples = ["large", "medium", "900x900", "small", "360x360", /*"240x240", "120x120", "tiny"*/];
             let isSample = false;
@@ -472,7 +476,6 @@ function hoistFeatures() {
             if (!samples.includes(previewSize)) {
                 samples.push(previewSize);
             }
-
 
             function handleImgUrl(url) {
                 const urlObj = new URL(url);
