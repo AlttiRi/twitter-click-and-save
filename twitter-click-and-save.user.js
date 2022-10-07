@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.11.5-2022.10.07
+// @version     0.11.6-2022.10.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -89,7 +89,8 @@ function showSettings() {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   `;
   const s = settings;
-  const downloadProgressFFTitle = isFirefox ? '(Disable the download progress if you use Firefox with "Enhanced Tracking Protection" set to "Strict")' : "";
+  const downloadProgressFFTitle = `Disable the download progress if you use Firefox with "Enhanced Tracking Protection" set to "Strict" and ViolentMonkey, or GreaseMonkey extension`;
+  const strictTrackingProtectionFixFFTitle = `Choose this if you use ViolentMonkey, or GreaseMonkey in Firefox with "Enhanced Tracking Protection" set to "Strict". It is not required in case you use TamperMonkey.`;
   document.body.insertAdjacentHTML("afterbegin", `
   <div class="ujs-modal-wrapper" style="${modalWrapperStyle}">
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
@@ -116,7 +117,7 @@ function showSettings() {
           <fieldset ${isFirefox ? '': 'style="display: none"'}>
               <legend>Firefox only</legend>
               <label title='${downloadProgressFFTitle}'><input type="radio" ${s.downloadProgress ? "checked" : ""} name="firefoxDownloadProgress" value="downloadProgress">Download Progress<br/></label>
-              <label title="Choose this if you use ViolentMonkey, or GreaseMonkey. It's not required in case you use TamperMonkey."><input type="radio" ${s.strictTrackingProtectionFix ? "checked" : ""} name="firefoxDownloadProgress" value="strictTrackingProtectionFix">Strict Tracking Protection Fix<br/></label>
+              <label title='${strictTrackingProtectionFixFFTitle}'><input type="radio" ${s.strictTrackingProtectionFix ? "checked" : ""} name="firefoxDownloadProgress" value="strictTrackingProtectionFix">Strict Tracking Protection Fix<br/></label>
           </fieldset>
           <fieldset>
               <legend>Main</legend>
