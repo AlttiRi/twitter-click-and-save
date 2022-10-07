@@ -213,5 +213,5 @@ If `someone`'s has a lot of posts (more than 1000) use a search result downloadi
 
 ### If the script does not work
 
-The userscript may does not work if you have set `"Enhanced Tracking Protection"` to `"Strict"` in Firefox (`"Tracking content"` option) in `about:preferences#privacy`.
+The userscript may do not work if you have set `"Enhanced Tracking Protection"` to `"Strict"` in Firefox (`"Tracking content"` option of the "Custom" preset) in `about:preferences#privacy`.
 
