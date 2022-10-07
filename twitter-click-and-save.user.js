@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.11.1-2022.10.07
+// @version     0.11.2-2022.10.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -19,6 +19,8 @@ if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || type
 // --- For debug --- //
 const verbose = false;
 
+
+const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
 const settings = loadSettings();
 
 function loadSettings() {
@@ -44,6 +46,7 @@ function loadSettings() {
 
     hideLoginPopup: false,
     addBorder: false,
+    downloadProgress: true,
   };
 
   let savedSettings;
@@ -85,6 +88,7 @@ function showSettings() {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   `;
   const s = settings;
+  const downloadProgressFF = isFirefox ? ' <i>(Disable if you use Firefox with "Enhanced Tracking Protection" set to "Strict")</i>' : "";
   document.body.insertAdjacentHTML("afterbegin", `
   <div class="ujs-modal-wrapper" style="${modalWrapperStyle}">
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
@@ -107,6 +111,7 @@ function showSettings() {
               <legend>Highly Recommended</legend>
               <label><input type="checkbox" ${s.directLinks ? "checked" : ""} name="directLinks">Direct Links</label><br/>
               <label><input type="checkbox" ${s.handleTitle ? "checked" : ""} name="handleTitle">Enchance Title*<br/></label>
+              <label title='Disable if you use Firefox with "Enhanced Tracking Protection" set to "Strict"'><input type="checkbox" ${s.downloadProgress ? "checked" : ""} name="downloadProgress">Download Progress${downloadProgressFF}<br/></label>
           </fieldset>
           <fieldset>
               <legend>Main</legend>
@@ -198,7 +203,7 @@ if (verbose) {
 // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
 const fetch = (typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
     verbose && console.log("wrappedJSObject.fetch", resource, init);
-    
+
     if (init.headers instanceof Headers) {
         // Since `Headers` are not allowed for structured cloning.
         init.headers = Object.fromEntries(init.headers.entries());
@@ -453,7 +458,11 @@ function hoistFeatures() {
             }
             btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
-            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
+
+            let onProgress = null;
+            if (settings.downloadProgress) {
+                onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
+            }
 
 
             const originals = ["orig", "4096x4096"];
@@ -579,7 +588,10 @@ function hoistFeatures() {
             const btnProgress = btn.querySelector(".ujs-progress");
 
             const url = video.url;
-            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
+            let onProgress = null;
+            if (settings.downloadProgress) {
+                onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
+            }
 
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url, onProgress);
 
@@ -1377,7 +1389,9 @@ function getUtils({verbose}) {
             const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
             const extension = contentType ? extensionFromMime(contentType) : null;
 
-            response = responseProgressProxy(response, onProgress)
+            if (onProgress) {
+                response = responseProgressProxy(response, onProgress);
+            }
 
             const blob = await response.blob();
 
