@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.12.1-2022.10.14
+// @version     0.13.0-2022.10.14
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -551,7 +551,9 @@ function hoistFeatures() {
                 verbose && console.log(vid);
                 vid.dataset.handled = "true";
 
-                const btn = Features.createButton({isVideo: true});
+                const poster = vid.getAttribute("poster");
+
+                const btn = Features.createButton({isVideo: true, url: poster});
                 btn.addEventListener("click", Features._videoClickHandler);
 
                 let elem = vid.parentNode.parentNode.parentNode;
@@ -581,9 +583,11 @@ function hoistFeatures() {
             btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
 
+            const posterUrl = btn.dataset.url;
+
             let video; // {bitrate, content_type, url}
             try {
-                ({video, tweetId: id, screenName: author} = await API.getVideoInfo(id, author));
+                ({video, tweetId: id, screenName: author} = await API.getVideoInfo(id, author, posterUrl));
                 verbose && console.log(video);
             } catch (e) {
                 btn.classList.add("ujs-error");
@@ -1252,7 +1256,7 @@ function hoistAPI() {
         }
 
         // @return {bitrate, content_type, url}
-        static async getVideoInfo(tweetId, screenName) {
+        static async getVideoInfo(tweetId, screenName, posterUrl) {
             // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
             const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
             url.searchParams.set("tweet_mode", "extended");
@@ -1267,7 +1271,8 @@ function hoistAPI() {
                 tweetData = json.globalObjects.tweets[tweetId];
             }
 
-            const videoVariants = tweetData.extended_entities.media[0].video_info.variants;
+            const vidNumber = tweetData.extended_entities.media.findIndex(e => e.media_url_https === posterUrl) || 0;
+            const videoVariants = tweetData.extended_entities.media[vidNumber].video_info.variants;
             verbose && console.log("[getVideoInfo]", videoVariants);
 
             const video = videoVariants
@@ -1278,7 +1283,7 @@ function hoistAPI() {
                 throw new Error("No video URL");
             }
 
-            return {video, tweetId, screenName};
+            return {video, tweetId, screenName, vidNumber};
         }
 
         static async getUserInfo(username) {
