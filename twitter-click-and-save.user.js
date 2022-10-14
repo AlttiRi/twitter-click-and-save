@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.11.6-2022.10.07
+// @version     0.12.0-2022.10.14
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -23,53 +23,54 @@ const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
 const settings = loadSettings();
 
 function loadSettings() {
-  const defaultSettings = {
-    hideTrends: true,
-    hideSignUpSection: true,
-    hideTopicsToFollow: false,
-    hideTopicsToFollowInstantly: false,
-    hideSignUpBottomBarAndMessages: true,
-    doNotPlayVideosAutomatically: false,
-    goFromMobileToMainSite: false,
+    const defaultSettings = {
+        hideTrends: true,
+        hideSignUpSection: true,
+        hideTopicsToFollow: false,
+        hideTopicsToFollowInstantly: false,
+        hideSignUpBottomBarAndMessages: true,
+        doNotPlayVideosAutomatically: false,
+        goFromMobileToMainSite: false,
 
-    highlightVisitedLinks: true,
-    expandSpoilers: true,
+        highlightVisitedLinks: true,
+        highlightOnlySpecialVisitedLinks: true,
+        expandSpoilers: true,
 
-    directLinks: true,
-    handleTitle: true,
+        directLinks: true,
+        handleTitle: true,
 
-    imagesHandler: true,
-    videoHandler: true,
-    addRequiredCSS: true,
-    preventBlinking: false,
+        imagesHandler: true,
+        videoHandler: true,
+        addRequiredCSS: true,
+        preventBlinking: false,
 
-    hideLoginPopup: false,
-    addBorder: false,
+        hideLoginPopup: false,
+        addBorder: false,
 
-    downloadProgress: true,
-    strictTrackingProtectionFix: false,
-  };
+        downloadProgress: true,
+        strictTrackingProtectionFix: false,
+    };
 
-  let savedSettings;
-  try {
-    savedSettings = JSON.parse(localStorage.getItem("ujs-click-n-save-settings")) || {};
-  } catch (e) {
-    console.error("[ujs]", e);
-    localStorage.removeItem("ujs-click-n-save-settings");
-    savedSettings = {};
-  }
-  savedSettings = Object.assign(defaultSettings, savedSettings);
-  return savedSettings;
+    let savedSettings;
+    try {
+        savedSettings = JSON.parse(localStorage.getItem("ujs-click-n-save-settings")) || {};
+    } catch (e) {
+        console.error("[ujs]", e);
+        localStorage.removeItem("ujs-click-n-save-settings");
+        savedSettings = {};
+    }
+    savedSettings = Object.assign(defaultSettings, savedSettings);
+    return savedSettings;
 }
 function showSettings() {
-  closeSetting();
-  if (window.scrollY > 0) {
-      document.querySelector("html").classList.add("ujs-scroll-initial");
-      document.body.classList.add("ujs-scrollbar-width-margin-right");
-  }
-  document.body.classList.add("ujs-no-scroll");
+    closeSetting();
+    if (window.scrollY > 0) {
+        document.querySelector("html").classList.add("ujs-scroll-initial");
+        document.body.classList.add("ujs-scrollbar-width-margin-right");
+    }
+    document.body.classList.add("ujs-no-scroll");
 
-  const modalWrapperStyle = `
+    const modalWrapperStyle = `
     width: 100%;
     height: 100%;
     position: fixed;
@@ -80,7 +81,7 @@ function showSettings() {
     backdrop-filter: blur(4px);
     background-color: rgba(255, 255, 255, 0.5);
   `;
-  const modalSettingsStyle = `
+    const modalSettingsStyle = `
     background-color: white;
     min-width: 320px;
     min-height: 320px;
@@ -88,10 +89,10 @@ function showSettings() {
     padding: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   `;
-  const s = settings;
-  const downloadProgressFFTitle = `Disable the download progress if you use Firefox with "Enhanced Tracking Protection" set to "Strict" and ViolentMonkey, or GreaseMonkey extension`;
-  const strictTrackingProtectionFixFFTitle = `Choose this if you use ViolentMonkey, or GreaseMonkey in Firefox with "Enhanced Tracking Protection" set to "Strict". It is not required in case you use TamperMonkey.`;
-  document.body.insertAdjacentHTML("afterbegin", `
+    const s = settings;
+    const downloadProgressFFTitle = `Disable the download progress if you use Firefox with "Enhanced Tracking Protection" set to "Strict" and ViolentMonkey, or GreaseMonkey extension`;
+    const strictTrackingProtectionFixFFTitle = `Choose this if you use ViolentMonkey, or GreaseMonkey in Firefox with "Enhanced Tracking Protection" set to "Strict". It is not required in case you use TamperMonkey.`;
+    document.body.insertAdjacentHTML("afterbegin", `
   <div class="ujs-modal-wrapper" style="${modalWrapperStyle}">
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
           <fieldset>
@@ -107,6 +108,8 @@ function showSettings() {
           <fieldset>
               <legend>Recommended</legend>
               <label><input type="checkbox" ${s.highlightVisitedLinks ? "checked" : ""} name="highlightVisitedLinks">Highlight Visited Links<br/></label>
+              <label title="In most cases absoulute links are 3rd-party links"><input type="checkbox" ${s.highlightOnlySpecialVisitedLinks ? "checked" : ""} name="highlightOnlySpecialVisitedLinks">Highlight Only Absolute Visited Links<br/></label>
+  
               <label title="Note: since the recent update the most NSFW spoilers are impossible to expand without an account"><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers (if possible)*<br/></label>
           </fieldset>
           <fieldset>
@@ -125,7 +128,7 @@ function showSettings() {
               <label><input type="checkbox" ${s.videoHandler ? "checked" : ""} name="videoHandler">Video Download Button<br/></label>
               <label hidden><input type="checkbox" ${s.addRequiredCSS ? "checked" : ""} name="addRequiredCSS">Add Required CSS*<br/></label><!-- * Only for the image download button in /photo/1 mode -->
           </fieldset>
-            <fieldset>
+          <fieldset>
               <legend title="Outdated due to Twitter's updates, or impossible to reimplement">Outdated</legend>
               <strike>
 
@@ -150,26 +153,26 @@ function showSettings() {
       </div>
   </div>`);
 
-  document.querySelector("body > .ujs-modal-wrapper .ujs-save-setting-button").addEventListener("click", saveSetting);
-  document.querySelector("body > .ujs-modal-wrapper .ujs-close-setting-button").addEventListener("click", closeSetting);
+    document.querySelector("body > .ujs-modal-wrapper .ujs-save-setting-button").addEventListener("click", saveSetting);
+    document.querySelector("body > .ujs-modal-wrapper .ujs-close-setting-button").addEventListener("click", closeSetting);
 
-  function saveSetting() {
-    const entries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=checkbox]")]
-        .map(checkbox => [checkbox.name, checkbox.checked]);
-    const radioEntries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=radio]")]
-        .map(checkbox => [checkbox.value, checkbox.checked])
-    const settings = Object.fromEntries([entries, radioEntries].flat());
-    settings.hideTopicsToFollowInstantly = settings.hideTopicsToFollow;
-    // console.log("[ujs]", settings);
-    localStorage.setItem("ujs-click-n-save-settings", JSON.stringify(settings));
-  }
+    function saveSetting() {
+        const entries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=checkbox]")]
+            .map(checkbox => [checkbox.name, checkbox.checked]);
+        const radioEntries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=radio]")]
+            .map(checkbox => [checkbox.value, checkbox.checked])
+        const settings = Object.fromEntries([entries, radioEntries].flat());
+        settings.hideTopicsToFollowInstantly = settings.hideTopicsToFollow;
+        // console.log("[ujs]", settings);
+        localStorage.setItem("ujs-click-n-save-settings", JSON.stringify(settings));
+    }
 
-  function closeSetting() {
-    document.body.classList.remove("ujs-no-scroll");
-    document.body.classList.remove("ujs-scrollbar-width-margin-right");
-    document.querySelector("html").classList.remove("ujs-scroll-initial");
-    document.querySelector("body > .ujs-modal-wrapper")?.remove();
-  }
+    function closeSetting() {
+        document.body.classList.remove("ujs-no-scroll");
+        document.body.classList.remove("ujs-scrollbar-width-margin-right");
+        document.querySelector("html").classList.remove("ujs-scroll-initial");
+        document.querySelector("body > .ujs-modal-wrapper")?.remove();
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -776,7 +779,7 @@ function hoistFeatures() {
                 if (buttonShow) {
                     // const verifying = a.previousSibling.textContent.includes("Nudity"); // todo?
                     // if (verifying) {
-                        buttonShow.click();
+                    buttonShow.click();
                     // }
                 }
             }
@@ -836,6 +839,14 @@ function hoistFeatures() {
         }
 
         static highlightVisitedLinks() {
+            if (settings.highlightOnlySpecialVisitedLinks) {
+                addCSS(`
+                    a[href^="http"]:visited {
+                        color: darkorange;
+                    }
+                `);
+                return;
+            }
             addCSS(`
                 a:visited {
                     color: darkorange;
@@ -1242,7 +1253,7 @@ function hoistAPI() {
 
         // @return {bitrate, content_type, url}
         static async getVideoInfo(tweetId, screenName) {
-         // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
+            // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
             const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
             url.searchParams.set("tweet_mode", "extended");
 
