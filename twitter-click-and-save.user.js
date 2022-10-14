@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.13.2-2022.10.14
+// @version     0.13.3-2022.10.14
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -541,6 +541,7 @@ function hoistFeatures() {
             btnProgress.style.cssText = "--progress: 0%";
         }
 
+        static tweetVidWeakMap = new WeakMap();
         static async videoHandler(preventBlinking) {
             const videos = document.querySelectorAll("video");
 
@@ -562,8 +563,22 @@ function hoistFeatures() {
                     Features._preventBlinking(btn);
                 }
 
-                const id = Tweet.of(btn).id;
-                const downloaded = downloadedVideoTweetIds.hasItem(id);
+                const tweet = Tweet.of(btn);
+                const id = tweet.id;
+                const tweetElem = tweet.elem;
+                let vidNumber = 0;
+
+                const map = Features.tweetVidWeakMap;
+                if (map.has(tweetElem)) {
+                    vidNumber = map.get(tweetElem) + 1;
+                    map.set(tweetElem, vidNumber);
+                } else {
+                    map.set(tweetElem, vidNumber);
+                }
+
+                const historyId = vidNumber ? id + "-" + vidNumber : id;
+
+                const downloaded = downloadedVideoTweetIds.hasItem(historyId);
                 if (downloaded) {
                     btn.classList.add("ujs-already-downloaded");
                 }
@@ -586,8 +601,9 @@ function hoistFeatures() {
             const posterUrl = btn.dataset.url;
 
             let video; // {bitrate, content_type, url}
+            let vidNumber = 0;
             try {
-                ({video, tweetId: id, screenName: author} = await API.getVideoInfo(id, author, posterUrl));
+                ({video, tweetId: id, screenName: author, vidNumber} = await API.getVideoInfo(id, author, posterUrl));
                 verbose && console.log(video);
             } catch (e) {
                 btn.classList.add("ujs-error");
@@ -614,8 +630,9 @@ function hoistFeatures() {
             downloadBlob(blob, filename, url);
 
             const downloaded = btn.classList.contains("ujs-already-downloaded");
+            const historyId = vidNumber ? id + "-" + vidNumber : id;
             if (!downloaded) {
-                await downloadedVideoTweetIds.pushItem(id);
+                await downloadedVideoTweetIds.pushItem(historyId);
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
@@ -1142,7 +1159,6 @@ function hoistTweet() {
             const url = innerElem.closest(`a[href^="/"]`)?.href;
             if (url && url.includes("/status/")) {
                 return new Tweet({url});
-
             }
 
             const elem = innerElem.closest(`[data-testid="tweet"]`);
@@ -1255,7 +1271,7 @@ function hoistAPI() {
             return json;
         }
 
-        // @return {bitrate, content_type, url}
+        // @return {bitrate, content_type, url, vidNumber}
         static async getVideoInfo(tweetId, screenName, posterUrl) {
             // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
             const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
