@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.13.3-2022.10.14
+// @version     0.13.4-2022.10.14
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1287,12 +1287,21 @@ function hoistAPI() {
                 tweetData = json.globalObjects.tweets[tweetId];
             }
 
-            let vidNumber = tweetData.extended_entities.media.findIndex(e => e.media_url_https === posterUrl);
-            if (vidNumber === -1) {
-                verbose && console.log("[ujs][warning]: vidNumber === -1");
+            // types: "photo", "video", "animated_gif"
+            
+            let vidNumber = tweetData.extended_entities.media
+                .filter(e => e.type !== "photo")
+                .findIndex(e => e.media_url_https === posterUrl);
+
+            let mediaIndex = tweetData.extended_entities.media
+                .findIndex(e => e.media_url_https === posterUrl);
+
+            if (vidNumber === -1 || mediaIndex === -1) {
+                verbose && console.log("[ujs][warning]: vidNumber === -1 || mediaIndex === -1");
                 vidNumber = 0;
+                mediaIndex = 0;
             }
-            const videoVariants = tweetData.extended_entities.media[vidNumber].video_info.variants;
+            const videoVariants = tweetData.extended_entities.media[mediaIndex].video_info.variants;
             verbose && console.log("[getVideoInfo]", videoVariants);
 
             const video = videoVariants
