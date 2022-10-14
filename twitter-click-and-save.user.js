@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.13.1-2022.10.14
+// @version     0.13.2-2022.10.14
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -645,7 +645,7 @@ function hoistFeatures() {
                 return;
             }
 
-            // if not a opened tweet
+            // if not an opened tweet
             if (!location.href.match(/twitter\.com\/[^\/]+\/status\/\d+/)) {
                 return;
             }
@@ -777,7 +777,7 @@ function hoistFeatures() {
                 }
 
                 // "Content warning: Nudity"
-                // "The Tweet author flagged this Tweet as showing sensitive content.""
+                // "The Tweet author flagged this Tweet as showing sensitive content."
                 // "Show"
                 const buttonShow = elems.find(el => el.textContent === I18N.SHOW_NUDITY);
                 if (buttonShow) {
