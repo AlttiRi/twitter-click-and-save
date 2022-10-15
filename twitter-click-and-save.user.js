@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.13.4-2022.10.14
+// @version     0.13.5-2022.10.15
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -109,7 +109,7 @@ function showSettings() {
               <legend>Recommended</legend>
               <label><input type="checkbox" ${s.highlightVisitedLinks ? "checked" : ""} name="highlightVisitedLinks">Highlight Visited Links<br/></label>
               <label title="In most cases absolute links are 3rd-party links"><input type="checkbox" ${s.highlightOnlySpecialVisitedLinks ? "checked" : ""} name="highlightOnlySpecialVisitedLinks">Highlight Only Absolute Visited Links<br/></label>
-  
+
               <label title="Note: since the recent update the most NSFW spoilers are impossible to expand without an account"><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers (if possible)*<br/></label>
           </fieldset>
           <fieldset>
@@ -725,6 +725,16 @@ function hoistFeatures() {
             for (const anchor of anchors) {
                 const redirectUrl = new URL(anchor.href);
                 const shortUrl = redirectUrl.origin + redirectUrl.pathname; // remove "?amp=1"
+
+                const hrefAttr = anchor.getAttribute("href");
+                if (hrefAttr.startsWith("/")) {
+                    anchor.dataset.handled = "true";
+                    return;
+                }
+
+                verbose && console.log("[ujs][directLinks]", hrefAttr, redirectUrl.href, shortUrl);
+
+
                 anchor.dataset.redirect = shortUrl;
                 anchor.dataset.handled = "true";
                 anchor.rel = "nofollow noopener noreferrer";
@@ -1288,7 +1298,7 @@ function hoistAPI() {
             }
 
             // types: "photo", "video", "animated_gif"
-            
+
             let vidNumber = tweetData.extended_entities.media
                 .filter(e => e.type !== "photo")
                 .findIndex(e => e.media_url_https === posterUrl);
