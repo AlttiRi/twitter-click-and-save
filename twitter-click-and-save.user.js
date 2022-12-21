@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.13.7-2022.10.30
+// @version     0.13.8-2022.12.21
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -211,17 +211,22 @@ if (verbose) {
     // showSettings();
 }
 
-// --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
-const fetch = (settings.strictTrackingProtectionFix && typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function") ? function(resource, init = {}) {
-    verbose && console.log("wrappedJSObject.fetch", resource, init);
+const fetch = ujs_getGlobalFetch({verbose, strictTrackingProtectionFix: settings.strictTrackingProtectionFix});
 
-    if (init.headers instanceof Headers) {
-        // Since `Headers` are not allowed for structured cloning.
-        init.headers = Object.fromEntries(init.headers.entries());
+function ujs_getGlobalFetch({verbose, strictTrackingProtectionFix} = {}) {
+    const useFirefoxStrictTrackingProtectionFix = strictTrackingProtectionFix === undefined ? true : strictTrackingProtectionFix; // Let's use by default
+    const useFirefoxFix = useFirefoxStrictTrackingProtectionFix && typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function";
+    // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
+    function fixedFirefoxFetch(resource, init = {}) {
+        verbose && console.log("wrappedJSObject.fetch", resource, init);
+        if (init.headers instanceof Headers) {
+            // Since `Headers` are not allowed for structured cloning.
+            init.headers = Object.fromEntries(init.headers.entries());
+        }
+        return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
     }
-
-    return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
-} : globalThis.fetch;
+    return useFirefoxFix ? fixedFirefoxFetch : globalThis.fetch;
+}
 
 // --- "Imports" --- //
 const {
