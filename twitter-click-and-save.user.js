@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.13.9-2023.0.19
+// @version     0.13.10-2023.0.19
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -514,12 +514,15 @@ function hoistFeatures() {
                             btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/26a0.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;
                             btn.title = "[warning] Original images are not available.";
                         }
-                        if (!samples.length) {
+
+                        const ffAutoAllocateChunkSizeBug = e.message.includes("autoAllocateChunkSize"); // https://bugzilla.mozilla.org/show_bug.cgi?id=1757836
+                        if (!samples.length || ffAutoAllocateChunkSizeBug) {
+                            btn.classList.add("ujs-error");
                             btnErrorTextElem.textContent = "";
                             // Add ❌
                             btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/274c.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;
 
-                            const ffHint = isFirefox && !settings.strictTrackingProtectionFix ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
+                            const ffHint = isFirefox && !settings.strictTrackingProtectionFix && ffAutoAllocateChunkSizeBug ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
                             btn.title = "Failed to download the image." + ffHint;
                             throw new Error("[error] Fallback URLs are failed.");
                         }
