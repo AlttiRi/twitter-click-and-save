@@ -220,6 +220,7 @@ If `someone`'s has a lot of posts (more than 1000) use a search result downloadi
 ### Recommendations
 - Use [uBlock Origin](https://github.com/gorhill/uBlock) web extension for an advertisement blocking.
 - For bulk download use [gallery-dl](https://github.com/mikf/gallery-dl) console program as mentioned [above](#gallery-dl-config).
+- In Firefox I recommend to disable `browser.download.alwaysOpenPanel` in `about:config` in order to the download popup does not open each download.
 
 ### If the script does not work
 
