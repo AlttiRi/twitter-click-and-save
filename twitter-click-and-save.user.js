@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.0.3-2023.07.03
+// @version     1.0.4-2023.07.03-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -42,7 +42,6 @@ function loadSettings() {
         imagesHandler: true,
         videoHandler: true,
         addRequiredCSS: true,
-        preventBlinking: false,
 
         hideLoginPopup: false,
         addBorder: false,
@@ -132,7 +131,6 @@ function showSettings() {
               <strike>
 
               <label title="It seems Twitter no more shows this section."><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
-              <label title="Prevent the tweet backgroubd blinking on the button/image click. \nOutdated. \nTwitter have removed this disgusting behavior. This option is more no need."><input type="checkbox" ${s.preventBlinking ? "checked" : ""} name="preventBlinking">Prevent blinking on click (outdated)<br/></label>
               <label title="Hides the modal login pop up. Useful if you have no account. \nWARNING: Currently it will close any popup, not only the login one.\nIt's reccommended to use only if you do not have an account to hide the annoiyng login popup."><input type="checkbox" ${s.hideLoginPopup ? "checked" : ""} name="hideLoginPopup">Hide <strike>Login</strike> Popups (beta)<br/></label>
 
               <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
@@ -194,8 +192,8 @@ function execFeaturesImmediately() {
     settings.expandSpoilers     && Features.expandSpoilers();
 }
 function execFeatures() {
-    settings.imagesHandler      && Features.imagesHandler(settings.preventBlinking);
-    settings.videoHandler       && Features.videoHandler(settings.preventBlinking);
+    settings.imagesHandler      && Features.imagesHandler();
+    settings.videoHandler       && Features.videoHandler();
     settings.expandSpoilers     && Features.expandSpoilers();
     settings.hideSignUpSection  && Features.hideSignUpSection();
     settings.hideTopicsToFollow && Features.hideTopicsToFollow();
@@ -323,53 +321,6 @@ function hoistFeatures() {
             return btn;
         }
 
-        static hasBlinkListenerWeakSet;
-        static _preventBlinking(clickBtnElem) {
-            const weakSet = Features.hasBlinkListenerWeakSet || (Features.hasBlinkListenerWeakSet = new WeakSet());
-            let wrapper;
-            clickBtnElem.addEventListener("mouseenter", () => {
-                if (!weakSet.has(clickBtnElem)) {
-                    wrapper = Features._preventBlinkingHandler(clickBtnElem);
-                    weakSet.add(clickBtnElem);
-                }
-            });
-            clickBtnElem.addEventListener("mouseleave", () => {
-                verbose && console.log("[ujs] Btn mouseleave");
-                if (wrapper?.observer?.disconnect) {
-                    weakSet.delete(clickBtnElem);
-                    wrapper.observer.disconnect();
-                }
-            });
-        }
-        static _preventBlinkingHandler(clickBtnElem) {
-            let targetNode = clickBtnElem.closest("[aria-labelledby]");
-            if (!targetNode) {
-                return;
-            }
-            let config = {attributes: true, subtree: true, attributeOldValue: true};
-            const wrapper = {};
-            wrapper.observer = new MutationObserver(callback);
-            wrapper.observer.observe(targetNode, config);
-
-            function callback(mutationsList, observer) {
-                for (const mutation of mutationsList) {
-                    if (mutation.type === "attributes" && mutation.attributeName === "class") {
-                        if (mutation.target.classList.contains("ujs-btn-download")) {
-                            return;
-                        }
-                        // Don't allow to change classList
-                        mutation.target.className = mutation.oldValue;
-
-                        // Recreate, to prevent an infinity loop
-                        wrapper.observer.disconnect();
-                        wrapper.observer = new MutationObserver(callback);
-                        wrapper.observer.observe(targetNode, config);
-                    }
-                }
-            }
-
-            return wrapper;
-        }
 
         // Banner/Background
         static async _downloadBanner(url, btn) {
@@ -416,7 +367,7 @@ function hoistFeatures() {
                 }
             }
         }
-        static async imagesHandler(preventBlinking) {
+        static async imagesHandler() {
             verbose && console.log("[ujs-cns][imagesHandler]");
             const images = document.querySelectorAll("img");
             for (const img of images) {
@@ -437,9 +388,6 @@ function hoistFeatures() {
                     anchor = img.parentNode;
                 }
                 anchor.append(btn);
-                if (preventBlinking) {
-                    Features._preventBlinking(btn);
-                }
 
                 const downloaded = Features._ImageHistory.isDownloaded({
                     id: Tweet.of(btn).id,
@@ -552,7 +500,7 @@ function hoistFeatures() {
         }
 
         static tweetVidWeakMap = new WeakMap();
-        static async videoHandler(preventBlinking) {
+        static async videoHandler() {
             const videos = document.querySelectorAll("video");
 
             for (const vid of videos) {
@@ -569,9 +517,6 @@ function hoistFeatures() {
 
                 let elem = vid.parentNode.parentNode.parentNode;
                 elem.after(btn);
-                if (preventBlinking) {
-                    Features._preventBlinking(btn);
-                }
 
                 const tweet = Tweet.of(btn);
                 const id = tweet.id;
