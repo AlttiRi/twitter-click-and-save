@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.0.9-2023.07.03-dev
+// @version     1.1.0-2023.07.03-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -134,8 +134,10 @@ function showSettings() {
           </fieldset>
           <hr>
           <div style="display: flex; justify-content: space-around;">
-              <button class="ujs-save-setting-button"  style="padding: 5px">Save Settings</button>
-              <button class="ujs-close-setting-button" style="padding: 5px">Close Settings</button>
+              <div>
+                <button class="ujs-reload-setting-button" style="padding: 5px" title="Reload the web page">Reload</button>
+                <button class="ujs-close-setting-button" style="padding: 5px" title="Just close this popup.\nNote: You need to reload the web page to apply changes.">Close</button>
+              </div>
           </div>
           <hr>
           <h4 style="margin: 0; padding-left: 8px; color: #444;">Notes:</h4>
@@ -147,7 +149,15 @@ function showSettings() {
       </div>
   </div>`);
 
-    document.querySelector("body > .ujs-modal-wrapper .ujs-save-setting-button").addEventListener("click", saveSetting);
+    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-setting-button").addEventListener("click", () => {
+        location.reload();
+    });
+
+    const checkboxList = document.querySelectorAll("body > .ujs-modal-wrapper input[type=checkbox]");
+    checkboxList.forEach(checkbox => {
+        checkbox.addEventListener("change", saveSetting);
+    });
+
     document.querySelector("body > .ujs-modal-wrapper .ujs-close-setting-button").addEventListener("click", closeSetting);
 
     function saveSetting() {
