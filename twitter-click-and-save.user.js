@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.0.4-2023.07.03-dev
+// @version     1.0.5-2023.07.03-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -26,8 +26,6 @@ function loadSettings() {
     const defaultSettings = {
         hideTrends: true,
         hideSignUpSection: true,
-        hideTopicsToFollow: false,
-        hideTopicsToFollowInstantly: false,
         hideSignUpBottomBarAndMessages: true,
         doNotPlayVideosAutomatically: false,
         goFromMobileToMainSite: false,
@@ -130,10 +128,8 @@ function showSettings() {
               <legend title="Outdated due to Twitter's updates, or impossible to reimplement">Outdated</legend>
               <strike>
 
-              <label title="It seems Twitter no more shows this section."><input type="checkbox" ${s.hideTopicsToFollow ? "checked" : ""} name="hideTopicsToFollow">Hide <b>Topics To Follow</b> (in the right column)*<br/></label>
               <label title="Hides the modal login pop up. Useful if you have no account. \nWARNING: Currently it will close any popup, not only the login one.\nIt's reccommended to use only if you do not have an account to hide the annoiyng login popup."><input type="checkbox" ${s.hideLoginPopup ? "checked" : ""} name="hideLoginPopup">Hide <strike>Login</strike> Popups (beta)<br/></label>
 
-              <label hidden><input type="checkbox" ${s.hideTopicsToFollowInstantly ? "checked" : ""} name="hideTopicsToFollowInstantly">Hide <b>Topics To Follow</b> Instantly*<br/></label>
               </strike>
           </fieldset>
           <hr>
@@ -160,7 +156,6 @@ function showSettings() {
         const radioEntries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=radio]")]
             .map(checkbox => [checkbox.value, checkbox.checked])
         const settings = Object.fromEntries([entries, radioEntries].flat());
-        settings.hideTopicsToFollowInstantly = settings.hideTopicsToFollow;
         // console.log("[ujs]", settings);
         localStorage.setItem("ujs-click-n-save-settings", JSON.stringify(settings));
     }
@@ -185,7 +180,6 @@ function execFeaturesOnce() {
     settings.hideSignUpBottomBarAndMessages && Features.hideSignUpBottomBarAndMessages(doNotPlayVideosAutomatically);
     settings.hideTrends                     && Features.hideTrends();
     settings.highlightVisitedLinks          && Features.highlightVisitedLinks();
-    settings.hideTopicsToFollowInstantly    && Features.hideTopicsToFollowInstantly();
     settings.hideLoginPopup                 && Features.hideLoginPopup();
 }
 function execFeaturesImmediately() {
@@ -196,7 +190,6 @@ function execFeatures() {
     settings.videoHandler       && Features.videoHandler();
     settings.expandSpoilers     && Features.expandSpoilers();
     settings.hideSignUpSection  && Features.hideSignUpSection();
-    settings.hideTopicsToFollow && Features.hideTopicsToFollow();
     settings.directLinks        && Features.directLinks();
     settings.handleTitle        && Features.handleTitle();
 }
@@ -839,38 +832,9 @@ function hoistFeatures() {
             `);
         }
 
-        // Hides "TOPICS TO FOLLOW" only in the right column, NOT in timeline.
-        // Use it once. To prevent blinking.
-        static hideTopicsToFollowInstantly() {
-            if (!I18N.TOPICS_TO_FOLLOW) { // Unsupported lang, no TOPICS_TO_FOLLOW constant
-                return;
-            }
-            addCSS(`
-                div[aria-label="${I18N.TOPICS_TO_FOLLOW}"] {
-                    display: none;
-                }
-            `);
-        }
-
-        // Hides container and "separator line"
-        static hideTopicsToFollow() {
-            if (!I18N.TOPICS_TO_FOLLOW) { // Unsupported lang, no TOPICS_TO_FOLLOW constant
-                return;
-            }
-
-            const elem = xpath(`.//section[@role="region" and child::div[@aria-label="${I18N.TOPICS_TO_FOLLOW}"]]/../..`);
-            if (!elem) {
-                return;
-            }
-            elem.classList.add("ujs-hidden");
-
-            elem.previousSibling.classList.add("ujs-hidden"); // a "separator line" (empty element of "TRENDS", for example)
-            // in fact it's a hack // todo rework // may hide "You might like" section [bug]
-        }
-
         // todo split to two methods
         // todo fix it, currently it works questionably
-        // not tested with non eng langs
+        // not tested with non eng languages
         static footerHandled = false;
         static hideAndMoveFooter() { // "Terms of Service   Privacy Policy   Cookie Policy"
             let footer = document.querySelector(`main[role=main] nav[aria-label=${I18N.FOOTER}][role=navigation]`);
@@ -1046,37 +1010,32 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
 /*
 Features depend on:
 
-addRequiredCSS: IMAGE
+addRequiredCSS:     IMAGE
 
-expandSpoilers:     YES_VIEW_PROFILE,   SHOW_NUDITY,  VIEW
-handleTitle:        QUOTES,             ON_TWITTER,   TWITTER
+expandSpoilers:     YES_VIEW_PROFILE, SHOW_NUDITY, VIEW
+handleTitle:        QUOTES,           ON_TWITTER,  TWITTER
 hideSignUpSection:  SIGNUP
 hideTrends:         TRENDS
-hideTopicsToFollowInstantly: TOPICS_TO_FOLLOW,
-
-hideTopicsToFollow:          TOPICS_TO_FOLLOW,
 
 [unused]
 hideAndMoveFooter:  FOOTER
 */
 
 // --- Twitter.LangConstants --- //
-function getLanguageConstants() { //todo: "de", "fr"
+function getLanguageConstants() { // todo: "de", "fr"
     const defaultQuotes = [`"`, `"`];
 
     const SUPPORTED_LANGUAGES = ["en",                     "ru",                     "es",                                 "zh",               "ja",                       ];
 
     // texts
     const VIEW                = ["View",                   "Посмотреть",             "Ver",                                "查看",             "表示",                      ];
-    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     "是，查看个人资料",   "プロフィールを表示する",      ];
-
+    const YES_VIEW_PROFILE    = ["Yes, view profile",      "Да, посмотреть профиль", "Sí, ver perfil",                     "是，查看个人资料",   "プロフィールを表示する",       ];
     const SHOW_NUDITY         = ["Show",                   "Показать",               "Mostrar",                            "显示",              "表示",                     ];
+
     // aria-label texts
     const IMAGE               = ["Image",                  "Изображение",            "Imagen",                             "图像",              "画像",                     ];
     const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         "注册",             "アカウント作成",              ];
-    const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", "时间线：当前趋势",   "タイムライン: トレンド",      ];
-    const TOPICS_TO_FOLLOW    = ["Timeline: ",             "Лента: ",                "Cronología: ",                       "时间线：", /*[1]*/  "タイムライン: ",  /*[1]*/    ];
-    const WHO_TO_FOLLOW       = ["Who to follow",          "Кого читать",            "A quién seguir",                     "推荐关注",          "おすすめユーザー"             ];
+    const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", "时间线：当前趋势",   "タイムライン: トレンド",       ];
     const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      "页脚",             "フッター",                   ];
     // *1 — it's a suggestion, need to recheck. But I can't find a page where I can check it. Was it deleted?
 
@@ -1092,16 +1051,14 @@ function getLanguageConstants() { //todo: "de", "fr"
         SUPPORTED_LANGUAGES,
         VIEW: VIEW[langIndex],
         YES_VIEW_PROFILE: YES_VIEW_PROFILE[langIndex],
+        SHOW_NUDITY: SHOW_NUDITY[langIndex],
+        IMAGE: IMAGE[langIndex],
         SIGNUP: SIGNUP[langIndex],
         TRENDS: TRENDS[langIndex],
-        TOPICS_TO_FOLLOW: TOPICS_TO_FOLLOW[langIndex],
-        WHO_TO_FOLLOW: WHO_TO_FOLLOW[langIndex],
         FOOTER: FOOTER[langIndex],
         QUOTES: QUOTES[langIndex],
         ON_TWITTER: ON_TWITTER[langIndex],
         TWITTER: TWITTER[langIndex],
-        IMAGE: IMAGE[langIndex],
-        SHOW_NUDITY: SHOW_NUDITY[langIndex],
     }
 }
 
