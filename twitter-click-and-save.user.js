@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     0.13.10-2023.03.19
+// @version     1.0.0-2023.07.03-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1292,22 +1292,34 @@ function hoistAPI() {
 
         // @return {bitrate, content_type, url, vidNumber}
         static async getVideoInfo(tweetId, screenName, posterUrl) {
+            // RIP 2023.07.03;
             // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
-            const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
-            url.searchParams.set("tweet_mode", "extended");
+            // const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
+            // url.searchParams.set("tweet_mode", "extended");
+
+            const url = API.createVideoEndpointUrl(tweetId);
 
             const json = await API.apiRequest(url);
-            let tweetData = json.globalObjects.tweets[tweetId];
+            verbose && console.log("[getVideoInfo]", json);
 
-            const isVideoInQuotedPost = !tweetData.extended_entities || tweetData.extended_entities.media
-                .findIndex(e => e.media_url_https === posterUrl) === -1;
+            // RIP 2023.07.03
+            // let tweetData = json.globalObjects.tweets[tweetId];
+            // const isVideoInQuotedPost = !tweetData.extended_entities || tweetData.extended_entities.media.findIndex(e => e.media_url_https === posterUrl) === -1;
+            // if (tweetData.quoted_status_id_str && isVideoInQuotedPost) {
+            //     tweetId = tweetData.quoted_status_id_str;
+            //     const userIdStr = json.globalObjects.tweets[tweetId].user_id_str;
+            //     screenName = json.globalObjects.users[userIdStr].screen_name;
+            //     tweetData = json.globalObjects.tweets[tweetId];
+            // }
 
-            if (tweetData.quoted_status_id_str && isVideoInQuotedPost) {
-                tweetId = tweetData.quoted_status_id_str;
-                const userIdStr = json.globalObjects.tweets[tweetId].user_id_str;
-                screenName = json.globalObjects.users[userIdStr].screen_name;
-                tweetData = json.globalObjects.tweets[tweetId];
-            }
+            // 2023.07.03
+            const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
+            const tweetObject = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId)
+            const tweetData = tweetObject.content.itemContent.tweet_results.result.legacy;
+
+            // 2023.07.03 todo: check is it still required
+            // if (tweetData.quoted_status_id_str) { ... }
+
 
             // types: "photo", "video", "animated_gif"
 
@@ -1337,14 +1349,64 @@ function hoistAPI() {
             return {video, tweetId, screenName, vidNumber};
         }
 
+        // todo: keep `queryId` updated
+        static TweetDetailQueryId      = "3XDB26fBve-MmjHaWTUZxA"; // TweetDetail      (for videos)
+        static UserByScreenNameQueryId = "oUZZZ8Oddwxs8Cd3iW3UEA"; // UserByScreenName
+
+        static createVideoEndpointUrl(tweetId) {
+            console.log("createVideoEndpointUrl(tweetId)", tweetId);
+            const variables = {
+                "focalTweetId": tweetId,
+                "with_rux_injections": false,
+                "includePromotedContent": true,
+                "withCommunity": true,
+                "withQuickPromoteEligibilityTweetFields": true,
+                "withBirdwatchNotes": true,
+                "withVoice": true,
+                "withV2Timeline": true
+            };
+            const features = {
+                "rweb_lists_timeline_redesign_enabled": true,
+                "responsive_web_graphql_exclude_directive_enabled": true,
+                "verified_phone_label_enabled": false,
+                "creator_subscriptions_tweet_preview_api_enabled": true,
+                "responsive_web_graphql_timeline_navigation_enabled": true,
+                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+                "tweetypie_unmention_optimization_enabled": true,
+                "responsive_web_edit_tweet_api_enabled": true,
+                "graphql_is_translatable_rweb_tweet_is_translatable_enabled": true,
+                "view_counts_everywhere_api_enabled": true,
+                "longform_notetweets_consumption_enabled": true,
+                "responsive_web_twitter_article_tweet_consumption_enabled": false,
+                "tweet_awards_web_tipping_enabled": false,
+                "freedom_of_speech_not_reach_fetch_enabled": true,
+                "standardized_nudges_misinfo": true,
+                "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
+                "longform_notetweets_rich_text_read_enabled": true,
+                "longform_notetweets_inline_media_enabled": true,
+                "responsive_web_media_download_video_enabled": false,
+                "responsive_web_enhance_cards_enabled": false
+            };
+            const fieldToggles = {
+                "withArticleRichContentState": false
+            };
+
+            const urlBase = `https://twitter.com/i/api/graphql/${API.TweetDetailQueryId}/TweetDetail`;
+            const urlObj = new URL(urlBase);
+            urlObj.searchParams.set("variables", JSON.stringify(variables));
+            urlObj.searchParams.set("features", JSON.stringify(features));
+            urlObj.searchParams.set("fieldToggles", JSON.stringify(fieldToggles));
+            const url = urlObj.toString();
+            return url;
+        }
+
         static async getUserInfo(username) {
-            const qHash = "Bhlf1dYJ3bYCKmLfeEQ31A"; // todo: change
             const variables = JSON.stringify({
                 "screen_name": username,
                 "withSafetyModeUserFields": true,
                 "withSuperFollowsUserFields": true
             });
-            const url = `https://twitter.com/i/api/graphql/${qHash}/UserByScreenName?variables=${encodeURIComponent(variables)}`;
+            const url = `https://twitter.com/i/api/graphql/${API.UserByScreenNameQueryId}/UserByScreenName?variables=${encodeURIComponent(variables)}`;
             const json = await API.apiRequest(url);
             verbose && console.log("[getUserInfo]", json);
             return json.data.user.result.legacy.entities.url?.urls[0].expanded_url;
