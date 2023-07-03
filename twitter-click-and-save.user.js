@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.0.0-2023.07.03-dev
+// @version     1.0.1-2023.07.03-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1351,10 +1351,9 @@ function hoistAPI() {
 
         // todo: keep `queryId` updated
         static TweetDetailQueryId      = "3XDB26fBve-MmjHaWTUZxA"; // TweetDetail      (for videos)
-        static UserByScreenNameQueryId = "oUZZZ8Oddwxs8Cd3iW3UEA"; // UserByScreenName
+        static UserByScreenNameQueryId = "oUZZZ8Oddwxs8Cd3iW3UEA"; // UserByScreenName (for the direct user profile url)
 
         static createVideoEndpointUrl(tweetId) {
-            console.log("createVideoEndpointUrl(tweetId)", tweetId);
             const variables = {
                 "focalTweetId": tweetId,
                 "with_rux_injections": false,
