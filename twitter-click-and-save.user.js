@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.0.1-2023.07.03
+// @version     1.0.2-2023.07.03
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1292,34 +1292,25 @@ function hoistAPI() {
 
         // @return {bitrate, content_type, url, vidNumber}
         static async getVideoInfo(tweetId, screenName, posterUrl) {
-            // RIP 2023.07.03;
-            // const url = new URL(`https://api.twitter.com/2/timeline/conversation/${tweetId}.json`); // only for suspended/anon
-            // const url = new URL(`https://twitter.com/i/api/2/timeline/conversation/${tweetId}.json`);
-            // url.searchParams.set("tweet_mode", "extended");
-
             const url = API.createVideoEndpointUrl(tweetId);
 
             const json = await API.apiRequest(url);
-            verbose && console.log("[getVideoInfo]", json);
+            verbose && console.log("[getVideoInfo]", json, JSON.stringify(json));
 
-            // RIP 2023.07.03
-            // let tweetData = json.globalObjects.tweets[tweetId];
-            // const isVideoInQuotedPost = !tweetData.extended_entities || tweetData.extended_entities.media.findIndex(e => e.media_url_https === posterUrl) === -1;
-            // if (tweetData.quoted_status_id_str && isVideoInQuotedPost) {
-            //     tweetId = tweetData.quoted_status_id_str;
-            //     const userIdStr = json.globalObjects.tweets[tweetId].user_id_str;
-            //     screenName = json.globalObjects.users[userIdStr].screen_name;
-            //     tweetData = json.globalObjects.tweets[tweetId];
-            // }
-
-            // 2023.07.03
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
-            const tweetObject = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId)
-            const tweetData = tweetObject.content.itemContent.tweet_results.result.legacy;
+            const tweetEntry = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
+            const tweetResult = tweetEntry.content.itemContent.tweet_results.result
+            let tweetData = tweetResult.legacy;
 
-            // 2023.07.03 todo: check is it still required
-            // if (tweetData.quoted_status_id_str) { ... }
+            const isVideoInQuotedPost = !tweetData.extended_entities || tweetData.extended_entities.media.findIndex(e => e.media_url_https === posterUrl) === -1;
+            if (tweetData.quoted_status_id_str && isVideoInQuotedPost) {
+                const tweetDataQuoted     = tweetResult.quoted_status_result.result.legacy;
+                const tweetDataQuotedCore = tweetResult.quoted_status_result.result.core.user_results.result.legacy;
 
+                tweetId = tweetData.quoted_status_id_str;
+                screenName = tweetDataQuotedCore.screen_name;
+                tweetData = tweetDataQuoted;
+            }
 
             // types: "photo", "video", "animated_gif"
 
