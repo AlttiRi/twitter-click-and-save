@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.1.1-2023.07.03
+// @version     1.1.2-2023.07.03-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1047,7 +1047,6 @@ function getLanguageConstants() { // todo: "de", "fr"
     const SIGNUP              = ["Sign up",                "Зарегистрироваться",     "Regístrate",                         "注册",             "アカウント作成",              ];
     const TRENDS              = ["Timeline: Trending now", "Лента: Актуальные темы", "Cronología: Tendencias del momento", "时间线：当前趋势",   "タイムライン: トレンド",       ];
     const FOOTER              = ["Footer",                 "Нижний колонтитул",      "Pie de página",                      "页脚",             "フッター",                   ];
-    // *1 — it's a suggestion, need to recheck. But I can't find a page where I can check it. Was it deleted?
 
     // document.title "{AUTHOR}{ON_TWITTER} {QUOTES[0]}{TEXT}{QUOTES[1]} / {TWITTER}"
     const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        defaultQuotes,      [`「`, `」`],                ];
