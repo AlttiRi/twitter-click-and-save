@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.1.0-2023.07.03-dev
+// @version     1.1.1-2023.07.03
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -133,7 +133,7 @@ function showSettings() {
               </strike>
           </fieldset>
           <hr>
-          <div style="display: flex; justify-content: space-around;">
+          <div style="display: flex; justify-content: flex-end;">
               <div>
                 <button class="ujs-reload-setting-button" style="padding: 5px" title="Reload the web page">Reload</button>
                 <button class="ujs-close-setting-button" style="padding: 5px" title="Just close this popup.\nNote: You need to reload the web page to apply changes.">Close</button>
