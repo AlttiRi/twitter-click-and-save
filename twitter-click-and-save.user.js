@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.2.2-2023.07.05-dev
+// @version     1.2.3-2023.07.05-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -102,6 +102,64 @@ function ujs_getGlobalFetch({verbose, strictTrackingProtectionFix} = {}) {
     return useFirefoxFix ? fixedFirefoxFetch : globalThis.fetch;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// --- Features to execute --- //
+
+const doNotPlayVideosAutomatically = false; // Hidden settings
+
+function execFeaturesOnce() {
+    settings.goFromMobileToMainSite         && Features.goFromMobileToMainSite();
+    settings.addRequiredCSS                 && Features.addRequiredCSS();
+    settings.hideSignUpBottomBarAndMessages && Features.hideSignUpBottomBarAndMessages(doNotPlayVideosAutomatically);
+    settings.hideTrends                     && Features.hideTrends();
+    settings.highlightVisitedLinks          && Features.highlightVisitedLinks();
+    settings.hideLoginPopup                 && Features.hideLoginPopup();
+}
+function execFeaturesImmediately() {
+    settings.expandSpoilers     && Features.expandSpoilers();
+}
+function execFeatures() {
+    settings.imagesHandler      && Features.imagesHandler();
+    settings.videoHandler       && Features.videoHandler();
+    settings.expandSpoilers     && Features.expandSpoilers();
+    settings.hideSignUpSection  && Features.hideSignUpSection();
+    settings.directLinks        && Features.directLinks();
+    settings.handleTitle        && Features.handleTitle();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------------------------------------------
+// --- Script runner --- //
+
+(function starter(feats) {
+    const {once, onChangeImmediate, onChange} = feats;
+
+    once();
+    onChangeImmediate();
+    const onChangeThrottled = throttle(onChange, 250);
+    onChangeThrottled();
+
+    const targetNode = document.querySelector("body");
+    const observerOptions = {
+        subtree: true,
+        childList: true,
+    };
+    const observer = new MutationObserver(callback);
+    observer.observe(targetNode, observerOptions);
+
+    function callback(mutationList, observer) {
+        verbose && console.log(mutationList);
+        onChangeImmediate();
+        onChangeThrottled();
+    }
+})({
+    once: execFeaturesOnce,
+    onChangeImmediate: execFeaturesImmediately,
+    onChange: execFeatures
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
 function loadSettings() {
@@ -267,64 +325,6 @@ function showSettings() {
 
 
 }
-
-// ---------------------------------------------------------------------------------------------------------------------
-// --- Features to execute --- //
-
-const doNotPlayVideosAutomatically = false; // Hidden settings
-
-function execFeaturesOnce() {
-    settings.goFromMobileToMainSite         && Features.goFromMobileToMainSite();
-    settings.addRequiredCSS                 && Features.addRequiredCSS();
-    settings.hideSignUpBottomBarAndMessages && Features.hideSignUpBottomBarAndMessages(doNotPlayVideosAutomatically);
-    settings.hideTrends                     && Features.hideTrends();
-    settings.highlightVisitedLinks          && Features.highlightVisitedLinks();
-    settings.hideLoginPopup                 && Features.hideLoginPopup();
-}
-function execFeaturesImmediately() {
-    settings.expandSpoilers     && Features.expandSpoilers();
-}
-function execFeatures() {
-    settings.imagesHandler      && Features.imagesHandler();
-    settings.videoHandler       && Features.videoHandler();
-    settings.expandSpoilers     && Features.expandSpoilers();
-    settings.hideSignUpSection  && Features.hideSignUpSection();
-    settings.directLinks        && Features.directLinks();
-    settings.handleTitle        && Features.handleTitle();
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------------------------------------------------
-// --- Script runner --- //
-
-(function starter(feats) {
-    const {once, onChangeImmediate, onChange} = feats;
-
-    once();
-    onChangeImmediate();
-    const onChangeThrottled = throttle(onChange, 250);
-    onChangeThrottled();
-
-    const targetNode = document.querySelector("body");
-    const observerOptions = {
-        subtree: true,
-        childList: true,
-    };
-    const observer = new MutationObserver(callback);
-    observer.observe(targetNode, observerOptions);
-
-    function callback(mutationList, observer) {
-        verbose && console.log(mutationList);
-        onChangeImmediate();
-        onChangeThrottled();
-    }
-})({
-    once: execFeaturesOnce,
-    onChangeImmediate: execFeaturesImmediately,
-    onChange: execFeatures
-});
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
