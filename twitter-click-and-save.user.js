@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.3.0-2023.07.05-dev
+// @version     1.3.1-2023.07.05-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -295,14 +295,37 @@ function showSettings() {
       </div>
   </div>`);
 
-    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-export-button").addEventListener("click", () => {
-        historyHelper.exportHistory();
+    async function onDone(button) {
+        button.classList.remove("ujs-btn-error");
+        button.classList.add("ujs-btn-done");
+        await sleep(900);
+        button.classList.remove("ujs-btn-done");
+    }
+    async function onError(button, err) {
+        button.classList.remove("ujs-btn-done");
+        button.classList.add("ujs-btn-error");
+        button.title = err.message;
+        await sleep(1800);
+        button.classList.remove("ujs-btn-error");
+    }
+
+    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-export-button").addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        historyHelper.exportHistory(() => onDone(button));
     });
-    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-import-button").addEventListener("click", () => {
-        historyHelper.importHistory();
+    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-import-button").addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        historyHelper.importHistory(
+            () => onDone(button),
+            (err) => onError(button, err)
+        );
     });
-    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-merge-button").addEventListener("click", () => {
-        historyHelper.mergeHistory();
+    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-merge-button").addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        historyHelper.mergeHistory(
+            () => onDone(button),
+            (err) => onError(button, err)
+        );
     });
 
     document.querySelector("body > .ujs-modal-wrapper .ujs-reload-setting-button").addEventListener("click", () => {
@@ -1061,6 +1084,13 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
   background: var(--ujs-blue);
 }
 
+.ujs-btn-done {
+  box-shadow: 0 0 6px var(--ujs-green);
+}
+.ujs-btn-error {
+  box-shadow: 0 0 6px var(--ujs-red);
+}
+
 .ujs-downloaded .ujs-btn-background {
   background: var(--ujs-green);
 }
@@ -1792,7 +1822,7 @@ function getHistoryHelper() {
         // localStorage.setItem(StorageNames.migrated, "true");
     }
 
-    function exportHistory() {
+    function exportHistory(onDone) {
         const exportObject = [
             StorageNames.settings,
             StorageNames.settingsImageHistoryBy,
@@ -1800,11 +1830,15 @@ function getHistoryHelper() {
             StorageNames.downloadedImageTweetIds, // only if "settingsImageHistoryBy" === "TWEET_ID" (need to set manually with DevTools)
             StorageNames.downloadedVideoTweetIds,
         ].reduce((acc, name) => {
-            const value = localStorage.getItem(name);
-            if (value === null) {
+            const valueStr = localStorage.getItem(name);
+            if (valueStr === null) {
                 return acc;
             }
-            acc[name] = JSON.parse(value);
+            let value = JSON.parse(valueStr);
+            if (Array.isArray(value)) {
+                value = [...new Set(value)];
+            }
+            acc[name] = value;
             return acc;
         }, {});
         downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}.json`);
@@ -1816,45 +1850,67 @@ function getHistoryHelper() {
             anchor.click();
             setTimeout(() => URL.revokeObjectURL(blobUrl), 8000);
         }
+        onDone();
     }
 
-    function importHistory() {
+    function verify(jsonObject) {
+        if (Array.isArray(jsonObject)) {
+            throw new Error("Wrong object! JSON contains an array.");
+        }
+        if (Object.keys(jsonObject).some(key => !key.startsWith("ujs-twitter-click-n-save"))) {
+            throw new Error("Wrong object! The keys should start with 'ujs-twitter-click-n-save'.");
+        }
+    }
+
+    function importHistory(onDone, onError) {
         const importInput = document.createElement("input");
         importInput.type = "file";
         importInput.accept = "application/json";
         importInput.style.display = "none";
         document.body.prepend(importInput);
         importInput.addEventListener("change", async _event => {
-            const json = JSON.parse(await importInput.files[0].text());
+            let json;
+            try {
+                json = JSON.parse(await importInput.files[0].text());
+                verify(json);
 
-            console.log("json", json);
-            globalThis.json = json;
-
-            Object.entries(json).forEach(([key, value]) => {
-                localStorage.setItem(key, JSON.stringify(value));
-            });
+                Object.entries(json).forEach(([key, value]) => {
+                    if (Array.isArray(value)) {
+                        value = [...new Set(value)];
+                    }
+                    localStorage.setItem(key, JSON.stringify(value));
+                });
+                onDone();
+            } catch (err) {
+                onError(err);
+            }
         });
         importInput.click();
     }
 
-    function mergeHistory() {
+    function mergeHistory(onDone, onError) { // Only merges arrays
         const mergeInput = document.createElement("input");
         mergeInput.type = "file";
         mergeInput.accept = "application/json";
         document.body.prepend(mergeInput);
         mergeInput.addEventListener("change", async _event => {
-            const json = JSON.parse(await mergeInput.files[0].text());
-
-            console.log("json", json);
-            globalThis.json = json;
-
-            Object.entries(json).forEach(([key, value]) => {
-                const existedValue = JSON.parse(localStorage.getItem(key));
-                if (Array.isArray(existedValue)) {
-                    value = [...new Set([...existedValue, ...value])];
-                }
-                localStorage.setItem(key, JSON.stringify(value));
-            });
+            let json;
+            try {
+                json = JSON.parse(await mergeInput.files[0].text());
+                verify(json);
+                Object.entries(json).forEach(([key, value]) => {
+                    const existedValue = JSON.parse(localStorage.getItem(key));
+                    if (Array.isArray(existedValue)) {
+                        const resultValue = [...new Set([...existedValue, ...value])];
+                        localStorage.setItem(key, JSON.stringify(resultValue));
+                    } else if (Array.isArray(value)) {
+                        localStorage.setItem(key, JSON.stringify(value));
+                    }
+                });
+                onDone();
+            } catch (err) {
+                onError(err);
+            }
         });
         mergeInput.click();
     }
