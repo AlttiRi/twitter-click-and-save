@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.3.4-2023.07.05-dev
+// @version     1.3.5-2023.07.05-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -34,6 +34,7 @@ const {
     dateToDayDateString,
     toLineJSON,
     isFirefox,
+    getBrowserName,
 } = getUtils({verbose});
 
 
@@ -1749,6 +1750,17 @@ function getUtils({verbose}) {
 
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
 
+    function getBrowserName() {
+        const userAgent = window.navigator.userAgent.toLowerCase();
+        return userAgent.indexOf("edge") > -1 ? "edge-legacy"
+            : userAgent.indexOf("edg") > -1 ? "edge"
+            : userAgent.indexOf("opr") > -1 && !!window.opr ? "opera"
+            : userAgent.indexOf("chrome") > -1 && !!window.chrome ? "chrome"
+            : userAgent.indexOf("firefox") > -1 ? "firefox"
+            : userAgent.indexOf("safari") > -1 ? "safari"
+            : "";
+    }
+
     return {
         sleep, fetchResource, extensionFromMime, downloadBlob, dateToDayDateString,
         addCSS,
@@ -1758,6 +1770,7 @@ function getUtils({verbose}) {
         responseProgressProxy,
         toLineJSON,
         isFirefox,
+        getBrowserName,
     }
 }
 
@@ -1841,7 +1854,10 @@ function getHistoryHelper() {
             acc[name] = value;
             return acc;
         }, {});
-        downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}.json`);
+        const browser = getBrowserName();
+        const browserLine = browser ? "-" + browser : "";
+
+        downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}${browserLine}.json`);
         function downloadBlob(blob, name, url) {
             const anchor = document.createElement("a");
             anchor.setAttribute("download", name || "");
