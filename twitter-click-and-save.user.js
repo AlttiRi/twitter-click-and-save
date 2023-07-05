@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.2.1-2023.07.05-dev
+// @version     1.2.2-2023.07.05-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1723,6 +1723,7 @@ function getUtils({verbose}) {
 
 function getHistoryHelper() {
     function migrateLocalStore() {
+        // 2023.07.05 // todo: uncomment after two+ months
         // Currently I disable it for cases if some browser's tabs uses the old version of the script.
         // const migrated = localStorage.getItem(StorageNames.migrated);
         // if (migrated === "true") {
