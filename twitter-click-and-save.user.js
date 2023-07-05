@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.2.4-2023.07.05-dev
+// @version     1.3.0-2023.07.05-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -294,6 +294,16 @@ function showSettings() {
           </ul>
       </div>
   </div>`);
+
+    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-export-button").addEventListener("click", () => {
+        historyHelper.exportHistory();
+    });
+    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-import-button").addEventListener("click", () => {
+        historyHelper.importHistory();
+    });
+    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-merge-button").addEventListener("click", () => {
+        historyHelper.mergeHistory();
+    });
 
     document.querySelector("body > .ujs-modal-wrapper .ujs-reload-setting-button").addEventListener("click", () => {
         location.reload();
@@ -1812,6 +1822,7 @@ function getHistoryHelper() {
         const importInput = document.createElement("input");
         importInput.type = "file";
         importInput.accept = "application/json";
+        importInput.style.display = "none";
         document.body.prepend(importInput);
         importInput.addEventListener("change", async _event => {
             const json = JSON.parse(await importInput.files[0].text());
