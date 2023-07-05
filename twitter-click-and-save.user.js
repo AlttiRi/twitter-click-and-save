@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.2.0-2023.07.05-dev
+// @version     1.2.1-2023.07.05-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1723,10 +1723,11 @@ function getUtils({verbose}) {
 
 function getHistoryHelper() {
     function migrateLocalStore() {
-        const migrated = localStorage.getItem(StorageNames.migrated);
-        if (migrated === "true") {
-            return;
-        }
+        // Currently I disable it for cases if some browser's tabs uses the old version of the script.
+        // const migrated = localStorage.getItem(StorageNames.migrated);
+        // if (migrated === "true") {
+        //     return;
+        // }
 
         const names = [
             [StorageNames.settings,                StorageNamesOld.settings],
@@ -1736,19 +1737,48 @@ function getHistoryHelper() {
             [StorageNames.downloadedVideoTweetIds, StorageNamesOld.downloadedVideoTweetIds],
         ];
 
-        for (const [newName, oldName] of names) {
-            const value = localStorage.getItem(oldName);
-            if (value !== null) {
-                try {
-                    localStorage.setItem(newName, value);
-                } catch (e) {
-                    localStorage.removeItem(oldName); // if there is no space (exceeded the quota)
-                    localStorage.setItem(newName, value);
+        /**
+         * @param {string} newName
+         * @param {string} oldName
+         * @param {string} value
+         */
+        function setValue(newName, oldName, value) {
+            try {
+                localStorage.setItem(newName, value);
+            } catch (e) {
+                localStorage.removeItem(oldName); // if there is no space ("exceeded the quota")
+                localStorage.setItem(newName, value);
+            }
+            localStorage.removeItem(oldName);
+        }
+
+        function mergeOldWithNew({newName, oldName}) {
+            const oldValueStr = localStorage.getItem(oldName);
+            if (oldValueStr === null) {
+                return;
+            }
+            const newValueStr = localStorage.getItem(newName);
+            if (newValueStr === null) {
+                setValue(newName, oldName, oldValueStr);
+                return;
+            }
+            try {
+                const oldValue = JSON.parse(oldValueStr);
+                const newValue = JSON.parse(newValueStr);
+                if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+                    const resultArray = [...new Set([...newValue, ...oldValue])];
+                    const resultArrayStr = JSON.stringify(resultArray);
+                    setValue(newName, oldName, resultArrayStr);
                 }
-                localStorage.removeItem(oldName);
+            } catch (e) {
+                // return;
             }
         }
-        localStorage.setItem(StorageNames.migrated, "true");
+
+        for (const [newName, oldName] of names) {
+            mergeOldWithNew({newName, oldName});
+        }
+        // localStorage.setItem(StorageNames.migrated, "true");
     }
 
     function exportHistory() {
