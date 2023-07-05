@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.1.3-2023.07.05-dev
+// @version     1.2.0-2023.07.05-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -12,15 +12,97 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
-if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
-    GM_registerMenuCommand("Show settings", showSettings);
-}
+// Please, report bugs and suggestions on GitHub.
+// --> https://github.com/AlttiRi/twitter-click-and-save/issues <--
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 // --- For debug --- //
 const verbose = false;
 
-const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
+// ---------------------------------------------------------------------------------------------------------------------
+// --- "Imports" --- //
+
+const {
+    sleep, fetchResource, downloadBlob,
+    addCSS,
+    getCookie,
+    throttle,
+    xpath, xpathAll,
+    responseProgressProxy,
+    dateToDayDateString,
+    toLineJSON,
+    isFirefox,
+} = getUtils({verbose});
+
+
+const LS = hoistLS({verbose});
+
+const API = hoistAPI();
+const Tweet = hoistTweet();
+const Features = hoistFeatures();
+const I18N = getLanguageConstants();
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+const StorageNamesOld = {
+    settings:                "ujs-click-n-save-settings",
+    settingsImageHistoryBy:  "ujs-images-history-by",
+    downloadedImageNames:    "ujs-twitter-downloaded-images-names",
+    downloadedImageTweetIds: "ujs-twitter-downloaded-image-tweet-ids",
+    downloadedVideoTweetIds: "ujs-twitter-downloaded-video-tweet-ids",
+};
+// New LocalStorage key names 2023.07.05
+const StorageNames = {
+    settings:                "ujs-twitter-click-n-save-settings",
+    settingsImageHistoryBy:  "ujs-twitter-click-n-save-settings-image-history-by",
+    downloadedImageNames:    "ujs-twitter-click-n-save-downloaded-image-names",
+    downloadedImageTweetIds: "ujs-twitter-click-n-save-downloaded-image-tweet-ids",
+    downloadedVideoTweetIds: "ujs-twitter-click-n-save-downloaded-video-tweet-ids",
+
+    migrated:                "ujs-twitter-click-n-save-migrated",
+};
+
+const historyHelper = getHistoryHelper();
+historyHelper.migrateLocalStore();
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
+    GM_registerMenuCommand("Show settings", showSettings);
+}
+
 const settings = loadSettings();
+
+if (verbose) {
+    console.log("[ujs][settings]", settings);
+    showSettings();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+const fetch = ujs_getGlobalFetch({verbose, strictTrackingProtectionFix: settings.strictTrackingProtectionFix});
+
+function ujs_getGlobalFetch({verbose, strictTrackingProtectionFix} = {}) {
+    const useFirefoxStrictTrackingProtectionFix = strictTrackingProtectionFix === undefined ? true : strictTrackingProtectionFix; // Let's use by default
+    const useFirefoxFix = useFirefoxStrictTrackingProtectionFix && typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function";
+    // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
+    function fixedFirefoxFetch(resource, init = {}) {
+        verbose && console.log("wrappedJSObject.fetch", resource, init);
+        if (init.headers instanceof Headers) {
+            // Since `Headers` are not allowed for structured cloning.
+            init.headers = Object.fromEntries(init.headers.entries());
+        }
+        return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
+    }
+    return useFirefoxFix ? fixedFirefoxFetch : globalThis.fetch;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 function loadSettings() {
     const defaultSettings = {
@@ -50,10 +132,10 @@ function loadSettings() {
 
     let savedSettings;
     try {
-        savedSettings = JSON.parse(localStorage.getItem("ujs-click-n-save-settings")) || {};
+        savedSettings = JSON.parse(localStorage.getItem(StorageNames.settings)) || {};
     } catch (e) {
         console.error("[ujs]", e);
-        localStorage.removeItem("ujs-click-n-save-settings");
+        localStorage.removeItem(StorageNames.settings);
         savedSettings = {};
     }
     savedSettings = Object.assign(defaultSettings, savedSettings);
@@ -133,10 +215,16 @@ function showSettings() {
               </strike>
           </fieldset>
           <hr>
-          <div style="display: flex; justify-content: flex-end;">
+          <div style="display: flex; justify-content: space-around;">
               <div>
-                <button class="ujs-reload-setting-button" style="padding: 5px" title="Reload the web page">Reload</button>
-                <button class="ujs-close-setting-button" style="padding: 5px" title="Just close this popup.\nNote: You need to reload the web page to apply changes.">Close</button>
+                History: 
+                <button class="ujs-reload-export-button" style="padding: 5px" >Export</button>
+                <button class="ujs-reload-import-button" style="padding: 5px" >Import</button>
+                <button class="ujs-reload-merge-button"  style="padding: 5px" >Merge</button>
+              </div>
+              <div>
+                <button class="ujs-reload-setting-button" style="padding: 5px" title="Reload the web page to apply changes">Reload page</button>
+                <button class="ujs-close-setting-button" style="padding: 5px" title="Just close this popup.\nNote: You need to reload the web page to apply changes.">Close popup</button>
               </div>
           </div>
           <hr>
@@ -167,7 +255,7 @@ function showSettings() {
             .map(checkbox => [checkbox.value, checkbox.checked])
         const settings = Object.fromEntries([entries, radioEntries].flat());
         // console.log("[ujs]", settings);
-        localStorage.setItem("ujs-click-n-save-settings", JSON.stringify(settings));
+        localStorage.setItem(StorageNames.settings, JSON.stringify(settings));
     }
 
     function closeSetting() {
@@ -176,13 +264,14 @@ function showSettings() {
         document.querySelector("html").classList.remove("ujs-scroll-initial");
         document.querySelector("body > .ujs-modal-wrapper")?.remove();
     }
+
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-
 // --- Features to execute --- //
-const doNotPlayVideosAutomatically = false;
+
+const doNotPlayVideosAutomatically = false; // Hidden settings
 
 function execFeaturesOnce() {
     settings.goFromMobileToMainSite         && Features.goFromMobileToMainSite();
@@ -205,54 +294,7 @@ function execFeatures() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
 
-if (verbose) {
-    console.log("[ujs][settings]", settings);
-    // showSettings();
-}
-
-const fetch = ujs_getGlobalFetch({verbose, strictTrackingProtectionFix: settings.strictTrackingProtectionFix});
-
-function ujs_getGlobalFetch({verbose, strictTrackingProtectionFix} = {}) {
-    const useFirefoxStrictTrackingProtectionFix = strictTrackingProtectionFix === undefined ? true : strictTrackingProtectionFix; // Let's use by default
-    const useFirefoxFix = useFirefoxStrictTrackingProtectionFix && typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function";
-    // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
-    function fixedFirefoxFetch(resource, init = {}) {
-        verbose && console.log("wrappedJSObject.fetch", resource, init);
-        if (init.headers instanceof Headers) {
-            // Since `Headers` are not allowed for structured cloning.
-            init.headers = Object.fromEntries(init.headers.entries());
-        }
-        return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
-    }
-    return useFirefoxFix ? fixedFirefoxFetch : globalThis.fetch;
-}
-
-// --- "Imports" --- //
-const {
-    sleep, fetchResource, downloadBlob,
-    addCSS,
-    getCookie,
-    throttle,
-    xpath, xpathAll,
-    responseProgressProxy,
-} = getUtils({verbose});
-const LS = hoistLS({verbose});
-
-const API = hoistAPI();
-const Tweet = hoistTweet();
-const Features = hoistFeatures();
-const I18N = getLanguageConstants();
-
-// --- That to use for the image history --- //
-// "TWEET_ID" or "IMAGE_NAME"
-const imagesHistoryBy = LS.getItem("ujs-images-history-by", "IMAGE_NAME");
-// With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
-// on the next time when the tweet will appear.
-// "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
-
-// ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Script runner --- //
 
@@ -283,14 +325,24 @@ const imagesHistoryBy = LS.getItem("ujs-images-history-by", "IMAGE_NAME");
     onChange: execFeatures
 });
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Twitter Specific code --- //
 
-const downloadedImages = new LS("ujs-twitter-downloaded-images-names");
-const downloadedImageTweetIds = new LS("ujs-twitter-downloaded-image-tweet-ids");
-const downloadedVideoTweetIds = new LS("ujs-twitter-downloaded-video-tweet-ids");
+const downloadedImages        = new LS(StorageNames.downloadedImageNames);
+const downloadedImageTweetIds = new LS(StorageNames.downloadedImageTweetIds);
+const downloadedVideoTweetIds = new LS(StorageNames.downloadedVideoTweetIds);
 
+// --- That to use for the image history --- //
+/** @type {"TWEET_ID" | "IMAGE_NAME"} */
+const imagesHistoryBy = LS.getItem(StorageNames.settingsImageHistoryBy, "IMAGE_NAME"); // Hidden settings
+// With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
+// on the next time when the tweet will appear.
+// "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
+
+
+// ---------------------------------------------------------------------------------------------------------------------
 // --- Twitter.Features --- //
 function hoistFeatures() {
     class Features {
@@ -1635,6 +1687,28 @@ function getUtils({verbose}) {
         get headers() { return this._headers; }
     }
 
+    function toLineJSON(object, prettyHead = false) {
+        let result = "{\n";
+        const entries = Object.entries(object);
+        const length = entries.length;
+        if (prettyHead && length > 0) {
+            result += `"${entries[0][0]}":${JSON.stringify(entries[0][1], null, " ")}`;
+            if (length > 1) {
+                result += `,\n\n`;
+            }
+        }
+        for (let i = 1; i < length - 1; i++) {
+            result += `"${entries[i][0]}":${JSON.stringify(entries[i][1])},\n`;
+        }
+        if (length > 0 && !prettyHead || length > 1) {
+            result += `"${entries[length - 1][0]}":${JSON.stringify(entries[length - 1][1])}`;
+        }
+        result += `\n}`;
+        return result;
+    }
+
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
+
     return {
         sleep, fetchResource, extensionFromMime, downloadBlob, dateToDayDateString,
         addCSS,
@@ -1642,7 +1716,108 @@ function getUtils({verbose}) {
         throttle, throttleWithResult,
         xpath, xpathAll,
         responseProgressProxy,
+        toLineJSON,
+        isFirefox,
     }
+}
+
+function getHistoryHelper() {
+    function migrateLocalStore() {
+        const migrated = localStorage.getItem(StorageNames.migrated);
+        if (migrated === "true") {
+            return;
+        }
+
+        const names = [
+            [StorageNames.settings,                StorageNamesOld.settings],
+            [StorageNames.settingsImageHistoryBy,  StorageNamesOld.settingsImageHistoryBy],
+            [StorageNames.downloadedImageNames,    StorageNamesOld.downloadedImageNames],
+            [StorageNames.downloadedImageTweetIds, StorageNamesOld.downloadedImageTweetIds],
+            [StorageNames.downloadedVideoTweetIds, StorageNamesOld.downloadedVideoTweetIds],
+        ];
+
+        for (const [newName, oldName] of names) {
+            const value = localStorage.getItem(oldName);
+            if (value !== null) {
+                try {
+                    localStorage.setItem(newName, value);
+                } catch (e) {
+                    localStorage.removeItem(oldName); // if there is no space (exceeded the quota)
+                    localStorage.setItem(newName, value);
+                }
+                localStorage.removeItem(oldName);
+            }
+        }
+        localStorage.setItem(StorageNames.migrated, "true");
+    }
+
+    function exportHistory() {
+        const exportObject = [
+            StorageNames.settings,
+            StorageNames.settingsImageHistoryBy,
+            StorageNames.downloadedImageNames,    // only if "settingsImageHistoryBy" === "IMAGE_NAME" (by default)
+            StorageNames.downloadedImageTweetIds, // only if "settingsImageHistoryBy" === "TWEET_ID" (need to set manually with DevTools)
+            StorageNames.downloadedVideoTweetIds,
+        ].reduce((acc, name) => {
+            const value = localStorage.getItem(name);
+            if (value === null) {
+                return acc;
+            }
+            acc[name] = JSON.parse(value);
+            return acc;
+        }, {});
+        downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}.json`);
+        function downloadBlob(blob, name, url) {
+            const anchor = document.createElement("a");
+            anchor.setAttribute("download", name || "");
+            const blobUrl = URL.createObjectURL(blob);
+            anchor.href = blobUrl + (url ? ("#" + url) : "");
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 8000);
+        }
+    }
+
+    function importHistory() {
+        const importInput = document.createElement("input");
+        importInput.type = "file";
+        importInput.accept = "application/json";
+        document.body.prepend(importInput);
+        importInput.addEventListener("change", async _event => {
+            const json = JSON.parse(await importInput.files[0].text());
+
+            console.log("json", json);
+            globalThis.json = json;
+
+            Object.entries(json).forEach(([key, value]) => {
+                localStorage.setItem(key, JSON.stringify(value));
+            });
+        });
+        importInput.click();
+    }
+
+    function mergeHistory() {
+        const mergeInput = document.createElement("input");
+        mergeInput.type = "file";
+        mergeInput.accept = "application/json";
+        document.body.prepend(mergeInput);
+        mergeInput.addEventListener("change", async _event => {
+            const json = JSON.parse(await mergeInput.files[0].text());
+
+            console.log("json", json);
+            globalThis.json = json;
+
+            Object.entries(json).forEach(([key, value]) => {
+                const existedValue = JSON.parse(localStorage.getItem(key));
+                if (Array.isArray(existedValue)) {
+                    value = [...new Set([...existedValue, ...value])];
+                }
+                localStorage.setItem(key, JSON.stringify(value));
+            });
+        });
+        mergeInput.click();
+    }
+
+    return {exportHistory, importHistory, mergeHistory, migrateLocalStore};
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
