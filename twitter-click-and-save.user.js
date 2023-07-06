@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.3.10-2023.07.06
+// @version     1.3.11-2023.07.06
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -311,18 +311,30 @@ function showSettings() {
         button.classList.remove("ujs-btn-error");
     }
 
-    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-export-button").addEventListener("click", (event) => {
+    const exportButton = document.querySelector("body > .ujs-modal-wrapper .ujs-reload-export-button");
+    const importButton = document.querySelector("body > .ujs-modal-wrapper .ujs-reload-import-button");
+    const mergeButton  = document.querySelector("body > .ujs-modal-wrapper .ujs-reload-merge-button");
+
+    exportButton.addEventListener("click", (event) => {
         const button = event.currentTarget;
         historyHelper.exportHistory(() => onDone(button));
     });
-    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-import-button").addEventListener("click", (event) => {
+    sleep(50).then(() => {
+        const infoObj = getStoreInfo();
+        exportButton.title = Object.entries(infoObj).reduce((acc, [key, value]) => {
+            acc += `${key}: ${value}\n`;
+            return acc;
+        }, "");
+    });
+
+    importButton.addEventListener("click", (event) => {
         const button = event.currentTarget;
         historyHelper.importHistory(
             () => onDone(button),
             (err) => onError(button, err)
         );
     });
-    document.querySelector("body > .ujs-modal-wrapper .ujs-reload-merge-button").addEventListener("click", (event) => {
+    mergeButton.addEventListener("click", (event) => {
         const button = event.currentTarget;
         historyHelper.mergeHistory(
             () => onDone(button),
@@ -986,6 +998,28 @@ function hoistFeatures() {
     }
 
     return Features;
+}
+
+function getStoreInfo() {
+    const resultObj = {
+        total: 0
+    };
+    for (const [name, lsKey] of Object.entries(StorageNames)) {
+        const valueStr = localStorage.getItem(lsKey);
+        if (valueStr) {
+            try {
+                const value = JSON.parse(valueStr);
+                if (Array.isArray(value)) {
+                    const size = new Set(value).size;
+                    resultObj[name] = size;
+                    resultObj.total += size;
+                }
+            } catch (e) {
+                // ...
+            }
+        }
+    }
+    return resultObj;
 }
 
 // --- Twitter.RequiredCSS --- //
