@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.3.9-2023.07.06-dev
+// @version     1.3.10-2023.07.06
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -63,6 +63,7 @@ const StorageNames = {
     downloadedVideoTweetIds: "ujs-twitter-click-n-save-downloaded-video-tweet-ids",
 
     migrated:                "ujs-twitter-click-n-save-migrated",
+    browserName:             "ujs-twitter-click-n-save-browser-name", // Hidden settings
 };
 
 const historyHelper = getHistoryHelper();
@@ -1854,8 +1855,8 @@ function getHistoryHelper() {
             acc[name] = value;
             return acc;
         }, {});
-        const browser = getBrowserName();
-        const browserLine = browser ? "-" + browser : "";
+        const browserName = localStorage.getItem(StorageNames.browserName) || getBrowserName();
+        const browserLine = browserName ? "-" + browserName : "";
 
         downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}${browserLine}.json`);
         onDone();
