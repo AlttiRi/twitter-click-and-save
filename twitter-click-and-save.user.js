@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.3.8-2023.07.06-dev
+// @version     1.3.9-2023.07.06-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1891,6 +1891,9 @@ function getHistoryHelper() {
                 onDone();
             } catch (err) {
                 onError(err);
+            } finally {
+                await sleep(1000);
+                importInput.remove();
             }
         });
         importInput.click();
@@ -1922,6 +1925,9 @@ function getHistoryHelper() {
                 onDone();
             } catch (err) {
                 onError(err);
+            } finally {
+                await sleep(1000);
+                mergeInput.remove();
             }
         });
         mergeInput.click();
