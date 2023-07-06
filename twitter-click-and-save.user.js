@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.3.7-2023.07.06-dev
+// @version     1.3.8-2023.07.06-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1908,11 +1908,14 @@ function getHistoryHelper() {
                 json = JSON.parse(await mergeInput.files[0].text());
                 verify(json);
                 Object.entries(json).forEach(([key, value]) => {
+                    if (!Array.isArray(value)) {
+                        return;
+                    }                    
                     const existedValue = JSON.parse(localStorage.getItem(key));
                     if (Array.isArray(existedValue)) {
                         const resultValue = [...new Set([...existedValue, ...value])];
                         localStorage.setItem(key, JSON.stringify(resultValue));
-                    } else if (Array.isArray(value)) {
+                    } else {
                         localStorage.setItem(key, JSON.stringify(value));
                     }
                 });
