@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.5.0-2023.07.07
+// @version     1.5.1-2023.07.07-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -412,13 +412,6 @@ const imagesHistoryBy = LS.getItem(StorageNames.settingsImageHistoryBy, "IMAGE_N
 // --- Twitter.Features --- //
 function hoistFeatures() {
     class Features {
-        static goFromMobileToMainSite() {
-            if (location.href.startsWith("https://mobile.twitter.com/")) {
-                location.href = location.href.replace("https://mobile.twitter.com/", "https://twitter.com/");
-            }
-            // TODO: add #redirected, remove by timer // to prevent a potential infinity loop
-        }
-
         static createButton({url, downloaded, isVideo}) {
             const btn = document.createElement("div");
             btn.innerHTML = `
@@ -490,15 +483,13 @@ function hoistFeatures() {
         }
         static async imagesHandler() {
             verbose && console.log("[ujs][imagesHandler]");
-            const images = document.querySelectorAll("img");
+            const images = document.querySelectorAll("img:not([data-handled])");
             for (const img of images) {
-
-                if (img.width < 150 || img.dataset.handled) {
+                img.dataset.handled = "true";
+                if (img.width < 150) {
                     continue;
                 }
                 verbose && console.log("[ujs][imagesHandler]", {img, img_width: img.width});
-
-                img.dataset.handled = "true";
 
                 const btn = Features.createButton({url: img.src});
                 btn.addEventListener("click", Features._imageClickHandler);
@@ -622,14 +613,10 @@ function hoistFeatures() {
 
         static tweetVidWeakMap = new WeakMap();
         static async videoHandler() {
-            const videos = document.querySelectorAll("video");
-
+            const videos = document.querySelectorAll("video:not([data-handled])");
             for (const vid of videos) {
-                if (vid.dataset.handled) {
-                    continue;
-                }
-                verbose && console.log("[ujs][videoHandler][vid]", vid);
                 vid.dataset.handled = "true";
+                verbose && console.log("[ujs][videoHandler][vid]", vid);
 
                 const poster = vid.getAttribute("poster");
 
@@ -736,7 +723,7 @@ function hoistFeatures() {
             addCSS(code);
         }
 
-        // it depends of `directLinks()` use only it after `directLinks()`
+        // it depends on `directLinks()` use only it after `directLinks()`
         static handleTitle(title) {
 
             if (!I18N.QUOTES) { // Unsupported lang, no QUOTES, ON_TWITTER, TWITTER constants
@@ -1019,6 +1006,12 @@ function hoistFeatures() {
             }
         }
 
+        static goFromMobileToMainSite() { // uncompleted
+            if (location.href.startsWith("https://mobile.twitter.com/")) {
+                location.href = location.href.replace("https://mobile.twitter.com/", "https://twitter.com/");
+            }
+            // TODO: add #redirected, remove by timer // to prevent a potential infinity loop
+        }
     }
 
     return Features;
@@ -1358,7 +1351,7 @@ function hoistAPI() {
                 if (response.ok) {
                     verbose && console.log("[ujs][apiRequest]", "Cache API request", _url);
                     API.vacuumCache();
-                    API.requestCache.set(_url, json);                    
+                    API.requestCache.set(_url, json);
                 }
             } catch (err) {
                 /* verbose && */ console.error("[ujs][apiRequest]", _url);
