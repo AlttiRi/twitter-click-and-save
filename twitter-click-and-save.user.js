@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.4.2-2023.07.07
+// @version     1.4.3-2023.07.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1490,6 +1490,168 @@ function hoistAPI() {
     return API;
 }
 
+function getHistoryHelper() {
+    function migrateLocalStore() {
+        // 2023.07.05 // todo: uncomment after two+ months
+        // Currently I disable it for cases if some browser's tabs uses the old version of the script.
+        // const migrated = localStorage.getItem(StorageNames.migrated);
+        // if (migrated === "true") {
+        //     return;
+        // }
+
+        const newToOldNameMap = [
+            [StorageNames.settings,                StorageNamesOld.settings],
+            [StorageNames.settingsImageHistoryBy,  StorageNamesOld.settingsImageHistoryBy],
+            [StorageNames.downloadedImageNames,    StorageNamesOld.downloadedImageNames],
+            [StorageNames.downloadedImageTweetIds, StorageNamesOld.downloadedImageTweetIds],
+            [StorageNames.downloadedVideoTweetIds, StorageNamesOld.downloadedVideoTweetIds],
+        ];
+
+        /**
+         * @param {string} newName
+         * @param {string} oldName
+         * @param {string} value
+         */
+        function setValue(newName, oldName, value) {
+            try {
+                localStorage.setItem(newName, value);
+            } catch (e) {
+                localStorage.removeItem(oldName); // if there is no space ("exceeded the quota")
+                localStorage.setItem(newName, value);
+            }
+            localStorage.removeItem(oldName);
+        }
+
+        function mergeOldWithNew({newName, oldName}) {
+            const oldValueStr = localStorage.getItem(oldName);
+            if (oldValueStr === null) {
+                return;
+            }
+            const newValueStr = localStorage.getItem(newName);
+            if (newValueStr === null) {
+                setValue(newName, oldName, oldValueStr);
+                return;
+            }
+            try {
+                const oldValue = JSON.parse(oldValueStr);
+                const newValue = JSON.parse(newValueStr);
+                if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+                    const resultArray = [...new Set([...newValue, ...oldValue])];
+                    const resultArrayStr = JSON.stringify(resultArray);
+                    setValue(newName, oldName, resultArrayStr);
+                }
+            } catch (e) {
+                // return;
+            }
+        }
+
+        for (const [newName, oldName] of newToOldNameMap) {
+            mergeOldWithNew({newName, oldName});
+        }
+        // localStorage.setItem(StorageNames.migrated, "true");
+    }
+
+    function exportHistory(onDone) {
+        const exportObject = [
+            StorageNames.settings,
+            StorageNames.settingsImageHistoryBy,
+            StorageNames.downloadedImageNames,    // only if "settingsImageHistoryBy" === "IMAGE_NAME" (by default)
+            StorageNames.downloadedImageTweetIds, // only if "settingsImageHistoryBy" === "TWEET_ID" (need to set manually with DevTools)
+            StorageNames.downloadedVideoTweetIds,
+        ].reduce((acc, name) => {
+            const valueStr = localStorage.getItem(name);
+            if (valueStr === null) {
+                return acc;
+            }
+            let value = JSON.parse(valueStr);
+            if (Array.isArray(value)) {
+                value = [...new Set(value)];
+            }
+            acc[name] = value;
+            return acc;
+        }, {});
+        const browserName = localStorage.getItem(StorageNames.browserName) || getBrowserName();
+        const browserLine = browserName ? "-" + browserName : "";
+
+        downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}${browserLine}.json`);
+        onDone();
+    }
+
+    function verify(jsonObject) {
+        if (Array.isArray(jsonObject)) {
+            throw new Error("Wrong object! JSON contains an array.");
+        }
+        if (Object.keys(jsonObject).some(key => !key.startsWith("ujs-twitter-click-n-save"))) {
+            throw new Error("Wrong object! The keys should start with 'ujs-twitter-click-n-save'.");
+        }
+    }
+
+    function importHistory(onDone, onError) {
+        const importInput = document.createElement("input");
+        importInput.type = "file";
+        importInput.accept = "application/json";
+        importInput.style.display = "none";
+        document.body.prepend(importInput);
+        importInput.addEventListener("change", async _event => {
+            let json;
+            try {
+                json = JSON.parse(await importInput.files[0].text());
+                verify(json);
+
+                Object.entries(json).forEach(([key, value]) => {
+                    if (Array.isArray(value)) {
+                        value = [...new Set(value)];
+                    }
+                    localStorage.setItem(key, JSON.stringify(value));
+                });
+                onDone();
+            } catch (err) {
+                onError(err);
+            } finally {
+                await sleep(1000);
+                importInput.remove();
+            }
+        });
+        importInput.click();
+    }
+
+    function mergeHistory(onDone, onError) { // Only merges arrays
+        const mergeInput = document.createElement("input");
+        mergeInput.type = "file";
+        mergeInput.accept = "application/json";
+        mergeInput.style.display = "none";
+        document.body.prepend(mergeInput);
+        mergeInput.addEventListener("change", async _event => {
+            let json;
+            try {
+                json = JSON.parse(await mergeInput.files[0].text());
+                verify(json);
+                Object.entries(json).forEach(([key, value]) => {
+                    if (!Array.isArray(value)) {
+                        return;
+                    }
+                    const existedValue = JSON.parse(localStorage.getItem(key));
+                    if (Array.isArray(existedValue)) {
+                        const resultValue = [...new Set([...existedValue, ...value])];
+                        localStorage.setItem(key, JSON.stringify(resultValue));
+                    } else {
+                        localStorage.setItem(key, JSON.stringify(value));
+                    }
+                });
+                onDone();
+            } catch (err) {
+                onError(err);
+            } finally {
+                await sleep(1000);
+                mergeInput.remove();
+            }
+        });
+        mergeInput.click();
+    }
+
+    return {exportHistory, importHistory, mergeHistory, migrateLocalStore};
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Common Utils --- //
@@ -1852,168 +2014,6 @@ function getUtils({verbose}) {
         isFirefox,
         getBrowserName,
     }
-}
-
-function getHistoryHelper() {
-    function migrateLocalStore() {
-        // 2023.07.05 // todo: uncomment after two+ months
-        // Currently I disable it for cases if some browser's tabs uses the old version of the script.
-        // const migrated = localStorage.getItem(StorageNames.migrated);
-        // if (migrated === "true") {
-        //     return;
-        // }
-
-        const newToOldNameMap = [
-            [StorageNames.settings,                StorageNamesOld.settings],
-            [StorageNames.settingsImageHistoryBy,  StorageNamesOld.settingsImageHistoryBy],
-            [StorageNames.downloadedImageNames,    StorageNamesOld.downloadedImageNames],
-            [StorageNames.downloadedImageTweetIds, StorageNamesOld.downloadedImageTweetIds],
-            [StorageNames.downloadedVideoTweetIds, StorageNamesOld.downloadedVideoTweetIds],
-        ];
-
-        /**
-         * @param {string} newName
-         * @param {string} oldName
-         * @param {string} value
-         */
-        function setValue(newName, oldName, value) {
-            try {
-                localStorage.setItem(newName, value);
-            } catch (e) {
-                localStorage.removeItem(oldName); // if there is no space ("exceeded the quota")
-                localStorage.setItem(newName, value);
-            }
-            localStorage.removeItem(oldName);
-        }
-
-        function mergeOldWithNew({newName, oldName}) {
-            const oldValueStr = localStorage.getItem(oldName);
-            if (oldValueStr === null) {
-                return;
-            }
-            const newValueStr = localStorage.getItem(newName);
-            if (newValueStr === null) {
-                setValue(newName, oldName, oldValueStr);
-                return;
-            }
-            try {
-                const oldValue = JSON.parse(oldValueStr);
-                const newValue = JSON.parse(newValueStr);
-                if (Array.isArray(oldValue) && Array.isArray(newValue)) {
-                    const resultArray = [...new Set([...newValue, ...oldValue])];
-                    const resultArrayStr = JSON.stringify(resultArray);
-                    setValue(newName, oldName, resultArrayStr);
-                }
-            } catch (e) {
-                // return;
-            }
-        }
-
-        for (const [newName, oldName] of newToOldNameMap) {
-            mergeOldWithNew({newName, oldName});
-        }
-        // localStorage.setItem(StorageNames.migrated, "true");
-    }
-
-    function exportHistory(onDone) {
-        const exportObject = [
-            StorageNames.settings,
-            StorageNames.settingsImageHistoryBy,
-            StorageNames.downloadedImageNames,    // only if "settingsImageHistoryBy" === "IMAGE_NAME" (by default)
-            StorageNames.downloadedImageTweetIds, // only if "settingsImageHistoryBy" === "TWEET_ID" (need to set manually with DevTools)
-            StorageNames.downloadedVideoTweetIds,
-        ].reduce((acc, name) => {
-            const valueStr = localStorage.getItem(name);
-            if (valueStr === null) {
-                return acc;
-            }
-            let value = JSON.parse(valueStr);
-            if (Array.isArray(value)) {
-                value = [...new Set(value)];
-            }
-            acc[name] = value;
-            return acc;
-        }, {});
-        const browserName = localStorage.getItem(StorageNames.browserName) || getBrowserName();
-        const browserLine = browserName ? "-" + browserName : "";
-
-        downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}${browserLine}.json`);
-        onDone();
-    }
-
-    function verify(jsonObject) {
-        if (Array.isArray(jsonObject)) {
-            throw new Error("Wrong object! JSON contains an array.");
-        }
-        if (Object.keys(jsonObject).some(key => !key.startsWith("ujs-twitter-click-n-save"))) {
-            throw new Error("Wrong object! The keys should start with 'ujs-twitter-click-n-save'.");
-        }
-    }
-
-    function importHistory(onDone, onError) {
-        const importInput = document.createElement("input");
-        importInput.type = "file";
-        importInput.accept = "application/json";
-        importInput.style.display = "none";
-        document.body.prepend(importInput);
-        importInput.addEventListener("change", async _event => {
-            let json;
-            try {
-                json = JSON.parse(await importInput.files[0].text());
-                verify(json);
-
-                Object.entries(json).forEach(([key, value]) => {
-                    if (Array.isArray(value)) {
-                        value = [...new Set(value)];
-                    }
-                    localStorage.setItem(key, JSON.stringify(value));
-                });
-                onDone();
-            } catch (err) {
-                onError(err);
-            } finally {
-                await sleep(1000);
-                importInput.remove();
-            }
-        });
-        importInput.click();
-    }
-
-    function mergeHistory(onDone, onError) { // Only merges arrays
-        const mergeInput = document.createElement("input");
-        mergeInput.type = "file";
-        mergeInput.accept = "application/json";
-        mergeInput.style.display = "none";
-        document.body.prepend(mergeInput);
-        mergeInput.addEventListener("change", async _event => {
-            let json;
-            try {
-                json = JSON.parse(await mergeInput.files[0].text());
-                verify(json);
-                Object.entries(json).forEach(([key, value]) => {
-                    if (!Array.isArray(value)) {
-                        return;
-                    }                    
-                    const existedValue = JSON.parse(localStorage.getItem(key));
-                    if (Array.isArray(existedValue)) {
-                        const resultValue = [...new Set([...existedValue, ...value])];
-                        localStorage.setItem(key, JSON.stringify(resultValue));
-                    } else {
-                        localStorage.setItem(key, JSON.stringify(value));
-                    }
-                });
-                onDone();
-            } catch (err) {
-                onError(err);
-            } finally {
-                await sleep(1000);
-                mergeInput.remove();
-            }
-        });
-        mergeInput.click();
-    }
-
-    return {exportHistory, importHistory, mergeHistory, migrateLocalStore};
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
