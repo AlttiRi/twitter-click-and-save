@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.4.1-2023.07.07
+// @version     1.4.2-2023.07.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -678,8 +678,9 @@ function hoistFeatures() {
 
             let video; // {bitrate, content_type, url}
             let vidNumber = 0;
+            let videoTweetId = id;
             try {
-                ({video, tweetId: id, screenName: author, vidNumber} = await API.getVideoInfo(id, author, posterUrl));
+                ({video, tweetId: videoTweetId, screenName: author, vidNumber} = await API.getVideoInfo(id, author, posterUrl));
                 verbose && console.log(video);
             } catch (e) {
                 btn.classList.add("ujs-error");
@@ -702,13 +703,17 @@ function hoistFeatures() {
 
             Features.verifyBlob(blob, url, btn);
 
-            const filename = `[twitter] ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
+            const filename = `[twitter] ${author}—${lastModifiedDate}—${videoTweetId}—${name}.${extension}`;
             downloadBlob(blob, filename, url);
 
             const downloaded = btn.classList.contains("ujs-already-downloaded");
-            const historyId = vidNumber ? id + "-" + vidNumber : id;
+            const historyId = vidNumber ? videoTweetId + "-" + vidNumber : videoTweetId;
             if (!downloaded) {
                 await downloadedVideoTweetIds.pushItem(historyId);
+                if (videoTweetId !== id) { // if QRT
+                    const historyId = vidNumber ? id + "-" + vidNumber : id;
+                    await downloadedVideoTweetIds.pushItem(historyId);
+                }
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
@@ -1365,7 +1370,7 @@ function hoistAPI() {
             return json;
         }
 
-        // @return {bitrate, content_type, url, vidNumber}
+        /** @return {video, tweetId, screenName, vidNumber} */
         static async getVideoInfo(tweetId, screenName, posterUrl) {
             const url = API.createVideoEndpointUrl(tweetId);
 
