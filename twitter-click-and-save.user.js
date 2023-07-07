@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.4.0-2023.07.07
+// @version     1.4.1-2023.07.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1351,8 +1351,8 @@ function hoistAPI() {
                 json = await response.json();
                 if (response.ok) {
                     verbose && console.log("cache api request", _url);
-                    API.requestCache.set(_url, json);
                     API.vacuumCache();
+                    API.requestCache.set(_url, json);                    
                 }
             } catch (e) {
                 console.error(e, _url);
