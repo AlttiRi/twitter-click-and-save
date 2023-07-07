@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.4.3-2023.07.07
+// @version     1.5.0-2023.07.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -113,7 +113,7 @@ function ujs_getGlobalFetch({verbose, strictTrackingProtectionFix} = {}) {
     const useFirefoxFix = useFirefoxStrictTrackingProtectionFix && typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function";
     // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
     function fixedFirefoxFetch(resource, init = {}) {
-        verbose && console.log("wrappedJSObject.fetch", resource, init);
+        verbose && console.log("[ujs][wrappedJSObject.fetch]", resource, init);
         if (init.headers instanceof Headers) {
             // Since `Headers` are not allowed for structured cloning.
             init.headers = Object.fromEntries(init.headers.entries());
@@ -170,7 +170,7 @@ function execFeatures() {
     observer.observe(targetNode, observerOptions);
 
     function callback(mutationList, observer) {
-        verbose && console.log(mutationList);
+        verbose && console.log("[ujs][mutationList]", mutationList);
         onChangeImmediate();
         onChangeThrottled();
     }
@@ -212,8 +212,8 @@ function loadSettings() {
     let savedSettings;
     try {
         savedSettings = JSON.parse(localStorage.getItem(StorageNames.settings)) || {};
-    } catch (e) {
-        console.error("[ujs]", e);
+    } catch (err) {
+        console.error("[ujs][parse-settings]", err);
         localStorage.removeItem(StorageNames.settings);
         savedSettings = {};
     }
@@ -378,7 +378,7 @@ function showSettings() {
         const radioEntries = [...document.querySelectorAll("body > .ujs-modal-wrapper input[type=radio]")]
             .map(checkbox => [checkbox.value, checkbox.checked])
         const settings = Object.fromEntries([entries, radioEntries].flat());
-        // console.log("[ujs]", settings);
+        // verbose && console.log("[ujs][save-settings]", settings);
         localStorage.setItem(StorageNames.settings, JSON.stringify(settings));
     }
 
@@ -489,14 +489,14 @@ function hoistFeatures() {
             }
         }
         static async imagesHandler() {
-            verbose && console.log("[ujs-cns][imagesHandler]");
+            verbose && console.log("[ujs][imagesHandler]");
             const images = document.querySelectorAll("img");
             for (const img of images) {
 
                 if (img.width < 150 || img.dataset.handled) {
                     continue;
                 }
-                verbose && console.log(img, img.width);
+                verbose && console.log("[ujs][imagesHandler]", {img, img_width: img.width});
 
                 img.dataset.handled = "true";
 
@@ -533,7 +533,7 @@ function hoistFeatures() {
             }
 
             const {id, author} = Tweet.of(btn);
-            verbose && console.log(id, author);
+            verbose && console.log("[ujs][_imageClickHandler]", {id, author});
 
             const btnProgress = btn.querySelector(".ujs-progress");
             if (btn.textContent !== "") {
@@ -566,7 +566,7 @@ function hoistFeatures() {
                     throw new Error("All fallback URLs are failed to download.");
                 }
                 url = urlObj.toString();
-                verbose && console.log("[handleImgUrl]", url);
+                verbose && console.log("[ujs][handleImgUrl][url]", url);
                 return url;
             }
 
@@ -575,7 +575,7 @@ function hoistFeatures() {
                     url = handleImgUrl(url);
                     try {
                         return await fetchResource(url, onProgress);
-                    } catch (e) {
+                    } catch (err) {
                         if (!originals.length) {
                             btn.classList.add("ujs-error");
                             btnErrorTextElem.textContent = "";
@@ -584,7 +584,7 @@ function hoistFeatures() {
                             btn.title = "[warning] Original images are not available.";
                         }
 
-                        const ffAutoAllocateChunkSizeBug = e.message.includes("autoAllocateChunkSize"); // https://bugzilla.mozilla.org/show_bug.cgi?id=1757836
+                        const ffAutoAllocateChunkSizeBug = err.message.includes("autoAllocateChunkSize"); // https://bugzilla.mozilla.org/show_bug.cgi?id=1757836
                         if (!samples.length || ffAutoAllocateChunkSizeBug) {
                             btn.classList.add("ujs-error");
                             btnErrorTextElem.textContent = "";
@@ -628,7 +628,7 @@ function hoistFeatures() {
                 if (vid.dataset.handled) {
                     continue;
                 }
-                verbose && console.log(vid);
+                verbose && console.log("[ujs][videoHandler][vid]", vid);
                 vid.dataset.handled = "true";
 
                 const poster = vid.getAttribute("poster");
@@ -681,8 +681,8 @@ function hoistFeatures() {
             let videoTweetId = id;
             try {
                 ({video, tweetId: videoTweetId, screenName: author, vidNumber} = await API.getVideoInfo(id, author, posterUrl));
-                verbose && console.log(video);
-            } catch (e) {
+                verbose && console.log("[ujs][videoHandler][video]", video);
+            } catch (err) {
                 btn.classList.add("ujs-error");
                 btnErrorTextElem.textContent = "Error";
                 btn.title = "API.getVideoInfo Error";
@@ -813,7 +813,7 @@ function hoistFeatures() {
                     return;
                 }
 
-                verbose && console.log("[ujs][directLinks]", hrefAttr, redirectUrl.href, shortUrl);
+                verbose && console.log("[ujs][directLinks]", {hrefAttr, redirectUrl_href: redirectUrl.href, shortUrl});
 
                 anchor.dataset.redirect = shortUrl;
                 anchor.dataset.handled = "true";
@@ -842,7 +842,7 @@ function hoistFeatures() {
                     const href = anchor.getAttribute("href");
                     const profileUrl = hasHttp(href) ? href : "https://" + href;
                     anchor.href = profileUrl;
-                    verbose && console.log("[ujs][directLinks][UserUrl]", profileUrl);
+                    verbose && console.log("[ujs][directLinks][profileUrl]", profileUrl);
 
                     // Restore if URL's text content is too long
                     if (anchor.textContent.endsWith("…")) {
@@ -853,8 +853,8 @@ function hoistFeatures() {
                             const expanded_url = await API.getUserInfo(author); // todo: make lazy
                             anchor.href = expanded_url;
                             Features.profileUrlCache.set(shortUrl, expanded_url);
-                        } catch (e) {
-                            verbose && console.error(e);
+                        } catch (err) {
+                            verbose && console.error("[ujs]", err);
                         }
                     }
                 }
@@ -1002,7 +1002,7 @@ function hoistFeatures() {
 
             function callback(mutationList, observer) {
                 const html = document.querySelector("html");
-                console.log(mutationList);
+                verbose && console.log("[ujs][hideLoginPopup][mutationList]", mutationList);
                 // overflow-y: scroll; overscroll-behavior-y: none; font-size: 15px;                     // default
                 // overflow: hidden; overscroll-behavior-y: none; font-size: 15px; margin-right: 15px;   // popup
                 if (html.style["overflow"] === "hidden") {
@@ -1038,7 +1038,7 @@ function getStoreInfo() {
                     resultObj[name] = size;
                     resultObj.total += size;
                 }
-            } catch (e) {
+            } catch (err) {
                 // ...
             }
         }
@@ -1245,7 +1245,7 @@ function hoistTweet() {
 
             const elem = innerElem.closest(`[data-testid="tweet"]`);
             if (!elem) { // opened image
-                verbose && console.log("no-tweet elem");
+                verbose && console.log("[ujs][Tweet.of]", "No-tweet elem");
             }
             return new Tweet({elem});
         }
@@ -1294,9 +1294,10 @@ function hoistAPI() {
             let text;
             try {
                 text = await (await fetch(scriptSrc)).text();
-            } catch (e) {
-                console.error(e, scriptSrc);
-                throw e;
+            } catch (err) {
+                /* verbose && */ console.error("[ujs][_requestBearerToken][scriptSrc]", scriptSrc);
+                /* verbose && */ console.error("[ujs][_requestBearerToken]", err);
+                throw err;
             }
 
             const authorizationKey = text.match(/(?<=")AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D.+?(?=")/)[0];
@@ -1324,7 +1325,7 @@ function hoistAPI() {
             verbose && console.log("[ujs][apiRequest]", _url);
 
             if (API.requestCache.has(_url)) {
-                verbose && console.log("use cached api request", _url);
+                verbose && console.log("[ujs][apiRequest] Use cached API request", _url);
                 return API.requestCache.get(_url);
             }
 
@@ -1355,16 +1356,17 @@ function hoistAPI() {
                 const response = await fetch(_url, {headers});
                 json = await response.json();
                 if (response.ok) {
-                    verbose && console.log("cache api request", _url);
+                    verbose && console.log("[ujs][apiRequest]", "Cache API request", _url);
                     API.vacuumCache();
                     API.requestCache.set(_url, json);                    
                 }
-            } catch (e) {
-                console.error(e, _url);
-                throw e;
+            } catch (err) {
+                /* verbose && */ console.error("[ujs][apiRequest]", _url);
+                /* verbose && */ console.error("[ujs][apiRequest]", err);
+                throw err;
             }
 
-            verbose && console.log("[ujs][apiRequest]", JSON.stringify(json, null, " "));
+            verbose && console.log("[ujs][apiRequest][json]", JSON.stringify(json, null, " "));
             // 429 - [{code: 88, message: "Rate limit exceeded"}] — for suspended accounts
 
             return json;
@@ -1375,7 +1377,7 @@ function hoistAPI() {
             const url = API.createVideoEndpointUrl(tweetId);
 
             const json = await API.apiRequest(url);
-            verbose && console.log("[getVideoInfo]", json, JSON.stringify(json));
+            verbose && console.log("[ujs][getVideoInfo]", json, JSON.stringify(json));
 
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
             const tweetEntry = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
@@ -1406,19 +1408,19 @@ function hoistAPI() {
                 .findIndex(e => e.media_url_https === posterUrl);
 
             if (vidNumber === -1 || mediaIndex === -1) {
-                verbose && console.log("[ujs][warning]: vidNumber === -1 || mediaIndex === -1");
+                verbose && console.warn("[ujs][getVideoInfo][warning]: vidNumber === -1 || mediaIndex === -1");
                 vidNumber = 0;
                 mediaIndex = 0;
             }
             const videoVariants = tweetData.extended_entities.media[mediaIndex].video_info.variants;
-            verbose && console.log("[getVideoInfo]", videoVariants);
+            verbose && console.log("[ujs][getVideoInfo][videoVariants]", videoVariants);
 
             const video = videoVariants
                 .filter(el => el.bitrate !== undefined) // if content_type: "application/x-mpegURL" // .m3u8
                 .reduce((acc, cur) => cur.bitrate > acc.bitrate ? cur : acc);
 
             if (!video) {
-                throw new Error("No video URL");
+                throw new Error("No video URL found");
             }
 
             return {video, tweetId, screenName, vidNumber};
@@ -1482,7 +1484,7 @@ function hoistAPI() {
             });
             const url = `https://twitter.com/i/api/graphql/${API.UserByScreenNameQueryId}/UserByScreenName?variables=${encodeURIComponent(variables)}`;
             const json = await API.apiRequest(url);
-            verbose && console.log("[getUserInfo]", json);
+            verbose && console.log("[ujs][getUserInfo][json]", json);
             return json.data.user.result.legacy.entities.url?.urls[0].expanded_url;
         }
     }
@@ -1515,7 +1517,7 @@ function getHistoryHelper() {
         function setValue(newName, oldName, value) {
             try {
                 localStorage.setItem(newName, value);
-            } catch (e) {
+            } catch (err) {
                 localStorage.removeItem(oldName); // if there is no space ("exceeded the quota")
                 localStorage.setItem(newName, value);
             }
@@ -1540,7 +1542,7 @@ function getHistoryHelper() {
                     const resultArrayStr = JSON.stringify(resultArray);
                     setValue(newName, oldName, resultArrayStr);
                 }
-            } catch (e) {
+            } catch (err) {
                 // return;
             }
         }
@@ -1773,7 +1775,8 @@ function getUtils({verbose}) {
             const {name} = filename.match(/(?<name>^[^.]+)/).groups;
             return {blob, lastModifiedDate, contentType, extension, name};
         } catch (error) {
-            verbose && console.error("[fetchResource]", url, error);
+            verbose && console.error("[ujs][fetchResource]", url);
+            verbose && console.error("[ujs][fetchResource]", error);
             throw error;
         }
     }
@@ -1816,7 +1819,7 @@ function getUtils({verbose}) {
     }
 
     function getCookie(name) {
-        verbose && console.log(document.cookie);
+        verbose && console.log("[ujs][getCookie]", document.cookie);
         const regExp = new RegExp(`(?<=${name}=)[^;]+`);
         return document.cookie.match(regExp)?.[0];
     }
@@ -1894,9 +1897,9 @@ function getUtils({verbose}) {
                 node = xPathResult.iterateNext();
             }
             return nodes;
-        } catch (e) {
+        } catch (err) {
             // todo need investigate it
-            console.error(e); // "The document has mutated since the result was returned."
+            console.error(err); // "The document has mutated since the result was returned."
             return [];
         }
     }
@@ -1934,8 +1937,8 @@ function getUtils({verbose}) {
                     loaded += value.length;
                     try {
                         onProgress({loaded, ...onProgressProps});
-                    } catch (e) {
-                        console.error("[onProgress]:", e);
+                    } catch (err) {
+                        console.error("[ujs][onProgress]:", err);
                     }
                     controller.enqueue(value);
                 }
