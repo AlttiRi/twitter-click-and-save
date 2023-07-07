@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.3.12-2023.07.07
+// @version     1.4.0-2023.07.07
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -17,12 +17,12 @@
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-
-// --- For debug --- //
-const verbose = false;
-
-// ---------------------------------------------------------------------------------------------------------------------
 // --- "Imports" --- //
+
+const {StorageNames, StorageNamesOld} = getStorageNames();
+
+const {verbose, debugPopup} = getDebugSettings(); // --- For debug --- //
+
 
 const {
     sleep, fetchResource, downloadBlob,
@@ -37,7 +37,6 @@ const {
     getBrowserName,
 } = getUtils({verbose});
 
-
 const LS = hoistLS({verbose});
 
 const API = hoistAPI();
@@ -47,24 +46,42 @@ const I18N = getLanguageConstants();
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-const StorageNamesOld = {
-    settings:                "ujs-click-n-save-settings",
-    settingsImageHistoryBy:  "ujs-images-history-by",
-    downloadedImageNames:    "ujs-twitter-downloaded-images-names",
-    downloadedImageTweetIds: "ujs-twitter-downloaded-image-tweet-ids",
-    downloadedVideoTweetIds: "ujs-twitter-downloaded-video-tweet-ids",
-};
-// New LocalStorage key names 2023.07.05
-const StorageNames = {
-    settings:                "ujs-twitter-click-n-save-settings",
-    settingsImageHistoryBy:  "ujs-twitter-click-n-save-settings-image-history-by",
-    downloadedImageNames:    "ujs-twitter-click-n-save-downloaded-image-names",
-    downloadedImageTweetIds: "ujs-twitter-click-n-save-downloaded-image-tweet-ids",
-    downloadedVideoTweetIds: "ujs-twitter-click-n-save-downloaded-video-tweet-ids",
+function getStorageNames() {
+    // New LocalStorage key names 2023.07.05
+    const StorageNames = {
+        settings:                "ujs-twitter-click-n-save-settings",
+        settingsImageHistoryBy:  "ujs-twitter-click-n-save-settings-image-history-by",
+        downloadedImageNames:    "ujs-twitter-click-n-save-downloaded-image-names",
+        downloadedImageTweetIds: "ujs-twitter-click-n-save-downloaded-image-tweet-ids",
+        downloadedVideoTweetIds: "ujs-twitter-click-n-save-downloaded-video-tweet-ids",
 
-    migrated:                "ujs-twitter-click-n-save-migrated",
-    browserName:             "ujs-twitter-click-n-save-browser-name", // Hidden settings
-};
+        migrated:                "ujs-twitter-click-n-save-migrated",     // Currently unused
+        browserName:             "ujs-twitter-click-n-save-browser-name", // Hidden settings
+        verbose:                 "ujs-twitter-click-n-save-verbose",      // Hidden settings for debug
+        debugPopup:              "ujs-twitter-click-n-save-debug-popup",  // Hidden settings for debug
+    };
+    const StorageNamesOld = {
+        settings:                "ujs-click-n-save-settings",
+        settingsImageHistoryBy:  "ujs-images-history-by",
+        downloadedImageNames:    "ujs-twitter-downloaded-images-names",
+        downloadedImageTweetIds: "ujs-twitter-downloaded-image-tweet-ids",
+        downloadedVideoTweetIds: "ujs-twitter-downloaded-video-tweet-ids",
+    };
+    return {StorageNames, StorageNamesOld};
+}
+
+function getDebugSettings() {
+    let verbose    = false;
+    let debugPopup = false;
+    try {
+        verbose    = Boolean(JSON.parse(localStorage.getItem(StorageNames.verbose)));
+    } catch (err) {}
+    try {
+        debugPopup = Boolean(JSON.parse(localStorage.getItem(StorageNames.debugPopup)));
+    } catch (err) {}
+
+    return {verbose, debugPopup};
+}
 
 const historyHelper = getHistoryHelper();
 historyHelper.migrateLocalStore();
@@ -82,6 +99,8 @@ const settings = loadSettings();
 
 if (verbose) {
     console.log("[ujs][settings]", settings);
+}
+if (debugPopup) {
     showSettings();
 }
 
@@ -1288,9 +1307,21 @@ function hoistAPI() {
             return API.authorization;
         }
 
+        static requestCache = new Map();
+        static vacuumCache() {
+            if (API.requestCache.size > 16) {
+                API.requestCache.delete(API.requestCache.keys().next().value);
+            }
+        }
+
         static async apiRequest(url) {
             const _url = url.toString();
             verbose && console.log("[ujs][apiRequest]", _url);
+
+            if (API.requestCache.has(_url)) {
+                verbose && console.log("use cached api request", _url);
+                return API.requestCache.get(_url);
+            }
 
             // Hm... it is always the same. Even for a logged user.
             // const authorization = API.guestToken ? API.guestAuthorization : await API.getAuthorization();
@@ -1318,6 +1349,11 @@ function hoistAPI() {
             try {
                 const response = await fetch(_url, {headers});
                 json = await response.json();
+                if (response.ok) {
+                    verbose && console.log("cache api request", _url);
+                    API.requestCache.set(_url, json);
+                    API.vacuumCache();
+                }
             } catch (e) {
                 console.error(e, _url);
                 throw e;
