@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.5.1-2023.07.07-dev
+// @version     1.5.2-2023.07.10-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -169,7 +169,7 @@ function execFeatures() {
     const observer = new MutationObserver(callback);
     observer.observe(targetNode, observerOptions);
 
-    function callback(mutationList, observer) {
+    function callback(mutationList, _observer) {
         verbose && console.log("[ujs][mutationList]", mutationList);
         onChangeImmediate();
         onChangeThrottled();
@@ -486,7 +486,7 @@ function hoistFeatures() {
             const images = document.querySelectorAll("img:not([data-handled])");
             for (const img of images) {
                 img.dataset.handled = "true";
-                if (img.width < 150) {
+                if (img.naturalWidth < 150) {
                     continue;
                 }
                 verbose && console.log("[ujs][imagesHandler]", {img, img_width: img.width});
@@ -987,7 +987,7 @@ function hoistFeatures() {
             const observer = new MutationObserver(callback);
             observer.observe(targetNode, observerOptions);
 
-            function callback(mutationList, observer) {
+            function callback(mutationList, _observer) {
                 const html = document.querySelector("html");
                 verbose && console.log("[ujs][hideLoginPopup][mutationList]", mutationList);
                 // overflow-y: scroll; overscroll-behavior-y: none; font-size: 15px;                     // default
@@ -1962,7 +1962,7 @@ function getUtils({verbose}) {
         get redirected() { return this._redirected; }
         get url() { return this._url; }
         get type() { return this._type || "basic"; }
-        /** @returns {HeadersLike} */
+        /** @returns {Headers} - `Headers`-like object */
         get headers() { return this._headers; }
     }
 
