@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.5.5-2023.07.13-dev
+// @version     1.5.6-2023.07.13-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -494,6 +494,12 @@ function hoistFeatures() {
                 }
                 verbose && console.log("[ujs][imagesHandler]", {img, img_width: img.width});
 
+                const isMobileVideo = img.src.includes("ext_tw_video_thumb");
+                if (isMobileVideo) {
+                    await Features.mobileVideoHandler(img);
+                    continue;
+                }
+
                 const btn = Features.createButton({url: img.src});
                 btn.addEventListener("click", Features._imageClickHandler);
 
@@ -614,6 +620,40 @@ function hoistFeatures() {
             btnProgress.style.cssText = "--progress: 0%";
         }
 
+        // Quick Dirty Fix // todo refactor
+        static async mobileVideoHandler(imgElem) {
+            verbose && console.log("[ujs][mobileVideoHandler][vid]", imgElem);
+
+            const btn = Features.createButton({isVideo: true, url: imgElem.src});
+            btn.addEventListener("click", Features._videoClickHandler);
+
+            let anchor = imgElem.closest("a");
+            if (!anchor) {
+                anchor = imgElem.parentNode;
+            }
+            anchor.append(btn);
+
+            const tweet = Tweet.of(btn);
+            const id = tweet.id;
+            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`);
+            let vidNumber = 0;
+
+            const map = Features.tweetVidWeakMapMobile;
+            if (map.has(tweetElem)) {
+                vidNumber = map.get(tweetElem) + 1;
+                map.set(tweetElem, vidNumber);
+            } else {
+                map.set(tweetElem, vidNumber); // can throw an error for null
+            }
+            const historyId = vidNumber ? id + "-" + vidNumber : id;
+
+            const downloaded = downloadedVideoTweetIds.hasItem(historyId);
+            if (downloaded) {
+                btn.classList.add("ujs-already-downloaded");
+            }
+        }
+
+        static tweetVidWeakMapMobile = new WeakMap();
         static tweetVidWeakMap = new WeakMap();
         static async videoHandler() {
             const videos = document.querySelectorAll("video:not([data-handled])");
@@ -1387,7 +1427,14 @@ function hoistAPI() {
                 tweetData = tweetResult.tweet.legacy; /* For "Embedded video" */
             }
 
-            const isVideoInQuotedPost = !tweetData.extended_entities || tweetData.extended_entities.media.findIndex(e => e.media_url_https === posterUrl) === -1;
+            // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
+            const posterUrlObj = new URL(posterUrl);
+            for (const key of [...posterUrlObj.searchParams.keys()]) {
+                posterUrlObj.searchParams.delete(key);
+            }
+            posterUrl = posterUrlObj.toString();
+
+            const isVideoInQuotedPost = !tweetData.extended_entities || tweetData.extended_entities.media.findIndex(e => e.media_url_https.startsWith(posterUrl)) === -1;
             if (tweetData.quoted_status_id_str && isVideoInQuotedPost) {
                 const tweetDataQuoted     = tweetResult.quoted_status_result.result.legacy;
                 const tweetDataQuotedCore = tweetResult.quoted_status_result.result.core.user_results.result.legacy;
@@ -1401,10 +1448,10 @@ function hoistAPI() {
 
             let vidNumber = tweetData.extended_entities.media
                 .filter(e => e.type !== "photo")
-                .findIndex(e => e.media_url_https === posterUrl);
+                .findIndex(e => e.media_url_https.startsWith(posterUrl));
 
             let mediaIndex = tweetData.extended_entities.media
-                .findIndex(e => e.media_url_https === posterUrl);
+                .findIndex(e => e.media_url_https.startsWith(posterUrl));
 
             if (vidNumber === -1 || mediaIndex === -1) {
                 verbose && console.warn("[ujs][getVideoInfo][warning]: vidNumber === -1 || mediaIndex === -1");
