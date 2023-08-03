@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.5.6-2023.07.13-dev
+// @version     1.5.7-2023.08.03-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -296,7 +296,7 @@ function showSettings() {
           <hr>
           <div style="display: flex; justify-content: space-around;">
               <div>
-                History: 
+                History:
                 <button class="ujs-reload-export-button" style="padding: 5px" >Export</button>
                 <button class="ujs-reload-import-button" style="padding: 5px" >Import</button>
                 <button class="ujs-reload-merge-button"  style="padding: 5px" >Merge</button>
@@ -564,6 +564,9 @@ function hoistFeatures() {
                     urlObj.searchParams.set("name", samples.shift());
                 } else {
                     throw new Error("All fallback URLs are failed to download.");
+                }
+                if (urlObj.searchParams.get("format") === "webp") {
+                  urlObj.searchParams.set("format", "jpg");
                 }
                 url = urlObj.toString();
                 verbose && console.log("[ujs][handleImgUrl][url]", url);
@@ -1290,18 +1293,18 @@ function hoistTweet() {
         }
 
         static getUrl(elem) {
-            if (!elem) { // if opened image
+            if (!elem) {
+                verbose && console.log("[ujs][Tweet.getUrl]", "Opened full screen image");
                 return location.href;
             }
-
-            const tweetAnchor = [...elem.querySelectorAll("a")].find(el => {
+            const quotedTweetAnchorEl = [...elem.querySelectorAll("a")].find(el => {
                 return el.childNodes[0]?.nodeName === "TIME";
             });
-
-            if (tweetAnchor) {
-                return tweetAnchor.href;
+            if (quotedTweetAnchorEl) {
+                verbose && console.log("[ujs][Tweet.getUrl]", "Quoted/Re Tweet");
+                return quotedTweetAnchorEl.href;
             }
-            // else if selected tweet
+            verbose && console.log("[ujs][Tweet.getUrl]", "Unreachable"); // Is it used?
             return location.href;
         }
 
