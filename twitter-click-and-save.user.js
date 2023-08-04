@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.5.7-2023.08.03
+// @version     1.6.0-2023.08.04
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -577,7 +577,17 @@ function hoistFeatures() {
                 while (true) {
                     url = handleImgUrl(url);
                     try {
-                        return await fetchResource(url, onProgress);
+                        const result = await fetchResource(url, onProgress);
+                        if (result.status === 404) {
+                            const urlObj = new URL(url);
+                            const params = urlObj.searchParams;
+                            if (params.get("name") === "orig" && params.get("format") === "jpg") {
+                                params.set("format", "png");
+                                url = urlObj.toString();
+                                return await fetchResource(url, onProgress);
+                            }
+                        }
+                        return result;
                     } catch (err) {
                         if (!originals.length) {
                             btn.classList.add("ujs-error");
@@ -1415,8 +1425,8 @@ function hoistAPI() {
         }
 
         /** @return {video, tweetId, screenName, vidNumber} */
-        static async getVideoInfo(tweetId, screenName, posterUrl) {
-            const url = API.createVideoEndpointUrl(tweetId);
+        static async getVideoInfo(tweetId, screenName /* author */, posterUrl) {
+            const url = API.createTweetDataEndpointUrl(tweetId);
 
             const json = await API.apiRequest(url);
             verbose && console.log("[ujs][getVideoInfo]", json, JSON.stringify(json));
@@ -1479,7 +1489,7 @@ function hoistAPI() {
         static TweetDetailQueryId      = "3XDB26fBve-MmjHaWTUZxA"; // TweetDetail      (for videos)
         static UserByScreenNameQueryId = "oUZZZ8Oddwxs8Cd3iW3UEA"; // UserByScreenName (for the direct user profile url)
 
-        static createVideoEndpointUrl(tweetId) {
+        static createTweetDataEndpointUrl(tweetId) {
             const variables = {
                 "focalTweetId": tweetId,
                 "with_rux_injections": false,
@@ -1800,6 +1810,7 @@ function getUtils({verbose}) {
 
     async function fetchResource(url, onProgress = props => console.log(props)) {
         try {
+            /** @type {Response} */
             let response = await fetch(url, {
                 // cache: "force-cache",
             });
@@ -1822,7 +1833,7 @@ function getUtils({verbose}) {
             const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
 
             const {name} = filename.match(/(?<name>^[^.]+)/).groups;
-            return {blob, lastModifiedDate, contentType, extension, name};
+            return {blob, lastModifiedDate, contentType, extension, name, status: response.status};
         } catch (error) {
             verbose && console.error("[ujs][fetchResource]", url);
             verbose && console.error("[ujs][fetchResource]", error);
@@ -2003,21 +2014,23 @@ function getUtils({verbose}) {
     class ResponseEx extends Response {
         [Symbol.toStringTag] = "ResponseEx";
 
-        constructor(body, {headers, status, statusText, url, redirected, type}) {
+        constructor(body, {headers, status, statusText, url, redirected, type, ok}) {
             super(body, {
                 status, statusText, headers: {
                     ...headers,
-                    "content-type": headers.get("content-type").split("; ")[0] // Fixes Blob type ("text/html; charset=UTF-8") in TM
+                    "content-type": headers.get("content-type")?.split("; ")[0] // Fixes Blob type ("text/html; charset=UTF-8") in TM
                 }
             });
             this._type = type;
             this._url = url;
             this._redirected = redirected;
+            this._ok = ok;
             this._headers = headers; // `HeadersLike` is more user-friendly for debug than the original `Headers` object
         }
         get redirected() { return this._redirected; }
         get url() { return this._url; }
         get type() { return this._type || "basic"; }
+        get ok() { return this._ok; }
         /** @returns {Headers} - `Headers`-like object */
         get headers() { return this._headers; }
     }
