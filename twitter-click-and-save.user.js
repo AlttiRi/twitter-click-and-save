@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.6.4-2023.08.17-dev
+// @version     1.6.5-2023.09.17
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1442,7 +1442,9 @@ function hoistAPI() {
 
             // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
             const posterUrlObj = new URL(posterUrl);
-            for (const key of [...posterUrlObj.searchParams.keys()]) {
+            const keys = [];
+            posterUrlObj.searchParams.forEach((v, k) => { keys.push(k); }); // FF fix // Instead of [...posterUrlObj.searchParams.keys()]
+            for (const key of keys) {
                 posterUrlObj.searchParams.delete(key);
             }
             posterUrl = posterUrlObj.toString();
@@ -1487,8 +1489,8 @@ function hoistAPI() {
 
         // todo: keep `queryId` updated
         // https://github.com/fa0311/TwitterInternalAPIDocument/blob/master/docs/json/API.json
-        static TweetDetailQueryId      = "q94uRCEn65LZThakYcPT6g"; // TweetDetail      (for videos)
-        static UserByScreenNameQueryId = "SAMkL5y_N9pmahSw8yy6gw"; // UserByScreenName (for the direct user profile url)
+        static TweetDetailQueryId      = "xOhkmRac04YFZmOzU9PJHg"; // TweetDetail      (for videos)
+        static UserByScreenNameQueryId = "G3KGOASz96M-Qu0nwmGXNg"; // UserByScreenName (for the direct user profile url)
 
         static createTweetDataEndpointUrl(tweetId) {
             const variables = {
