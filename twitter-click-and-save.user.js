@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.6.6-2023.09.17
+// @version     1.6.7-2023.09.17
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1443,10 +1443,8 @@ function hoistAPI() {
             // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
             const posterUrlObj = new URL(posterUrl);
 
-            const keys = []; // FF fix // Instead of [...posterUrlObj.searchParams.keys()]
-            for (const key in Object.fromEntries(posterUrlObj.searchParams)) {
-              keys.push(key);
-            }
+            const keys = []; // FF + VM fix // Instead of [...posterUrlObj.searchParams.keys()]
+            posterUrlObj.searchParams.forEach((v, k) => { keys.push(k); });
 
             for (const key of keys) {
                 posterUrlObj.searchParams.delete(key);
