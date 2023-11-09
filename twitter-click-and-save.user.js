@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.6.8-2023.11.09
+// @version     1.6.9-2023.11.09
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -309,7 +309,7 @@ function showSettings() {
           <hr>
           <h4 style="margin: 0; padding-left: 8px; color: #444;">Notes:</h4>
           <ul style="margin: 2px; padding-left: 16px; color: #444;">
-            <li>Click on <b>Save Settings</b> and <b>reload the page</b> to apply changes.</li>
+            <li><b>Reload the page</b> to apply changes.</li>
             <li><b>*</b>-marked settings are language dependent. Currently, the follow languages are supported:<br/> "en", "ru", "es", "zh", "ja".</li>
             <li hidden>The extension downloads only from twitter.com, not from <b>mobile</b>.twitter.com</li>
           </ul>
