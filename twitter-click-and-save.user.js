@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.7.1-2023.12.13-dev
+// @version     1.7.2-2023.12.13-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -500,12 +500,6 @@ function hoistFeatures() {
                 const listitemEl = img.closest(`li[role="listitem"]`);
                 const isThumb = Boolean(listitemEl); // isMediaThumbnail
 
-                const isMobileVideo = img.src.includes("ext_tw_video_thumb") || img.closest(`a[aria-label="Embedded video"]`) || img.alt === "Animated Text GIF" || img.alt === "Embedded video";
-                if (isMobileVideo) {
-                    await Features.mobileVideoHandler(img, isThumb);
-                    continue;
-                }
-
                 let isMultiMedia = false;
                 if (isThumb && img.closest("a").querySelector("svg")) {
                   // isMultiMedia = true;
@@ -514,6 +508,12 @@ function hoistFeatures() {
                   return;
                 }
 
+                const isMobileVideo = img.src.includes("ext_tw_video_thumb")  || img.closest(`a[aria-label="Embedded video"]`) || img.alt === "Animated Text GIF" || img.alt === "Embedded video"
+                                   || img.src.includes("tweet_video_thumb") /* GIF thumb */;
+                if (isMobileVideo) {
+                    await Features.mobileVideoHandler(img, isThumb);
+                    continue;
+                }
 
                 const btn = Features.createButton({url: img.src, isThumb});
                 btn.addEventListener("click", Features._imageClickHandler);
@@ -1512,8 +1512,8 @@ function hoistAPI() {
 
         // todo: keep `queryId` updated
         // https://github.com/fa0311/TwitterInternalAPIDocument/blob/master/docs/json/API.json
-        static TweetDetailQueryId      = "SGwBp0zRvv5uBLnCMJG75w"; // TweetDetail      (for videos)
-        static UserByScreenNameQueryId = "NimuplG1OB7Fd2btCLdBOw"; // UserByScreenName (for the direct user profile url)
+        static TweetDetailQueryId      = "xOhkmRac04YFZmOzU9PJHg"; // TweetDetail      (for videos)
+        static UserByScreenNameQueryId = "G3KGOASz96M-Qu0nwmGXNg"; // UserByScreenName (for the direct user profile url)
 
         static createTweetDataEndpointUrl(tweetId) {
             const variables = {
