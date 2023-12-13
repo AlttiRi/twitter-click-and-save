@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.6.9-2023.11.09
+// @version     1.7.0-2023.12.13-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -412,7 +412,7 @@ const imagesHistoryBy = LS.getItem(StorageNames.settingsImageHistoryBy, "IMAGE_N
 // --- Twitter.Features --- //
 function hoistFeatures() {
     class Features {
-        static createButton({url, downloaded, isVideo}) {
+        static createButton({url, downloaded, isVideo, isThumb}) {
             const btn = document.createElement("div");
             btn.innerHTML = `
 <div class="ujs-btn-common ujs-btn-background"></div>
@@ -431,6 +431,9 @@ function hoistFeatures() {
             }
             if (url) {
                 btn.dataset.url = url;
+            }
+            if (isThumb) {
+              btn.dataset.thumb = "true";
             }
             return btn;
         }
@@ -494,13 +497,25 @@ function hoistFeatures() {
                 }
                 verbose && console.log("[ujs][imagesHandler]", {img, img_width: img.width});
 
+                const listitemEl = img.closest(`li[role="listitem"]`);
+                const isThumb = Boolean(listitemEl); // isMediaThumbnail
+
                 const isMobileVideo = img.src.includes("ext_tw_video_thumb") || img.closest(`a[aria-label="Embedded video"]`) || img.alt === "Animated Text GIF" || img.alt === "Embedded video";
                 if (isMobileVideo) {
-                    await Features.mobileVideoHandler(img);
+                    await Features.mobileVideoHandler(img, isThumb);
                     continue;
                 }
 
-                const btn = Features.createButton({url: img.src});
+                let isMultiMedia = false;
+                if (isThumb && img.closest("a").querySelector("svg")) {
+                  // isMultiMedia = true;
+
+                  // todo
+                  return;
+                }
+
+
+                const btn = Features.createButton({url: img.src, isThumb});
                 btn.addEventListener("click", Features._imageClickHandler);
 
                 let anchor = img.closest("a");
@@ -634,10 +649,10 @@ function hoistFeatures() {
         }
 
         // Quick Dirty Fix // todo refactor
-        static async mobileVideoHandler(imgElem) {
+        static async mobileVideoHandler(imgElem, isThumb) { // + thumbVideoHandler
             verbose && console.log("[ujs][mobileVideoHandler][vid]", imgElem);
 
-            const btn = Features.createButton({isVideo: true, url: imgElem.src});
+            const btn = Features.createButton({isVideo: true, url: imgElem.src, isThumb});
             btn.addEventListener("click", Features._videoClickHandler);
 
             let anchor = imgElem.closest("a");
@@ -648,7 +663,7 @@ function hoistFeatures() {
 
             const tweet = Tweet.of(btn);
             const id = tweet.id;
-            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`);
+            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`) || (isThumb ? imgElem : null);
             let vidNumber = 0;
 
             const map = Features.tweetVidWeakMapMobile;
@@ -1161,6 +1176,9 @@ function getUserScriptCSS() {
   background-image: var(--ujs-shadow-4);
 }
 
+li[role="listitem"]:hover .ujs-btn-download {
+    opacity: 1;
+}
 article[role=article]:hover .ujs-btn-download {
     opacity: 1;
 }
