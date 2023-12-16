@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.7.8-2023.12.16-dev
+// @version     1.8.0-2023.12.16-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -35,6 +35,7 @@ const {
     toLineJSON,
     isFirefox,
     getBrowserName,
+    removeSearchParams,
 } = getUtils({verbose});
 
 const LS = hoistLS({verbose});
@@ -737,12 +738,13 @@ function hoistFeatures() {
 
             const posterUrl = btn.dataset.url;
 
-            let video; // {bitrate, content_type, url}
+            let url;
             let vidNumber = 0;
             let videoTweetId = id;
             try {
-                ({video, tweetId: videoTweetId, screenName: author, vidNumber} = await API.getVideoInfo(id, author, posterUrl));
-                verbose && console.log("[ujs][videoHandler][video]", video);
+                const result = await API.getVideoInfo(id, author, posterUrl);
+                ({videoUrl: url, tweetId: videoTweetId, screenName: author, vidNumber} = result);
+                verbose && console.log("[ujs][videoHandler][video]", result);
             } catch (err) {
                 btn.classList.add("ujs-error");
                 btnErrorTextElem.textContent = "Error";
@@ -752,7 +754,6 @@ function hoistFeatures() {
 
             const btnProgress = btn.querySelector(".ujs-progress");
 
-            const url = video.url;
             let onProgress = null;
             if (settings.downloadProgress) {
                 onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
@@ -1456,70 +1457,120 @@ function hoistAPI() {
         static parseTweetJson(json, tweetId) {
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
             const tweetEntry  = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
-            const tweetResult = tweetEntry.content.itemContent.tweet_results.result; // {"__typename": "Tweet"}
+            let tweetResult = tweetEntry.content.itemContent.tweet_results.result; // {"__typename": "Tweet"} // or {"__typename": "TweetWithVisibilityResults", tweet: {...}} (1641596499351212033)
+            if (tweetResult.tweet) {
+                tweetResult = tweetResult.tweet;
+            }
             verbose && console.log("[ujs][parseTweetJson] tweetResult", tweetResult, JSON.stringify(tweetResult));
             const tweetUser   = tweetResult.core.user_results.result; // {"__typename": "User"}
-            const tweetLegacy = tweetResult.legacy || tweetResult.tweet.legacy /* For "Embedded video" */;
+            const tweetLegacy = tweetResult.legacy;
             verbose && console.log("[ujs][parseTweetJson] tweetLegacy", tweetLegacy, JSON.stringify(tweetLegacy));
             verbose && console.log("[ujs][parseTweetJson] tweetUser", tweetUser, JSON.stringify(tweetUser));
             return {tweetResult, tweetLegacy, tweetUser};
         }
 
-        // todo: parse the URL from HTML (For "Embedded video" (?))
-        /** @return {video, tweetId, screenName, vidNumber} */
-        static async getVideoInfo(tweetId, screenName /* author */, posterUrl) {
-            const tweetJson = await API.getTweetJson(tweetId);
-            let {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJson(tweetJson, tweetId);
-
-            // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
-            posterUrl = removeSearchParams(posterUrl);
-            function removeSearchParams(url) {
-                const urlObj = new URL(url);
-                const keys = []; // FF + VM fix // Instead of [...urlObj.searchParams.keys()]
-                urlObj.searchParams.forEach((v, k) => { keys.push(k); });
-                for (const key of keys) {
-                    urlObj.searchParams.delete(key);
-                }
-                return urlObj.toString();
+        static parseTweetLegacyMedias(tweetResult, tweetLegacy, tweetUser) {
+            if (!tweetLegacy.extended_entities || !tweetLegacy.extended_entities.media) {
+                return [];
             }
 
-            const isVideoInQuotedPost = !tweetLegacy.extended_entities || tweetLegacy.extended_entities.media.findIndex(e => e.media_url_https.startsWith(posterUrl)) === -1;
-            if (tweetLegacy.quoted_status_id_str && isVideoInQuotedPost) {
+            const medias = [];
+            const typeIndex = {}; // "photo", "video", "animated_gif"
+            let index = -1;
+
+            for (const media of tweetLegacy.extended_entities.media) {
+                index++;
+                let   type          = media.type;
+                const type_original = media.type;
+                typeIndex[type] = (typeIndex[type] === undefined ? -1 : typeIndex[type]) + 1;
+                if (type === "animated_gif") {
+                    type = "video";
+                    typeIndex[type] = (typeIndex[type] === undefined ? -1 : typeIndex[type]) + 1;
+                }
+
+                let download_url;
+                if (media.video_info) {
+                    const videoInfo = media.video_info.variants
+                        .filter(el => el.bitrate !== undefined) // if content_type: "application/x-mpegURL" // .m3u8
+                        .reduce((acc, cur) => cur.bitrate > acc.bitrate ? cur : acc);
+                    download_url = videoInfo.url;
+                } else {
+                    if (media.media_url_https.includes("?format=")) {
+                        download_url = media.media_url_https;
+                    } else {
+                        // "https://pbs.twimg.com/media/FWYvXNMXgAA7se2.jpg" -> "https://pbs.twimg.com/media/FWYvXNMXgAA7se2?format=jpg&name=orig"
+                        const parts = media.media_url_https.split(".");
+                        const ext = parts[parts.length - 1];
+                        const urlPart = parts.slice(0, -1).join(".");
+                        download_url = `${urlPart}?format=${ext}&name=orig`;
+                    }
+                }
+
+                const screen_name   = tweetUser.legacy.screen_name;              // "kreamu"
+                const tweet_id      = tweetResult.rest_id || tweetLegacy.id_str; // "1687962620173733890"
+
+                const type_index          = typeIndex[type];          // 0
+                const type_index_original = typeIndex[type_original]; // 0
+
+                const preview_url = media.media_url_https; // "https://pbs.twimg.com/ext_tw_video_thumb/1687949851516862464/pu/img/mTBjwz--nylYk5Um.jpg"
+                const media_id    = media.id_str;          //   "1687949851516862464"
+                const media_key   = media.media_key;       // "7_1687949851516862464"
+
+                const expanded_url       = media.expanded_url; // "https://twitter.com/kreamu/status/1687962620173733890/video/1"
+                const short_expanded_url = media.display_url;  // "pic.twitter.com/KeXR8T910R"
+                const short_tweet_url    = media.url;          // "https://t.co/KeXR8T910R"
+                const tweet_text = tweetLegacy.full_text       // "Tracer providing some In-flight entertainment https://t.co/KeXR8T910R"
+                                              .replace(` ${media.url}`, "");
+
+                // {screen_name, tweet_id, download_url, preview_url, type_index}
+                const mediaEntry = {
+                    screen_name, tweet_id,
+                    download_url, type, type_original, index,
+                    type_index, type_index_original,
+                    preview_url, media_id, media_key,
+                    expanded_url, short_expanded_url, short_tweet_url, tweet_text,
+                };
+                medias.push(mediaEntry);
+            }
+
+            verbose && console.log("[ujs][parseTweetLegacyMedias] medias", medias);
+            return medias;
+        }
+
+        static async getTweetMedias(tweetId) {
+            const tweetJson = await API.getTweetJson(tweetId);
+            const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJson(tweetJson, tweetId);
+
+            let result = API.parseTweetLegacyMedias(tweetResult, tweetLegacy, tweetUser);
+
+            if (tweetResult.quoted_status_result) {
                 const tweetResultQuoted = tweetResult.quoted_status_result.result;
                 const tweetLegacyQuoted = tweetResultQuoted.legacy;
                 const tweetUserQuoted   = tweetResultQuoted.core.user_results.result;
-
-                tweetId     = tweetLegacy.quoted_status_id_str;
-                screenName  = tweetUserQuoted.legacy.screen_name;
-                tweetLegacy = tweetLegacyQuoted;
+                result = [...result, ...API.parseTweetLegacyMedias(tweetResultQuoted, tweetLegacyQuoted, tweetUserQuoted)];
             }
 
-            // types: "photo", "video", "animated_gif"
+            return result;
+        }
 
-            let vidNumber = tweetLegacy.extended_entities.media
-                .filter(e => e.type !== "photo")
-                .findIndex(e => e.media_url_https.startsWith(posterUrl));
+        // todo: parse the URL from HTML (For "Embedded video" (?))
+        /** @return {videoUrl, tweetId, screenName, vidNumber} */
+        static async getVideoInfo(tweetId, _screenName, posterUrl) {
+            const medias = await API.getTweetMedias(tweetId);
 
-            let mediaIndex = tweetLegacy.extended_entities.media
-                .findIndex(e => e.media_url_https.startsWith(posterUrl));
+            // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
+            posterUrl = removeSearchParams(posterUrl);
+            const media = medias.find(media => media.preview_url.startsWith(posterUrl));
+            const {screen_name, tweet_id, download_url, preview_url, type_index} = media;
 
-            if (vidNumber === -1 || mediaIndex === -1) {
-                verbose && console.warn("[ujs][getVideoInfo][warning]: vidNumber === -1 || mediaIndex === -1");
-                vidNumber = 0;
-                mediaIndex = 0;
-            }
-            const videoVariants = tweetLegacy.extended_entities.media[mediaIndex].video_info.variants;
-            verbose && console.log("[ujs][getVideoInfo][videoVariants]", videoVariants);
-
-            const video = videoVariants
-                .filter(el => el.bitrate !== undefined) // if content_type: "application/x-mpegURL" // .m3u8
-                .reduce((acc, cur) => cur.bitrate > acc.bitrate ? cur : acc);
-
-            if (!video) {
+            if (!download_url) {
                 throw new Error("No video URL found");
             }
 
-            return {video, tweetId, screenName, vidNumber};
+            const result = {videoUrl: download_url, tweetId: tweet_id, screenName: screen_name, vidNumber: type_index};
+
+            return result;
+
         }
 
         // todo: keep `queryId` updated
@@ -2106,6 +2157,16 @@ function getUtils({verbose}) {
             : "";
     }
 
+    function removeSearchParams(url) {
+        const urlObj = new URL(url);
+        const keys = []; // FF + VM fix // Instead of [...urlObj.searchParams.keys()]
+        urlObj.searchParams.forEach((v, k) => { keys.push(k); });
+        for (const key of keys) {
+            urlObj.searchParams.delete(key);
+        }
+        return urlObj.toString();
+    }
+
     return {
         sleep, fetchResource, extensionFromMime, downloadBlob, dateToDayDateString,
         addCSS,
@@ -2116,6 +2177,7 @@ function getUtils({verbose}) {
         toLineJSON,
         isFirefox,
         getBrowserName,
+        removeSearchParams,
     }
 }
 
