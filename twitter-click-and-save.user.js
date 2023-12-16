@@ -1475,13 +1475,16 @@ function hoistAPI() {
             let {tweetResult, tweetLegacy, user} = API.parseTweetJson(tweetJson, tweetId);
 
             // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
-            const posterUrlObj = new URL(posterUrl);
-            const keys = []; // FF + VM fix // Instead of [...posterUrlObj.searchParams.keys()]
-            posterUrlObj.searchParams.forEach((v, k) => { keys.push(k); });
-            for (const key of keys) {
-                posterUrlObj.searchParams.delete(key);
+            posterUrl = removeSearchParams(posterUrl);
+            function removeSearchParams(url) {
+                const urlObj = new URL(url);
+                const keys = []; // FF + VM fix // Instead of [...urlObj.searchParams.keys()]
+                urlObj.searchParams.forEach((v, k) => { keys.push(k); });
+                for (const key of keys) {
+                    urlObj.searchParams.delete(key);
+                }
+                return urlObj.toString();
             }
-            posterUrl = posterUrlObj.toString();
 
             const isVideoInQuotedPost = !tweetLegacy.extended_entities || tweetLegacy.extended_entities.media.findIndex(e => e.media_url_https.startsWith(posterUrl)) === -1;
             if (tweetLegacy.quoted_status_id_str && isVideoInQuotedPost) {
