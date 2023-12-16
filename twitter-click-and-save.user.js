@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.7.7-2023.12.16-dev
+// @version     1.7.8-2023.12.16-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1452,27 +1452,24 @@ function hoistAPI() {
             return json;
         }
 
-        /** return {tweetResult, tweetLegacy, user} */
+        /** return {tweetResult, tweetLegacy, tweetUser} */
         static parseTweetJson(json, tweetId) {
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
-            const tweetEntry = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
+            const tweetEntry  = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
             const tweetResult = tweetEntry.content.itemContent.tweet_results.result; // {"__typename": "Tweet"}
             verbose && console.log("[ujs][parseTweetJson] tweetResult", tweetResult, JSON.stringify(tweetResult));
-            const user = tweetResult.core.user_results.result; // {"__typename": "User"}
-            let tweetLegacy = tweetResult.legacy;
-            if (!tweetLegacy) {
-                tweetLegacy = tweetResult.tweet.legacy; /* For "Embedded video" */
-            }
+            const tweetUser   = tweetResult.core.user_results.result; // {"__typename": "User"}
+            const tweetLegacy = tweetResult.legacy || tweetResult.tweet.legacy /* For "Embedded video" */;
             verbose && console.log("[ujs][parseTweetJson] tweetLegacy", tweetLegacy, JSON.stringify(tweetLegacy));
-            verbose && console.log("[ujs][parseTweetJson] user", user, JSON.stringify(user));
-            return {tweetResult, tweetLegacy, user};
+            verbose && console.log("[ujs][parseTweetJson] tweetUser", tweetUser, JSON.stringify(tweetUser));
+            return {tweetResult, tweetLegacy, tweetUser};
         }
 
         // todo: parse the URL from HTML (For "Embedded video" (?))
         /** @return {video, tweetId, screenName, vidNumber} */
         static async getVideoInfo(tweetId, screenName /* author */, posterUrl) {
             const tweetJson = await API.getTweetJson(tweetId);
-            let {tweetResult, tweetLegacy, user} = API.parseTweetJson(tweetJson, tweetId);
+            let {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJson(tweetJson, tweetId);
 
             // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
             posterUrl = removeSearchParams(posterUrl);
@@ -1488,11 +1485,12 @@ function hoistAPI() {
 
             const isVideoInQuotedPost = !tweetLegacy.extended_entities || tweetLegacy.extended_entities.media.findIndex(e => e.media_url_https.startsWith(posterUrl)) === -1;
             if (tweetLegacy.quoted_status_id_str && isVideoInQuotedPost) {
-                const tweetLegacyQuoted     = tweetResult.quoted_status_result.result.legacy;
-                const tweetLegacyQuotedCore = tweetResult.quoted_status_result.result.core.user_results.result.legacy;
+                const tweetResultQuoted = tweetResult.quoted_status_result.result;
+                const tweetLegacyQuoted = tweetResultQuoted.legacy;
+                const tweetUserQuoted   = tweetResultQuoted.core.user_results.result;
 
-                tweetId = tweetLegacy.quoted_status_id_str;
-                screenName = tweetLegacyQuotedCore.screen_name;
+                tweetId     = tweetLegacy.quoted_status_id_str;
+                screenName  = tweetUserQuoted.legacy.screen_name;
                 tweetLegacy = tweetLegacyQuoted;
             }
 
