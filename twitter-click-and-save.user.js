@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.7.5-2023.12.16-dev
+// @version     1.7.6-2023.12.16-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1452,7 +1452,7 @@ function hoistAPI() {
             return json;
         }
 
-        /** return {tweetLegacy, user} */
+        /** return {tweetResult, tweetLegacy, user} */
         static parseTweetJson(json, tweetId) {
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
             const tweetEntry = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
@@ -1465,21 +1465,19 @@ function hoistAPI() {
             }
             verbose && console.log("[ujs][parseTweetJson] tweetLegacy", tweetLegacy, JSON.stringify(tweetLegacy));
             verbose && console.log("[ujs][parseTweetJson] user", user, JSON.stringify(user));
-            return {tweetLegacy, user};
+            return {tweetResult, tweetLegacy, user};
         }
 
         // todo: parse the URL from HTML (For "Embedded video" (?))
         /** @return {video, tweetId, screenName, vidNumber} */
         static async getVideoInfo(tweetId, screenName /* author */, posterUrl) {
             const tweetJson = await API.getTweetJson(tweetId);
-            const {tweetLegacy, user} = API.parseTweetJson(tweetJson, tweetId);
+            let {tweetResult, tweetLegacy, user} = API.parseTweetJson(tweetJson, tweetId);
 
             // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
             const posterUrlObj = new URL(posterUrl);
-
             const keys = []; // FF + VM fix // Instead of [...posterUrlObj.searchParams.keys()]
             posterUrlObj.searchParams.forEach((v, k) => { keys.push(k); });
-
             for (const key of keys) {
                 posterUrlObj.searchParams.delete(key);
             }
