@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.7.3-2023.12.13-dev
+// @version     1.7.4-2023.12.16-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1445,21 +1445,36 @@ function hoistAPI() {
             return json;
         }
 
-        /** @return {video, tweetId, screenName, vidNumber} */
-        static async getVideoInfo(tweetId, screenName /* author */, posterUrl) {
+        static async getTweetJson(tweetId) {
             const url = API.createTweetDataEndpointUrl(tweetId);
-
             const json = await API.apiRequest(url);
-            verbose && console.log("[ujs][getVideoInfo]", json, JSON.stringify(json));
+            verbose && console.log("[ujs][getTweetJson]", json, JSON.stringify(json));
+            return json;
+        }
 
+        static parseTweetData(json, tweetId) {
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
             const tweetEntry = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
             const tweetResult = tweetEntry.content.itemContent.tweet_results.result
             let tweetData = tweetResult.legacy;
-
-            if (!tweetData) { // todo: parse the URL from HTML
+            if (!tweetData) {
                 tweetData = tweetResult.tweet.legacy; /* For "Embedded video" */
             }
+            return tweetData;
+        }
+
+        /** Returns tweet's `legacy` object */
+        static async getTweetData(tweetId) {
+            const json = await API.getTweetJson(tweetId);
+            const tweetData = API.parseTweetData(json, tweetId);
+            verbose && console.log("[ujs][tweetData]", json, JSON.stringify(tweetData));
+            return tweetData;
+        }
+
+        // todo: parse the URL from HTML (For "Embedded video" (?))
+        /** @return {video, tweetId, screenName, vidNumber} */
+        static async getVideoInfo(tweetId, screenName /* author */, posterUrl) {
+            const tweetData = await API.getTweetData(tweetId);
 
             // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
             const posterUrlObj = new URL(posterUrl);
