@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.8.0-2023.12.16-dev
+// @version     1.8.1-2023.12.17-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -413,7 +413,7 @@ const imagesHistoryBy = LS.getItem(StorageNames.settingsImageHistoryBy, "IMAGE_N
 // --- Twitter.Features --- //
 function hoistFeatures() {
     class Features {
-        static createButton({url, downloaded, isVideo, isThumb}) {
+        static createButton({url, downloaded, isVideo, isThumb, isMultiMedia}) {
             const btn = document.createElement("div");
             btn.innerHTML = `
 <div class="ujs-btn-common ujs-btn-background"></div>
@@ -435,6 +435,9 @@ function hoistFeatures() {
             }
             if (isThumb) {
               btn.dataset.thumb = "true";
+            }
+            if (isMultiMedia) {
+              btn.dataset.isMultiMedia = "true";
             }
             return btn;
         }
@@ -501,12 +504,9 @@ function hoistFeatures() {
                 const listitemEl = img.closest(`li[role="listitem"]`);
                 const isThumb = Boolean(listitemEl); // isMediaThumbnail
 
-                let isMultiMedia = false;
                 if (isThumb && img.closest("a").querySelector("svg")) {
-                  // isMultiMedia = true;
-
-                  // todo
-                  return;
+                    await Features.multiMediaThumbHandler(img);
+                    continue;
                 }
 
                 const isMobileVideo = img.src.includes("ext_tw_video_thumb")  || img.closest(`a[aria-label="Embedded video"]`) || img.alt === "Animated Text GIF" || img.alt === "Embedded video"
@@ -682,6 +682,59 @@ function hoistFeatures() {
             }
         }
 
+
+
+
+
+
+        static async multiMediaThumbHandler(imgElem) {
+            verbose && console.log("[ujs][multiMediaThumbHandler]", imgElem);
+            let isVideo = false;
+            if (imgElem.src.includes("/ext_tw_video_thumb/")) {
+                isVideo = true;
+            }
+
+            const btn = Features.createButton({url: imgElem.src, isVideo, isThumb: true, isMultiMedia: true});
+            btn.addEventListener("click", Features._multiMediaThumbClickHandler);
+            let anchor = imgElem.closest("a");
+            if (!anchor) {
+                anchor = imgElem.parentNode;
+            }
+            anchor.append(btn);
+
+            let downloaded;
+            const tweetId = Tweet.of(btn).id;
+            if (isVideo) {
+                downloaded = downloadedVideoTweetIds.hasItem(tweetId);
+            } else {
+                downloaded = Features._ImageHistory.isDownloaded({
+                    id: tweetId,
+                    url: btn.dataset.url
+                });
+            }
+            if (downloaded) {
+                btn.classList.add("ujs-already-downloaded");
+            }
+        }
+        static async _multiMediaThumbClickHandler(event) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            const btn = event.currentTarget;
+            const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
+            if (btn.textContent !== "") {
+                btnErrorTextElem.textContent = "";
+            }
+
+            btn.classList.add("ujs-error");
+            btnErrorTextElem.textContent = "⚒";
+            btn.title = "NOT IMPLEMENTED YET";
+            // todo
+        }
+
+
+
+
+
         static tweetVidWeakMapMobile = new WeakMap();
         static tweetVidWeakMap = new WeakMap();
         static async videoHandler() {
@@ -722,13 +775,13 @@ function hoistFeatures() {
                 }
             }
         }
-        static async _videoClickHandler(event) {
+        static async _videoClickHandler(event) { // todo: parse the URL from HTML (For "Embedded video" (?))
             event.preventDefault();
             event.stopImmediatePropagation();
 
             const btn = event.currentTarget;
             const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
-            let {id, author} = Tweet.of(btn);
+            const {id} = Tweet.of(btn);
 
             if (btn.textContent !== "") {
                 btnErrorTextElem.textContent = "";
@@ -736,20 +789,29 @@ function hoistFeatures() {
             btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
 
-            const posterUrl = btn.dataset.url;
-
-            let url;
-            let vidNumber = 0;
-            let videoTweetId = id;
+            let mediaEntry;
             try {
-                const result = await API.getVideoInfo(id, author, posterUrl);
-                ({videoUrl: url, tweetId: videoTweetId, screenName: author, vidNumber} = result);
-                verbose && console.log("[ujs][videoHandler][video]", result);
+                const medias = await API.getTweetMedias(id);
+                const posterUrl = btn.dataset.url; // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
+                const posterUrlClear = removeSearchParams(posterUrl);
+                mediaEntry = medias.find(media => media.preview_url.startsWith(posterUrlClear));
+                verbose && console.log("[ujs][_videoClickHandler] mediaEntry", mediaEntry);
             } catch (err) {
+                console.error(err);
                 btn.classList.add("ujs-error");
                 btnErrorTextElem.textContent = "Error";
                 btn.title = "API.getVideoInfo Error";
                 throw new Error("API.getVideoInfo Error");
+            }
+
+            const {
+                screen_name:  author,
+                tweet_id:     videoTweetId,
+                download_url: url,
+                type_index:   vidNumber,
+            } = mediaEntry;
+            if (!url) {
+                throw new Error("No video URL found");
             }
 
             const btnProgress = btn.querySelector(".ujs-progress");
@@ -1553,25 +1615,6 @@ function hoistAPI() {
             return result;
         }
 
-        // todo: parse the URL from HTML (For "Embedded video" (?))
-        /** @return {videoUrl, tweetId, screenName, vidNumber} */
-        static async getVideoInfo(tweetId, _screenName, posterUrl) {
-            const medias = await API.getTweetMedias(tweetId);
-
-            // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
-            posterUrl = removeSearchParams(posterUrl);
-            const media = medias.find(media => media.preview_url.startsWith(posterUrl));
-            const {screen_name, tweet_id, download_url, preview_url, type_index} = media;
-
-            if (!download_url) {
-                throw new Error("No video URL found");
-            }
-
-            const result = {videoUrl: download_url, tweetId: tweet_id, screenName: screen_name, vidNumber: type_index};
-
-            return result;
-
-        }
 
         // todo: keep `queryId` updated
         // https://github.com/fa0311/TwitterInternalAPIDocument/blob/master/docs/json/API.json
