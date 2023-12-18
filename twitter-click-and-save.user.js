@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.8.1-2023.12.17-dev
+// @version     1.8.2-2023.12.18-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -434,10 +434,10 @@ function hoistFeatures() {
                 btn.dataset.url = url;
             }
             if (isThumb) {
-              btn.dataset.thumb = "true";
+                btn.dataset.thumb = "true";
             }
             if (isMultiMedia) {
-              btn.dataset.isMultiMedia = "true";
+                btn.dataset.isMultiMedia = "true";
             }
             return btn;
         }
@@ -540,7 +540,6 @@ function hoistFeatures() {
             event.stopImmediatePropagation();
 
             const btn = event.currentTarget;
-            const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
             let url = btn.dataset.url;
 
             const isBanner = url.includes("/profile_banners/");
@@ -551,6 +550,10 @@ function hoistFeatures() {
             const {id, author} = Tweet.of(btn);
             verbose && console.log("[ujs][_imageClickHandler]", {id, author});
 
+            await Features._downloadPhotoMediaEntry(id, author, url, btn);
+        }
+        static async _downloadPhotoMediaEntry(id, author, url, btn) {
+            const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
             const btnProgress = btn.querySelector(".ujs-progress");
             if (btn.textContent !== "") {
                 btnErrorTextElem.textContent = "";
@@ -582,7 +585,7 @@ function hoistFeatures() {
                     throw new Error("All fallback URLs are failed to download.");
                 }
                 if (urlObj.searchParams.get("format") === "webp") {
-                  urlObj.searchParams.set("format", "jpg");
+                    urlObj.searchParams.set("format", "jpg");
                 }
                 url = urlObj.toString();
                 verbose && console.log("[ujs][handleImgUrl][url]", url);
@@ -645,9 +648,17 @@ function hoistFeatures() {
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
 
+            if (btn.dataset.isMultiMedia && !isSample) { // dirty fix
+                const isDownloaded = Features._ImageHistory.isDownloaded({id, url});
+                if (!isDownloaded) {
+                    await Features._ImageHistory.markDownloaded({id, url});
+                }
+            }
+
             await sleep(40);
             btnProgress.style.cssText = "--progress: 0%";
         }
+
 
         // Quick Dirty Fix // todo refactor
         static async mobileVideoHandler(imgElem, isThumb) { // + thumbVideoHandler
@@ -681,10 +692,6 @@ function hoistFeatures() {
                 btn.classList.add("ujs-already-downloaded");
             }
         }
-
-
-
-
 
 
         static async multiMediaThumbHandler(imgElem) {
@@ -724,16 +731,30 @@ function hoistFeatures() {
             if (btn.textContent !== "") {
                 btnErrorTextElem.textContent = "";
             }
+            const {id} = Tweet.of(btn);
+            /** @type {TweetMediaEntry[]} */
+            let medias;
+            try {
+                medias = await API.getTweetMedias(id);
+                medias = medias.filter(mediaEntry => mediaEntry.tweet_id === id);
+            } catch (err) {
+                console.error(err);
+                btn.classList.add("ujs-error");
+                btnErrorTextElem.textContent = "Error";
+                btn.title = "API.getTweetMedias Error";
+                throw new Error("API.getTweetMedias Error");
+            }
 
-            btn.classList.add("ujs-error");
-            btnErrorTextElem.textContent = "⚒";
-            btn.title = "NOT IMPLEMENTED YET";
-            // todo
+            for (const mediaEntry of medias) {
+                if (mediaEntry.type === "video") {
+                    await Features._downloadVideoMediaEntry(mediaEntry, btn, id);
+                } else { // "photo"
+                    const {screen_name: author,download_url: url, tweet_id: id} = mediaEntry;
+                    await Features._downloadPhotoMediaEntry(id, author, url, btn);
+                }
+                await sleep(50);
+            }
         }
-
-
-
-
 
         static tweetVidWeakMapMobile = new WeakMap();
         static tweetVidWeakMap = new WeakMap();
@@ -804,6 +825,10 @@ function hoistFeatures() {
                 throw new Error("API.getVideoInfo Error");
             }
 
+            await Features._downloadVideoMediaEntry(mediaEntry, btn, id);
+        }
+
+        static async _downloadVideoMediaEntry(mediaEntry, btn, id /* of original tweet */) {
             const {
                 screen_name:  author,
                 tweet_id:     videoTweetId,
@@ -831,7 +856,7 @@ function hoistFeatures() {
             downloadBlob(blob, filename, url);
 
             const downloaded = btn.classList.contains("ujs-already-downloaded");
-            const historyId = vidNumber ? videoTweetId + "-" + vidNumber : videoTweetId;
+            const historyId = vidNumber /* not 0 */ ? videoTweetId + "-" + vidNumber : videoTweetId;
             if (!downloaded) {
                 await downloadedVideoTweetIds.pushItem(historyId);
                 if (videoTweetId !== id) { // if QRT
@@ -841,6 +866,17 @@ function hoistFeatures() {
             }
             btn.classList.remove("ujs-downloading");
             btn.classList.add("ujs-downloaded");
+
+            if (btn.dataset.isMultiMedia) { // dirty fix
+                const isDownloaded = downloadedVideoTweetIds.hasItem(historyId);
+                if (!isDownloaded) {
+                    await downloadedVideoTweetIds.pushItem(historyId);
+                    if (videoTweetId !== id) { // if QRT
+                        const historyId = vidNumber ? id + "-" + vidNumber : id;
+                        await downloadedVideoTweetIds.pushItem(historyId);
+                    }
+                }
+            }
 
             await sleep(40);
             btnProgress.style.cssText = "--progress: 0%";
@@ -1531,6 +1567,25 @@ function hoistAPI() {
             return {tweetResult, tweetLegacy, tweetUser};
         }
 
+        /**
+         * @typedef {Object} TweetMediaEntry
+         * @property {string} screen_name - "kreamu"
+         * @property {string} tweet_id - "1687962620173733890"
+         * @property {string} download_url - "https://pbs.twimg.com/media/FWYvXNMXgAA7se2?format=jpg&name=orig"
+         * @property {"photo" | "video" | "animated_gif"} type - "photo"
+         * @property {"photo" | "video" | "animated_gif"} type_original - "photo"
+         * @property {number} index - 0
+         * @property {number} type_index - 0
+         * @property {number} type_index_original - 0
+         * @property {string} preview_url - "https://pbs.twimg.com/media/FWYvXNMXgAA7se2.jpg"
+         * @property {string} media_id  -   "1687949851516862464"
+         * @property {string} media_key - "7_1687949851516862464"
+         * @property {string} expanded_url - "https://twitter.com/kreamu/status/1687962620173733890/video/1"
+         * @property {string} short_expanded_url - "pic.twitter.com/KeXR8T910R"
+         * @property {string} short_tweet_url - "https://t.co/KeXR8T910R"
+         * @property {string} tweet_text - "Tracer providing some In-flight entertainment"
+         */
+        /** @returns {TweetMediaEntry[]} */
         static parseTweetLegacyMedias(tweetResult, tweetLegacy, tweetUser) {
             if (!tweetLegacy.extended_entities || !tweetLegacy.extended_entities.media) {
                 return [];
@@ -1585,6 +1640,7 @@ function hoistAPI() {
                                               .replace(` ${media.url}`, "");
 
                 // {screen_name, tweet_id, download_url, preview_url, type_index}
+                /** @type {TweetMediaEntry} */
                 const mediaEntry = {
                     screen_name, tweet_id,
                     download_url, type, type_original, index,
