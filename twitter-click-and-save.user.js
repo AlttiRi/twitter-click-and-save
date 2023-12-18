@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.8.2-2023.12.18-dev
+// @version     1.8.3-2023.12.18-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1572,7 +1572,7 @@ function hoistAPI() {
          * @property {string} screen_name - "kreamu"
          * @property {string} tweet_id - "1687962620173733890"
          * @property {string} download_url - "https://pbs.twimg.com/media/FWYvXNMXgAA7se2?format=jpg&name=orig"
-         * @property {"photo" | "video" | "animated_gif"} type - "photo"
+         * @property {"photo" | "video"} type - "photo"
          * @property {"photo" | "video" | "animated_gif"} type_original - "photo"
          * @property {number} index - 0
          * @property {number} type_index - 0
