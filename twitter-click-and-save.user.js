@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.8.3-2023.12.18-dev
+// @version     1.9.0-2023.12.18
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -496,15 +496,28 @@ function hoistFeatures() {
                     continue;
                 }
                 img.dataset.handled = "true";
+                if (img.width === 0) {
+                    const imgOnload = new Promise(async (resolve) => {
+                        img.onload = resolve;
+                    });
+                    await Promise.any([imgOnload, sleep(500)]);
+                    await sleep(10); // to get updated img.width
+                }
                 if (img.width < 140) {
                     continue;
                 }
                 verbose && console.log("[ujs][imagesHandler]", {img, img_width: img.width});
 
+                let anchor = img.closest("a");
+                // if expanded_url (an image is _opened_ "https://twitter.com/UserName/status/1234567890123456789/photo/1" [fake-url])
+                if (!anchor) {
+                    anchor = img.parentNode;
+                }
+
                 const listitemEl = img.closest(`li[role="listitem"]`);
                 const isThumb = Boolean(listitemEl); // isMediaThumbnail
 
-                if (isThumb && img.closest("a").querySelector("svg")) {
+                if (isThumb && anchor.querySelector("svg")) {
                     await Features.multiMediaThumbHandler(img);
                     continue;
                 }
@@ -518,12 +531,6 @@ function hoistFeatures() {
 
                 const btn = Features.createButton({url: img.src, isThumb});
                 btn.addEventListener("click", Features._imageClickHandler);
-
-                let anchor = img.closest("a");
-                // if an image is _opened_ "https://twitter.com/UserName/status/1234567890123456789/photo/1" [fake-url]
-                if (!anchor) {
-                    anchor = img.parentNode;
-                }
                 anchor.append(btn);
 
                 const downloaded = Features._ImageHistory.isDownloaded({
@@ -675,16 +682,19 @@ function hoistFeatures() {
 
             const tweet = Tweet.of(btn);
             const id = tweet.id;
-            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`) || (isThumb ? imgElem : null);
+            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`);
             let vidNumber = 0;
 
-            const map = Features.tweetVidWeakMapMobile;
-            if (map.has(tweetElem)) {
-                vidNumber = map.get(tweetElem) + 1;
-                map.set(tweetElem, vidNumber);
-            } else {
-                map.set(tweetElem, vidNumber); // can throw an error for null
-            }
+            if (tweetElem) {
+                const map = Features.tweetVidWeakMapMobile;
+                if (map.has(tweetElem)) {
+                    vidNumber = map.get(tweetElem) + 1;
+                    map.set(tweetElem, vidNumber);
+                } else {
+                    map.set(tweetElem, vidNumber); // can throw an error for null
+                }
+            } // else thumbnail
+
             const historyId = vidNumber ? id + "-" + vidNumber : id;
 
             const downloaded = downloadedVideoTweetIds.hasItem(historyId);
@@ -772,20 +782,38 @@ function hoistFeatures() {
                 const btn = Features.createButton({isVideo: true, url: poster});
                 btn.addEventListener("click", Features._videoClickHandler);
 
-                let elem = vid.parentNode.parentNode.parentNode;
-                elem.after(btn);
+                let elem = vid.closest(`[data-testid="videoComponent"]`).parentNode;
+                if (elem) {
+                    elem.append(btn);
+                } else {
+                    elem = vid.parentNode.parentNode.parentNode;
+                    elem.after(btn);
+                }
+
 
                 const tweet = Tweet.of(btn);
                 const id = tweet.id;
                 const tweetElem = tweet.elem;
                 let vidNumber = 0;
 
-                const map = Features.tweetVidWeakMap;
-                if (map.has(tweetElem)) {
-                    vidNumber = map.get(tweetElem) + 1;
-                    map.set(tweetElem, vidNumber);
-                } else {
-                    map.set(tweetElem, vidNumber);
+                if (tweetElem) {
+                    const map = Features.tweetVidWeakMap;
+                    if (map.has(tweetElem)) {
+                        vidNumber = map.get(tweetElem) + 1;
+                        map.set(tweetElem, vidNumber);
+                    } else {
+                        map.set(tweetElem, vidNumber); // can throw an error for null
+                    }
+                } else { // expanded_url
+                    await sleep(10);
+                    const match = location.pathname.match(/(?<=\/video\/)\d/);
+                    if (!match) {
+                        verbose && console.log("[ujs][videoHandler] missed match for match");
+                    }
+                    vidNumber = Number(match[0]) - 1;
+
+                    console.warn("[ujs][videoHandler] vidNumber", vidNumber);
+                    // todo: add support for expanded_url video downloading
                 }
 
                 const historyId = vidNumber ? id + "-" + vidNumber : id;
@@ -1288,6 +1316,12 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
     opacity: 1;
 }
 .ujs-btn-download.ujs-downloading {
+    opacity: 1;
+}
+[data-testid="videoComponent"]:hover + .ujs-btn-download {
+    opacity: 1;
+}
+[data-testid="videoComponent"] + .ujs-btn-download:hover {
     opacity: 1;
 }
 
