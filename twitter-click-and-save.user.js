@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.9.0-2023.12.18
+// @version     1.9.1-2023.12.19
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -442,6 +442,14 @@ function hoistFeatures() {
             return btn;
         }
 
+        static _markButtonAsDownloaded(btn) {
+            btn.classList.remove("ujs-downloading");
+            btn.classList.remove("ujs-recently-downloaded");
+            btn.classList.add("ujs-downloaded");
+            btn.addEventListener("pointerenter", e => {
+                btn.classList.add("ujs-recently-downloaded");
+            }, {once: true});
+        }
 
         // Banner/Background
         static async _downloadBanner(url, btn) {
@@ -461,8 +469,7 @@ function hoistFeatures() {
             const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
             downloadBlob(blob, filename, url);
 
-            btn.classList.remove("ujs-downloading");
-            btn.classList.add("ujs-downloaded");
+            Features._markButtonAsDownloaded(btn);
         }
 
         static _ImageHistory = class {
@@ -558,6 +565,7 @@ function hoistFeatures() {
             verbose && console.log("[ujs][_imageClickHandler]", {id, author});
 
             await Features._downloadPhotoMediaEntry(id, author, url, btn);
+            Features._markButtonAsDownloaded(btn);
         }
         static async _downloadPhotoMediaEntry(id, author, url, btn) {
             const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
@@ -652,8 +660,6 @@ function hoistFeatures() {
             if (!downloaded && !isSample) {
                 await Features._ImageHistory.markDownloaded({id, url});
             }
-            btn.classList.remove("ujs-downloading");
-            btn.classList.add("ujs-downloaded");
 
             if (btn.dataset.isMultiMedia && !isSample) { // dirty fix
                 const isDownloaded = Features._ImageHistory.isDownloaded({id, url});
@@ -764,6 +770,7 @@ function hoistFeatures() {
                 }
                 await sleep(50);
             }
+            Features._markButtonAsDownloaded(btn);
         }
 
         static tweetVidWeakMapMobile = new WeakMap();
@@ -854,6 +861,7 @@ function hoistFeatures() {
             }
 
             await Features._downloadVideoMediaEntry(mediaEntry, btn, id);
+            Features._markButtonAsDownloaded(btn);
         }
 
         static async _downloadVideoMediaEntry(mediaEntry, btn, id /* of original tweet */) {
@@ -892,8 +900,6 @@ function hoistFeatures() {
                     await downloadedVideoTweetIds.pushItem(historyId);
                 }
             }
-            btn.classList.remove("ujs-downloading");
-            btn.classList.add("ujs-downloaded");
 
             if (btn.dataset.isMultiMedia) { // dirty fix
                 const isDownloaded = downloadedVideoTweetIds.hasItem(historyId);
@@ -1301,6 +1307,10 @@ function getUserScriptCSS() {
 }
 .ujs-btn-download:active .ujs-shadow {
   background-image: var(--ujs-shadow-4);
+}
+
+.ujs-btn-download.ujs-downloaded.ujs-recently-downloaded {
+    opacity: 0;
 }
 
 li[role="listitem"]:hover .ujs-btn-download {
