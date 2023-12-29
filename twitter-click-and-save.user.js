@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.9.2-2023.12.29
+// @version     1.9.3-2023.12.29-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1418,8 +1418,8 @@ function getLanguageConstants() { // todo: "de", "fr"
 
     // document.title "{AUTHOR}{ON_TWITTER} {QUOTES[0]}{TEXT}{QUOTES[1]} / {TWITTER}"
     const QUOTES              = [defaultQuotes,            [`«`, `»`],               defaultQuotes,                        defaultQuotes,      [`「`, `」`],                ];
-    const ON_TWITTER          = [" on Twitter:",           " в Твиттере:",           " en Twitter:",                       " 在 Twitter:",      "さんはTwitterを使っています", ];
-    const TWITTER             = ["Twitter",                "Твиттер",                "Twitter",                            "Twitter",          "Twitter",                  ];
+    const ON_TWITTER          = [" on X:",                  " в X:",                 " en X:",                             " 在 X:",            "さんはXを使っています", ];
+    const TWITTER             = ["X",                       "X",                      "X",                                  "X",                 "X",                  ];
 
     const lang = document.querySelector("html").getAttribute("lang");
     const langIndex = SUPPORTED_LANGUAGES.indexOf(lang);
