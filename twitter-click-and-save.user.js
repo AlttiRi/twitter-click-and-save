@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.9.3-2023.12.29-dev
+// @version     1.10.0-2024.05.17
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
+// @match       https://x.com/*
 // @homepageURL https://github.com/AlttiRi/twitter-click-and-save
 // @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
 // @license     GPL-3.0
@@ -12,13 +13,15 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 
+
+
 // Please, report bugs and suggestions on GitHub, not Greasyfork.
 // --> https://github.com/AlttiRi/twitter-click-and-save/issues <--
 
 // ---------------------------------------------------------------------------------------------------------------------
+const sitename = "x";
 // ---------------------------------------------------------------------------------------------------------------------
 // --- "Imports" --- //
-
 const {StorageNames, StorageNamesOld} = getStorageNames();
 
 const {verbose, debugPopup} = getDebugSettings(); // --- For debug --- //
@@ -938,7 +941,7 @@ function hoistFeatures() {
             }
 
             // if not an opened tweet
-            if (!location.href.match(/twitter\.com\/[^\/]+\/status\/\d+/)) {
+            if (!location.href.match(/(twitter|x)\.com\/[^\/]+\/status\/\d+/)) {
                 return;
             }
 
@@ -1483,7 +1486,7 @@ function hoistTweet() {
         }
 
         get author() {
-            return this.url.match(/(?<=twitter\.com\/).+?(?=\/)/)?.[0];
+            return this.url.match(/(?<=(twitter|x)\.com\/).+?(?=\/)/)?.[0];
         }
 
         get id() {
@@ -1758,7 +1761,7 @@ function hoistAPI() {
                 "withArticleRichContentState": false
             };
 
-            const urlBase = `https://twitter.com/i/api/graphql/${API.TweetDetailQueryId}/TweetDetail`;
+            const urlBase = `https://${sitename}.com/i/api/graphql/${API.TweetDetailQueryId}/TweetDetail`;
             const urlObj = new URL(urlBase);
             urlObj.searchParams.set("variables", JSON.stringify(variables));
             urlObj.searchParams.set("features", JSON.stringify(features));
@@ -1773,7 +1776,7 @@ function hoistAPI() {
                 "withSafetyModeUserFields": true,
                 "withSuperFollowsUserFields": true
             });
-            const url = `https://twitter.com/i/api/graphql/${API.UserByScreenNameQueryId}/UserByScreenName?variables=${encodeURIComponent(variables)}`;
+            const url = `https://${sitename}.com/i/api/graphql/${API.UserByScreenNameQueryId}/UserByScreenName?variables=${encodeURIComponent(variables)}`;
             const json = await API.apiRequest(url);
             verbose && console.log("[ujs][getUserInfo][json]", json);
             return json.data.user.result.legacy.entities.url?.urls[0].expanded_url;
