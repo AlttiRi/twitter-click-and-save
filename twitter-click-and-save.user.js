@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.10.0-2024.05.17
+// @version     1.10.1-2024.05.17
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -18,8 +18,10 @@
 // Please, report bugs and suggestions on GitHub, not Greasyfork.
 // --> https://github.com/AlttiRi/twitter-click-and-save/issues <--
 
+
+
 // ---------------------------------------------------------------------------------------------------------------------
-const sitename = "x";
+const sitename = location.hostname.replace(".com", "");
 // ---------------------------------------------------------------------------------------------------------------------
 // --- "Imports" --- //
 const {StorageNames, StorageNamesOld} = getStorageNames();
