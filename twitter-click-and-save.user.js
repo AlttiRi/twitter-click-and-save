@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.11.0-2024.05.29
+// @version     1.11.1-2024.05.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -888,7 +888,24 @@ function hoistFeatures() {
                 onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
             }
 
-            const {blob, lastModifiedDate, extension, name} = await fetchResource(url, onProgress);
+            async function safeFetchResource(url, onProgress) {
+                try {
+                    const result = await fetchResource(url, onProgress);
+                } catch (err) {
+                    const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
+                    const ffAutoAllocateChunkSizeBug = err.message.includes("autoAllocateChunkSize"); // https://bugzilla.mozilla.org/show_bug.cgi?id=1757836
+                    btn.classList.add("ujs-error");
+                    btnErrorTextElem.textContent = "";
+                    // Add ❌
+                    btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/274c.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;
+
+                    const ffHint = isFirefox && !settings.strictTrackingProtectionFix && ffAutoAllocateChunkSizeBug ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
+                    btn.title = "Video download failed." + ffHint;
+                    throw new Error("[error] Video download failed.");
+                }
+            }
+
+            const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url, onProgress);
 
             btnProgress.style.cssText = "--progress: 100%";
 
