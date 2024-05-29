@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.10.1-2024.05.17
+// @version     1.10.2-2024.05.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -21,7 +21,7 @@
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-const sitename = location.hostname.replace(".com", "");
+const sitename = location.hostname.replace(".com", ""); // "twitter" | "x"
 // ---------------------------------------------------------------------------------------------------------------------
 // --- "Imports" --- //
 const {StorageNames, StorageNamesOld} = getStorageNames();
@@ -235,6 +235,7 @@ function showSettings() {
     document.body.classList.add("ujs-no-scroll");
 
     const modalWrapperStyle = `
+    color-scheme: light;
     width: 100%;
     height: 100%;
     position: fixed;
