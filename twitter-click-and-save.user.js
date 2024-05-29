@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.11.1-2024.05.29
+// @version     1.11.2-2024.05.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -890,7 +890,7 @@ function hoistFeatures() {
 
             async function safeFetchResource(url, onProgress) {
                 try {
-                    const result = await fetchResource(url, onProgress);
+                    return await fetchResource(url, onProgress);
                 } catch (err) {
                     const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
                     const ffAutoAllocateChunkSizeBug = err.message.includes("autoAllocateChunkSize"); // https://bugzilla.mozilla.org/show_bug.cgi?id=1757836
