@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.11.3-2024.07.24
+// @version     1.11.4-2024.07.24
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -874,6 +874,7 @@ function hoistFeatures() {
                 btn.classList.add("ujs-error");
                 btnErrorTextElem.textContent = "Error";
                 btn.title = err.message + " Error";
+                throw err;
             }
             Features._markButtonAsDownloaded(btn);
         }
