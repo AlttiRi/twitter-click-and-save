@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.11.4-2024.07.24
+// @version     1.12.0-2024.08.17
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1031,7 +1031,7 @@ function hoistFeatures() {
         static async directLinks() {
             verbose && console.log("[ujs][directLinks]");
             const hasHttp = url => Boolean(url.match(/^https?:\/\//));
-            const anchors = xpathAll(`.//a[@dir="ltr" and child::span and not(@data-handled)]`);
+            const anchors = xpathAll(`.//a[starts-with(@href, "https://t.co/") and @dir="ltr" and child::span and not(@data-handled)]`);
             for (const anchor of anchors) {
                 const redirectUrl = new URL(anchor.href);
                 const shortUrl = redirectUrl.origin + redirectUrl.pathname; // remove "?amp=1"
@@ -1734,6 +1734,28 @@ function hoistAPI() {
             return medias;
         }
 
+        /**
+         * Returns an array like this (https://x.com/kirachem/status/1805456475893928166):
+         * [
+             {
+              "screen_name": "kirachem",
+              "tweet_id": "1805456475893928166",
+              "download_url": "https://video.twimg.com/amplify_video/1805450004041285634/vid/avc1/1080x1080/2da-wiS9XJ42-9rv.mp4?tag=16",
+              "type": "video",
+              "type_original": "video",
+              "index": 0,
+              "type_index": 0,
+              "type_index_original": 0,
+              "preview_url": "https://pbs.twimg.com/media/GQ4_SPoakAAnW8e.jpg",
+              "media_id": "1805450004041285634",
+              "media_key": "13_1805450004041285634",
+              "expanded_url": "https://twitter.com/kirachem/status/1805456475893928166/video/1",
+              "short_expanded_url": "pic.twitter.com/VnOcUSsGaC",
+              "short_tweet_url": "https://t.co/VnOcUSsGaC",
+              "tweet_text": "Bunny Tifa (Cloud's POV)"
+             }
+            ]
+         */
         static async getTweetMedias(tweetId) {
             const tweetJson = await API.getTweetJson(tweetId);
             const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJson(tweetJson, tweetId);
