@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.12.0-2024.08.17
+// @version     1.12.1-2024.08.17
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1053,7 +1053,7 @@ function hoistFeatures() {
                     continue;
                 }
 
-                const nodes = xpathAll(`./span[text() != "…"]|./text()`, anchor);
+                const nodes = xpathAll(`.//span[text() != "…"] | ./text()`, anchor);
                 let url = nodes.map(node => node.textContent).join("");
 
                 const doubleProtocolPrefix = url.match(/(?<dup>^https?:\/\/)(?=https?:)/)?.groups.dup;
