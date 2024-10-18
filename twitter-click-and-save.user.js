@@ -537,7 +537,7 @@ function hoistFeatures() {
                     continue;
                 }
 
-                const isMobileVideo = img.src.includes("ext_tw_video_thumb")  || img.closest(`a[aria-label="Embedded video"]`) || img.alt === "Animated Text GIF" || img.alt === "Embedded video"
+                const isMobileVideo = img.src.includes("ext_tw_video_thumb") || img.src.includes("amplify_video_thumb") || img.closest(`a[aria-label="Embedded video"]`) || img.alt === "Animated Text GIF" || img.alt === "Embedded video"
                                    || img.src.includes("tweet_video_thumb") /* GIF thumb */;
                 if (isMobileVideo) {
                     await Features.mobileVideoHandler(img, isThumb);
