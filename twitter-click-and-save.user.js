@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.12.2-2024.08.17
+// @version     1.13.0-2024.10.18
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -540,7 +540,7 @@ function hoistFeatures() {
                 const isMobileVideo = img.src.includes("ext_tw_video_thumb") || img.src.includes("amplify_video_thumb") || img.closest(`a[aria-label="Embedded video"]`) || img.alt === "Animated Text GIF" || img.alt === "Embedded video"
                                    || img.src.includes("tweet_video_thumb") /* GIF thumb */;
                 if (isMobileVideo) {
-                    await Features.mobileVideoHandler(img, isThumb);
+                    await Features.mobileVideoHandler(img, isThumb); // thumbVideoHandler
                     continue;
                 }
 
@@ -682,7 +682,7 @@ function hoistFeatures() {
 
 
         // Quick Dirty Fix // todo refactor
-        static async mobileVideoHandler(imgElem, isThumb) { // + thumbVideoHandler
+        static async mobileVideoHandler(imgElem, isThumb) { // thumbVideoHandler // todo rename?
             verbose && console.log("[ujs][mobileVideoHandler][vid]", imgElem);
 
             const btn = Features.createButton({isVideo: true, url: imgElem.src, isThumb});
@@ -721,7 +721,7 @@ function hoistFeatures() {
         static async multiMediaThumbHandler(imgElem) {
             verbose && console.log("[ujs][multiMediaThumbHandler]", imgElem);
             let isVideo = false;
-            if (imgElem.src.includes("/ext_tw_video_thumb/")) {
+            if (imgElem.src.includes("/ext_tw_video_thumb/") || imgElem.src.includes("/amplify_video_thumb/")) {
                 isVideo = true;
             }
 
