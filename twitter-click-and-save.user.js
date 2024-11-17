@@ -15,7 +15,7 @@
 
 
 
-// Please, report bugs and suggestions on GitHub, not Greasyfork.
+// Please, report bugs and suggestions on GitHub, not Greasyfork. I rarely visit Greasyfork.
 // --> https://github.com/AlttiRi/twitter-click-and-save/issues <--
 
 
