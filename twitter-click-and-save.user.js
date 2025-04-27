@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.1-2025.04.27
+// @version     1.14.2-2025.04.27
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -36,7 +36,7 @@ const {
     throttle,
     xpath, xpathAll,
     responseProgressProxy,
-    dateToDayDateString,
+    formatDate,
     toLineJSON,
     isFirefox,
     getBrowserName,
@@ -95,7 +95,11 @@ const historyHelper = getHistoryHelper();
 historyHelper.migrateLocalStore();
 
 // ---------------------------------------------------------------------------------------------------------------------
-
+/**
+ * UTC time. Supports: (YY/YYYY).MM.DD HH:mm:SS.
+ * @see formatDate
+ */
+const datePattern = "YYYY.MM.DD";
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -2034,7 +2038,7 @@ function getHistoryHelper() {
         const browserName = localStorage.getItem(StorageNames.browserName) || getBrowserName();
         const browserLine = browserName ? "-" + browserName : "";
 
-        downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${dateToDayDateString(new Date())}${browserLine}.json`);
+        downloadBlob(new Blob([toLineJSON(exportObject, true)]), `ujs-twitter-click-n-save-export-${formatDate(new Date(), datePattern)}${browserLine}.json`);
         onDone();
     }
 
@@ -2217,7 +2221,7 @@ function getUtils({verbose}) {
             const lastModifiedDateSeconds = response.headers.get("last-modified");
             const contentType = response.headers.get("content-type");
 
-            const lastModifiedDate = dateToDayDateString(lastModifiedDateSeconds);
+            const lastModifiedDate = formatDate(lastModifiedDateSeconds, datePattern);
             const extension = contentType ? extensionFromMime(contentType) : null;
 
             if (onProgress) {
@@ -2257,18 +2261,51 @@ function getUtils({verbose}) {
         setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
     }
 
-    // "Sun, 10 Jan 2021 22:22:22 GMT" -> "2021.01.10"
-    function dateToDayDateString(dateValue, utc = true) {
-        const _date = new Date(dateValue);
-        function pad(str) {
-            return str.toString().padStart(2, "0");
+    /**
+     * Formats date. Supports: YY.YYYY.MM.DD HH:mm:SS.
+     * Default format: "YYYY.MM.DD".
+     * formatDate() -> "2022.01.07"
+     * @param {Date | string | number} [dateValue]
+     * @param {string}  [pattern = "YYYY.MM.DD"]
+     * @param {boolean} [utc = true]
+     * @return {string}
+     */
+    function formatDate(dateValue = new Date(), pattern = "YYYY.MM.DD", utc = true) {
+        dateValue = firefoxDateFix(dateValue);
+        const date = new Date(dateValue);
+        if (date.toString() === "Invalid Date") {
+            console.warn("Invalid Date value: ", dateValue);
         }
-        const _utc = utc ? "UTC" : "";
-        const year  = _date[`get${_utc}FullYear`]();
-        const month = _date[`get${_utc}Month`]() + 1;
-        const date  = _date[`get${_utc}Date`]();
-
-        return year + "." + pad(month) + "." + pad(date);
+        const formatter = new DateFormatter(date, utc);
+        return pattern.replaceAll(/YYYY|YY|MM|DD|HH|mm|SS/g, (...args) => {
+            const property = args[0];
+            return formatter[property];
+        });
+    }
+    function firefoxDateFix(dateValue) {
+        if (isString(dateValue)) {
+            return dateValue.replace(/(?<y>\d{4})\.(?<m>\d{2})\.(?<d>\d{2})/, "$<y>-$<m>-$<d>");
+        }
+        return dateValue;
+    }
+    function isString(value) {
+        return typeof value === "string";
+    }
+    function pad0(value, count = 2) {
+        return value.toString().padStart(count, "0");
+    }
+    class DateFormatter {
+        constructor(date = new Date(), utc = true) {
+            this.date = date;
+            this.utc = utc ? "UTC" : "";
+        }
+        get SS() { return pad0(this.date[`get${this.utc}Seconds`]()); }
+        get mm() { return pad0(this.date[`get${this.utc}Minutes`]()); }
+        get HH() { return pad0(this.date[`get${this.utc}Hours`]()); }
+        get MM() { return pad0(this.date[`get${this.utc}Month`]() + 1); }
+        get DD() { return pad0(this.date[`get${this.utc}Date`]()); }
+        get YYYY() { return pad0(this.date[`get${this.utc}FullYear`](), 4); }
+        get YY() { return this.YYYY.slice(2); }
     }
 
     function addCSS(css) {
@@ -2479,7 +2516,7 @@ function getUtils({verbose}) {
     }
 
     return {
-        sleep, fetchResource, extensionFromMime, downloadBlob, dateToDayDateString,
+        sleep, fetchResource, extensionFromMime, downloadBlob, formatDate,
         addCSS,
         getCookie,
         throttle, throttleWithResult,
