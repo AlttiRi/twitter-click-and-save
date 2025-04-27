@@ -128,7 +128,7 @@ _(Note: of course, you are able to log in/sing up in [the front page](https://tw
 
 Finally, it hides "Trends" and "Topic to follow" by default. I find them useless, but you can do not agree with me, so it's not a big problem to disable this option. Just comment three related lines in the code in `Features to execute` section.
 
-UPD. Hiding of the Sign Up bottom bar also hides "Messages" block. In additional, the hiding the bottom bar can disable autoplaying videos that can be useful. You need to set `doNotPlayVideosAutomatically` to `true` for that.
+UPD. Hiding of the Sign-Up bottom bar also hides "Messages" block. In additional, the hiding the bottom bar can disable autoplaying videos that can be useful. You need to set `doNotPlayVideosAutomatically` to `true` for that.
 
 ![Messages](https://user-images.githubusercontent.com/16310547/133233108-807bdca2-7fb0-4324-b98c-bbadbd008d55.png)
 
