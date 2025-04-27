@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.13.2-2024.11.17
+// @version     1.14.0-2025.04.27
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -965,14 +965,14 @@ function hoistFeatures() {
             addCSS(code);
         }
 
-        // it depends on `directLinks()` use only it after `directLinks()`
+        // it depends on `directLinks()` use only it after `directLinks()` // todo: handleTitleNew
         static handleTitle(title) {
 
             if (!I18N.QUOTES) { // Unsupported lang, no QUOTES, ON_TWITTER, TWITTER constants
                 return;
             }
 
-            // if not an opened tweet
+            // Handle only an opened tweet
             if (!location.href.match(/(twitter|x)\.com\/[^\/]+\/status\/\d+/)) {
                 return;
             }
@@ -1593,7 +1593,9 @@ function hoistAPI() {
                 authorization,
                 "x-csrf-token": API.csrfToken,
                 "x-twitter-client-language": "en",
-                "x-twitter-active-user": "yes"
+                "x-twitter-active-user": "yes",
+             // "x-client-transaction-id": "", // todo?
+                "content-type": "application/json",
             });
             if (API.guestToken) {
                 headers.append("x-guest-token", API.guestToken);
@@ -1622,26 +1624,27 @@ function hoistAPI() {
             return json;
         }
 
-        static async getTweetJson(tweetId) {
-            const url = API.createTweetJsonEndpointUrl(tweetId);
-            const json = await API.apiRequest(url);
-            verbose && console.log("[ujs][getTweetJson]", json, JSON.stringify(json));
-            return json;
-        }
-
         /** return {tweetResult, tweetLegacy, tweetUser} */
-        static parseTweetJson(json, tweetId) {
+        static parseTweetJsonFrom_TweetDetail(json, tweetId) {
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
             const tweetEntry  = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
             let tweetResult = tweetEntry.content.itemContent.tweet_results.result; // {"__typename": "Tweet"} // or {"__typename": "TweetWithVisibilityResults", tweet: {...}} (1641596499351212033)
             if (tweetResult.tweet) {
                 tweetResult = tweetResult.tweet;
             }
-            verbose && console.log("[ujs][parseTweetJson] tweetResult", tweetResult, JSON.stringify(tweetResult));
+            verbose && console.log("[ujs][parseTweetJsonFrom_TweetDetail] tweetResult", tweetResult, JSON.stringify(tweetResult));
             const tweetUser   = tweetResult.core.user_results.result; // {"__typename": "User"}
             const tweetLegacy = tweetResult.legacy;
-            verbose && console.log("[ujs][parseTweetJson] tweetLegacy", tweetLegacy, JSON.stringify(tweetLegacy));
-            verbose && console.log("[ujs][parseTweetJson] tweetUser", tweetUser, JSON.stringify(tweetUser));
+            verbose && console.log("[ujs][parseTweetJsonFrom_TweetDetail] tweetLegacy", tweetLegacy, JSON.stringify(tweetLegacy));
+            verbose && console.log("[ujs][parseTweetJsonFrom_TweetDetail] tweetUser", tweetUser, JSON.stringify(tweetUser));
+            return {tweetResult, tweetLegacy, tweetUser};
+        }
+
+        /** return {tweetResult, tweetLegacy, tweetUser} */
+        static parseTweetJsonFrom_TweetResultByRestId(json, tweetId) {
+            const tweetResult = json.data.tweetResult.result; // {__typename: "Tweet"}
+            const tweetUser   = tweetResult.core.user_results.result; // {"__typename": "User"}
+            const tweetLegacy = tweetResult.legacy;
             return {tweetResult, tweetLegacy, tweetUser};
         }
 
@@ -1756,8 +1759,16 @@ function hoistAPI() {
             ]
          */
         static async getTweetMedias(tweetId) {
-            const tweetJson = await API.getTweetJson(tweetId);
-            const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJson(tweetJson, tweetId);
+            /* "old" (no more works / requires "x-client-transaction-id" header) and "new" API selection */
+
+         // const url = API.createTweetJsonEndpointUrl(tweetId); // old 2025.04
+            const url = API.createTweetJsonEndpointUrlById(tweetId);
+
+            const json = await API.apiRequest(url);
+            verbose && console.log("[ujs][getTweetMedias]", json, JSON.stringify(json));
+
+         // const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJsonFrom_TweetDetail(json, tweetId); // old 2025.04
+            const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJsonFrom_TweetResultByRestId(json, tweetId);
 
             let result = API.parseTweetLegacyMedias(tweetResult, tweetLegacy, tweetUser);
 
@@ -1780,50 +1791,116 @@ function hoistAPI() {
 
         // todo: keep `queryId` updated
         // https://github.com/fa0311/TwitterInternalAPIDocument/blob/master/docs/json/API.json
-        static TweetDetailQueryId      = "VwKJcAd7zqlBOitPLUrB8A"; // TweetDetail      (for videos)
-        static UserByScreenNameQueryId = "qW5u-DAuXpMEG0zA1F7UGQ"; // UserByScreenName (for the direct user profile url)
+        static TweetDetailQueryId         = "_8aYOgEDz35BrBcBal1-_w"; // TweetDetail      (for videos and media tab)
+        static UserByScreenNameQueryId    = "1VOOyvKkiI3FMmkeDNxM9A"; // UserByScreenName (for the direct user profile url)
+        static TweetResultByRestIdQueryId = "zAz9764BcLZOJ0JU2wrd1A"; // TweetResultByRestId (an alternative for TweetDetail)
 
-        static createTweetJsonEndpointUrl(tweetId) {
+
+        // get a URL for TweetResultByRestId endpoint
+        static createTweetJsonEndpointUrlById(tweetId) {
             const variables = {
-                "focalTweetId": tweetId,
-                "with_rux_injections": true,
-                "includePromotedContent": true,
-                "withCommunity": true,
-                "withQuickPromoteEligibilityTweetFields": true,
-                "withBirdwatchNotes": true,
-                "withVoice": true,
-                "withV2Timeline": true
+                "tweetId": tweetId,
+                "withCommunity": false,
+                "includePromotedContent": false,
+                "withVoice": false
             };
             const features = {
-                "rweb_tipjar_consumption_enabled": true,
-                "responsive_web_graphql_exclude_directive_enabled": true,
-                "verified_phone_label_enabled": false,
                 "creator_subscriptions_tweet_preview_api_enabled": true,
-                "responsive_web_graphql_timeline_navigation_enabled": true,
-                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+                "premium_content_api_read_enabled": false,
                 "communities_web_enable_tweet_community_results_fetch": true,
                 "c9s_tweet_anatomy_moderator_badge_enabled": true,
+                "responsive_web_grok_analyze_button_fetch_trends_enabled": false,
+                "responsive_web_grok_analyze_post_followups_enabled": false,
+                "responsive_web_jetfuel_frame": false,
+                "responsive_web_grok_share_attachment_enabled": true,
                 "articles_preview_enabled": true,
-                "tweetypie_unmention_optimization_enabled": true,
                 "responsive_web_edit_tweet_api_enabled": true,
                 "graphql_is_translatable_rweb_tweet_is_translatable_enabled": true,
                 "view_counts_everywhere_api_enabled": true,
                 "longform_notetweets_consumption_enabled": true,
                 "responsive_web_twitter_article_tweet_consumption_enabled": true,
                 "tweet_awards_web_tipping_enabled": false,
+                "responsive_web_grok_show_grok_translated_post": false,
+                "responsive_web_grok_analysis_button_from_backend": false,
                 "creator_subscriptions_quote_tweet_preview_enabled": false,
                 "freedom_of_speech_not_reach_fetch_enabled": true,
                 "standardized_nudges_misinfo": true,
                 "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
-                "rweb_video_timestamps_enabled": true,
                 "longform_notetweets_rich_text_read_enabled": true,
                 "longform_notetweets_inline_media_enabled": true,
+                "profile_label_improvements_pcf_label_in_post_enabled": true,
+                "rweb_tipjar_consumption_enabled": true,
+                "verified_phone_label_enabled": false,
+                "responsive_web_grok_image_annotation_enabled": true,
+                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+                "responsive_web_graphql_timeline_navigation_enabled": true,
                 "responsive_web_enhance_cards_enabled": false
             };
             const fieldToggles = {
                 "withArticleRichContentState": true,
                 "withArticlePlainText": false,
-                "withGrokAnalyze": false
+                "withGrokAnalyze": false,
+                "withDisallowedReplyControls": false
+            };
+
+            const urlBase = `https://${sitename}.com/i/api/graphql/${API.TweetResultByRestIdQueryId}/TweetResultByRestId`;
+            const urlObj = new URL(urlBase);
+            urlObj.searchParams.set("variables", JSON.stringify(variables));
+            urlObj.searchParams.set("features", JSON.stringify(features));
+            urlObj.searchParams.set("fieldToggles", JSON.stringify(fieldToggles));
+            const url = urlObj.toString();
+            return url;
+        }
+
+        // get a URL for TweetDetail endpoint
+        static createTweetJsonEndpointUrl(tweetId) {
+            const variables = {
+                "focalTweetId": tweetId,
+                "rankingMode": "Relevance",
+                "includePromotedContent": true,
+                "withCommunity": true,
+                "withQuickPromoteEligibilityTweetFields": true,
+                "withBirdwatchNotes": true,
+                "withVoice": true
+            };
+            const features = {
+                "rweb_video_screen_enabled": false,
+                "profile_label_improvements_pcf_label_in_post_enabled": true,
+                "rweb_tipjar_consumption_enabled": true,
+                "verified_phone_label_enabled": false,
+                "creator_subscriptions_tweet_preview_api_enabled": true,
+                "responsive_web_graphql_timeline_navigation_enabled": true,
+                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+                "premium_content_api_read_enabled": false,
+                "communities_web_enable_tweet_community_results_fetch": true,
+                "c9s_tweet_anatomy_moderator_badge_enabled": true,
+                "responsive_web_grok_analyze_button_fetch_trends_enabled": false,
+                "responsive_web_grok_analyze_post_followups_enabled": true,
+                "responsive_web_jetfuel_frame": false,
+                "responsive_web_grok_share_attachment_enabled": true,
+                "articles_preview_enabled": true,
+                "responsive_web_edit_tweet_api_enabled": true,
+                "graphql_is_translatable_rweb_tweet_is_translatable_enabled": true,
+                "view_counts_everywhere_api_enabled": true,
+                "longform_notetweets_consumption_enabled": true,
+                "responsive_web_twitter_article_tweet_consumption_enabled": true,
+                "tweet_awards_web_tipping_enabled": false,
+                "responsive_web_grok_show_grok_translated_post": false,
+                "responsive_web_grok_analysis_button_from_backend": true,
+                "creator_subscriptions_quote_tweet_preview_enabled": false,
+                "freedom_of_speech_not_reach_fetch_enabled": true,
+                "standardized_nudges_misinfo": true,
+                "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
+                "longform_notetweets_rich_text_read_enabled": true,
+                "longform_notetweets_inline_media_enabled": true,
+                "responsive_web_grok_image_annotation_enabled": true,
+                "responsive_web_enhance_cards_enabled": false
+            };
+            const fieldToggles = {
+                "withArticleRichContentState":true,
+                "withArticlePlainText":false,
+                "withGrokAnalyze":false,
+                "withDisallowedReplyControls":false
             };
 
             const urlBase = `https://${sitename}.com/i/api/graphql/${API.TweetDetailQueryId}/TweetDetail`;
@@ -1835,27 +1912,27 @@ function hoistAPI() {
             return url;
         }
 
+        // get data from UserByScreenName endpoint
         static async getUserInfo(username) {
             const variables = {
-                "screen_name": username,
-                "withSafetyModeUserFields": true,
+                "screen_name":"unbound_figure"
             };
             const features = {
-                "creator_subscriptions_tweet_preview_api_enabled": true,
-                "hidden_profile_likes_enabled": true,
                 "hidden_profile_subscriptions_enabled": true,
-                "highlights_tweets_tab_ui_enabled": true,
-                "responsive_web_graphql_exclude_directive_enabled": true,
-                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
-                "responsive_web_graphql_timeline_navigation_enabled": true,
-                "responsive_web_twitter_article_notes_tab_enabled": true,
+                "profile_label_improvements_pcf_label_in_post_enabled": true,
                 "rweb_tipjar_consumption_enabled": true,
+                "verified_phone_label_enabled": false,
                 "subscriptions_verification_info_is_identity_verified_enabled": true,
                 "subscriptions_verification_info_verified_since_enabled": true,
-                "verified_phone_label_enabled": false,
+                "highlights_tweets_tab_ui_enabled": true,
+                "responsive_web_twitter_article_notes_tab_enabled": true,
+                "subscriptions_feature_can_gift_premium": true,
+                "creator_subscriptions_tweet_preview_api_enabled": true,
+                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+                "responsive_web_graphql_timeline_navigation_enabled": true
             };
             const fieldToggles = {
-                "withAuxiliaryUserLabels": false,
+                "withAuxiliaryUserLabels": true
             };
 
             const urlBase = `https://${sitename}.com/i/api/graphql/${API.UserByScreenNameQueryId}/UserByScreenName?`;
