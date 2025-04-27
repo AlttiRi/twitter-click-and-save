@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.0-2025.04.27
+// @version     1.14.1-2025.04.27
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1762,7 +1762,7 @@ function hoistAPI() {
             /* "old" (no more works / requires "x-client-transaction-id" header) and "new" API selection */
 
          // const url = API.createTweetJsonEndpointUrl(tweetId); // old 2025.04
-            const url = API.createTweetJsonEndpointUrlById(tweetId);
+            const url = API.createTweetJsonEndpointUrlByRestId(tweetId);
 
             const json = await API.apiRequest(url);
             verbose && console.log("[ujs][getTweetMedias]", json, JSON.stringify(json));
@@ -1797,7 +1797,7 @@ function hoistAPI() {
 
 
         // get a URL for TweetResultByRestId endpoint
-        static createTweetJsonEndpointUrlById(tweetId) {
+        static createTweetJsonEndpointUrlByRestId(tweetId) {
             const variables = {
                 "tweetId": tweetId,
                 "withCommunity": false,
