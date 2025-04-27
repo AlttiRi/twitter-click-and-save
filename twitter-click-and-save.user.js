@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.3-2025.04.27
+// @version     1.14.4-2025.04.27
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -96,9 +96,9 @@ historyHelper.migrateLocalStore();
 
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * UTC time. Supports: (YYYY/YY).MM.DD HH:mm:SS.
- * The only recommended value order: Year -> Month -> Day -> Hour -> minute -> Second
- * OK: "YYYY.MM.DD", "YYYY-MM-DD", "YYYYMMDD_HHmmSS".
+ * UTC time. Supports: (YYYY/YY).MM.DD hh:mm:ss.
+ * The only recommended value order: Year -> Month -> Day -> hour -> minute -> second
+ * OK: "YYYY.MM.DD", "YYYY-MM-DD", "YYYYMMDD_hhmmss".
  * Not OK: "DD-MM-YYYY", "MM-DD-YYYY".
  * @see formatDate
  */
@@ -2265,7 +2265,7 @@ function getUtils({verbose}) {
     }
 
     /**
-     * Formats date. Supports: YY.YYYY.MM.DD HH:mm:SS.
+     * Formats date. Supports: YY.YYYY.MM.DD hh:mm:ss.
      * Default format: "YYYY.MM.DD".
      * formatDate() -> "2022.01.07"
      * @param {Date | string | number} [dateValue]
@@ -2280,7 +2280,7 @@ function getUtils({verbose}) {
             console.warn("Invalid Date value: ", dateValue);
         }
         const formatter = new DateFormatter(date, utc);
-        return pattern.replaceAll(/YYYY|YY|MM|DD|HH|mm|SS/g, (...args) => {
+        return pattern.replaceAll(/YYYY|YY|MM|DD|hh|mm|ss/g, (...args) => {
             const property = args[0];
             return formatter[property];
         });
@@ -2302,11 +2302,11 @@ function getUtils({verbose}) {
             this.date = date;
             this.utc = utc ? "UTC" : "";
         }
-        get SS() { return pad0(this.date[`get${this.utc}Seconds`]()); }
+        get ss() { return pad0(this.date[`get${this.utc}Seconds`]()); }
         get mm() { return pad0(this.date[`get${this.utc}Minutes`]()); }
-        get HH() { return pad0(this.date[`get${this.utc}Hours`]()); }
-        get MM() { return pad0(this.date[`get${this.utc}Month`]() + 1); }
+        get hh() { return pad0(this.date[`get${this.utc}Hours`]()); }
         get DD() { return pad0(this.date[`get${this.utc}Date`]()); }
+        get MM() { return pad0(this.date[`get${this.utc}Month`]() + 1); }
         get YYYY() { return pad0(this.date[`get${this.utc}FullYear`](), 4); }
         get YY() { return this.YYYY.slice(2); }
     }
