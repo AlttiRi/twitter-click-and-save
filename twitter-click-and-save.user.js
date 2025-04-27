@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.2-2025.04.27
+// @version     1.14.3-2025.04.27
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -96,7 +96,10 @@ historyHelper.migrateLocalStore();
 
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * UTC time. Supports: (YY/YYYY).MM.DD HH:mm:SS.
+ * UTC time. Supports: (YYYY/YY).MM.DD HH:mm:SS.
+ * The only recommended value order: Year -> Month -> Day -> Hour -> minute -> Second
+ * OK: "YYYY.MM.DD", "YYYY-MM-DD", "YYYYMMDD_HHmmSS".
+ * Not OK: "DD-MM-YYYY", "MM-DD-YYYY".
  * @see formatDate
  */
 const datePattern = "YYYY.MM.DD";
