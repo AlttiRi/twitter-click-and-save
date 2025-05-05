@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.7-2025.05.05
+// @version     1.14.8-2025.05.05
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -104,6 +104,21 @@ historyHelper.migrateLocalStore();
  * @see formatDate
  */
 const datePattern = "YYYY.MM.DD";
+
+/**
+ * I strongly do NOT recommend to change the filename pattern format.
+ *
+ * The filename may look a bit long, but here I wrote why the used filename pattern is the way it is:
+ * https://github.com/AlttiRi/twitter-click-and-save?tab=readme-ov-file#filename-format
+ *
+ * If you really need to change it, and you understand WHAT and WHY you do, 
+ * you can modify the follow lines in the source code.
+ * 
+ * Note, that the script updating will overwrite the changes.
+ * */
+const imageFilenameTemplate      = `[twitter]{sampleText} {author}—{lastModifiedDate}—{tweetId}—{name}.{extension}`;
+const videoFilenameTemplate      = `[twitter] {author}—{lastModifiedDate}—{tweetId}—{name}.{extension}`;
+const backgroundFilenameTemplate = `[twitter][bg] {username}—{lastModifiedDate}—{id}—{seconds}.{extension}`;
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -482,8 +497,7 @@ function hoistFeatures() {
 
             Features.verifyBlob(blob, url, btn);
 
-            const bgTemplate = `[twitter][bg] {username}—{lastModifiedDate}—{id}—{seconds}.{extension}`;
-            const filename = renderTemplateString(bgTemplate, {
+            const filename = renderTemplateString(backgroundFilenameTemplate, {
                 username, lastModifiedDate, id, seconds, extension,
             }).value;
             downloadBlob(blob, filename, url);
@@ -671,9 +685,8 @@ function hoistFeatures() {
 
             btnProgress.style.cssText = "--progress: 100%";
 
-            const sampleText = isSample ? "[sample]" : "";
-            const imageTemplate = `[twitter]{sampleText} {author}—{lastModifiedDate}—{tweetId}—{name}.{extension}`;
-            const filename = renderTemplateString(imageTemplate, {
+            const sampleText = isSample ? "[sample]" : ""; // "[sample]" prefix, when the original image is not available to download
+            const filename = renderTemplateString(imageFilenameTemplate, {
                 author, lastModifiedDate, tweetId: id, name, extension, sampleText,
             }).value;
             downloadBlob(blob, filename, url);
@@ -937,8 +950,7 @@ function hoistFeatures() {
 
             Features.verifyBlob(blob, url, btn);
 
-            const videoTemplate = `[twitter] {author}—{lastModifiedDate}—{tweetId}—{name}.{extension}`;
-            const filename = renderTemplateString(videoTemplate, {
+            const filename = renderTemplateString(videoFilenameTemplate, {
                 author, lastModifiedDate, tweetId: videoTweetId, name, extension,
             }).value;
             downloadBlob(blob, filename, url);
