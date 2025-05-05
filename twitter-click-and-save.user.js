@@ -111,9 +111,9 @@ const datePattern = "YYYY.MM.DD";
  * The filename may look a bit long, but here I wrote why the used filename pattern is the way it is:
  * https://github.com/AlttiRi/twitter-click-and-save?tab=readme-ov-file#filename-format
  *
- * If you really need to change it, and you understand WHAT and WHY you do, 
+ * If you really need to change it, and you understand WHAT and WHY you do,
  * you can modify the follow lines in the source code.
- * 
+ *
  * Note, that the script updating will overwrite the changes.
  * */
 const imageFilenameTemplate      = `[twitter]{sampleText} {author}—{lastModifiedDate}—{tweetId}—{name}.{extension}`;
