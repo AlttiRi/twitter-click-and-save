@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.6-2025.05.05
+// @version     1.14.7-2025.05.05
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -41,6 +41,7 @@ const {
     isFirefox,
     getBrowserName,
     removeSearchParams,
+    renderTemplateString,
 } = getUtils({verbose});
 
 const LS = hoistLS({verbose});
@@ -481,7 +482,10 @@ function hoistFeatures() {
 
             Features.verifyBlob(blob, url, btn);
 
-            const filename = `[twitter][bg] ${username}—${lastModifiedDate}—${id}—${seconds}.${extension}`;
+            const bgTemplate = `[twitter][bg] {username}—{lastModifiedDate}—{id}—{seconds}.{extension}`;
+            const filename = renderTemplateString(bgTemplate, {
+                username, lastModifiedDate, id, seconds, extension,
+            }).value;
             downloadBlob(blob, filename, url);
 
             Features._markButtonAsDownloaded(btn);
@@ -667,8 +671,11 @@ function hoistFeatures() {
 
             btnProgress.style.cssText = "--progress: 100%";
 
-            const sampleText = !isSample ? "" : "[sample]";
-            const filename = `[twitter]${sampleText} ${author}—${lastModifiedDate}—${id}—${name}.${extension}`;
+            const sampleText = isSample ? "[sample]" : "";
+            const imageTemplate = `[twitter]{sampleText} {author}—{lastModifiedDate}—{tweetId}—{name}.{extension}`;
+            const filename = renderTemplateString(imageTemplate, {
+                author, lastModifiedDate, tweetId: id, name, extension, sampleText,
+            }).value;
             downloadBlob(blob, filename, url);
 
             const downloaded = btn.classList.contains("ujs-already-downloaded") || btn.classList.contains("ujs-downloaded");
@@ -930,7 +937,10 @@ function hoistFeatures() {
 
             Features.verifyBlob(blob, url, btn);
 
-            const filename = `[twitter] ${author}—${lastModifiedDate}—${videoTweetId}—${name}.${extension}`;
+            const videoTemplate = `[twitter] {author}—{lastModifiedDate}—{tweetId}—{name}.{extension}`;
+            const filename = renderTemplateString(videoTemplate, {
+                author, lastModifiedDate, tweetId: videoTweetId, name, extension,
+            }).value;
             downloadBlob(blob, filename, url);
 
             const downloaded = btn.classList.contains("ujs-already-downloaded");
@@ -2549,6 +2559,24 @@ function getUtils({verbose}) {
         return urlObj.toString();
     }
 
+    /**
+     * @param {string} template
+     * @param {Record<string, any>} props
+     * @returns {{value: string, hasUndefined: boolean}}
+     */
+    function renderTemplateString(template, props) {
+        let hasUndefined = false;
+        const value = template.replaceAll(/{[^{}]+?}/g, (match, index, string) => {
+            const key = match.slice(1, -1);
+            const propValue = props[key];
+            if (propValue === undefined) {
+                hasUndefined = true;
+            }
+            return propValue;
+        });
+        return {value, hasUndefined};
+    }
+
     return {
         sleep, fetchResource, extensionFromMime, downloadBlob, formatDate,
         addCSS,
@@ -2560,6 +2588,7 @@ function getUtils({verbose}) {
         isFirefox,
         getBrowserName,
         removeSearchParams,
+        renderTemplateString,
     }
 }
 
