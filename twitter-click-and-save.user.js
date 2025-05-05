@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.4-2025.04.27
+// @version     1.14.5-2025.05.05
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1649,7 +1649,10 @@ function hoistAPI() {
 
         /** return {tweetResult, tweetLegacy, tweetUser} */
         static parseTweetJsonFrom_TweetResultByRestId(json, tweetId) {
-            const tweetResult = json.data.tweetResult.result; // {__typename: "Tweet"}
+            let tweetResult = json.data.tweetResult.result; // {"__typename": "Tweet"} // or {"__typename": "TweetWithVisibilityResults", tweet: {...}} (1641596499351212033)
+            if (tweetResult.tweet) {
+                tweetResult = tweetResult.tweet;
+            }
             const tweetUser   = tweetResult.core.user_results.result; // {"__typename": "User"}
             const tweetLegacy = tweetResult.legacy;
             return {tweetResult, tweetLegacy, tweetUser};
@@ -1774,7 +1777,7 @@ function hoistAPI() {
             const json = await API.apiRequest(url);
             verbose && console.log("[ujs][getTweetMedias]", json, JSON.stringify(json));
 
-         // const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJsonFrom_TweetDetail(json, tweetId); // old 2025.04
+         // const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJsonFrom_TweetDetail(json, tweetId); // [old] used before 2025.04
             const {tweetResult, tweetLegacy, tweetUser} = API.parseTweetJsonFrom_TweetResultByRestId(json, tweetId);
 
             let result = API.parseTweetLegacyMedias(tweetResult, tweetLegacy, tweetUser);
