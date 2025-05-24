@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.8-2025.05.24
+// @version     1.14.9-2025.05.24
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
