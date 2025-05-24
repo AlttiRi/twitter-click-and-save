@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.8-2025.05.05
+// @version     1.14.8-2025.05.24
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1975,7 +1975,7 @@ function hoistAPI() {
         // get data from UserByScreenName endpoint
         static async getUserInfo(username) {
             const variables = {
-                "screen_name":"unbound_figure"
+                "screen_name": username
             };
             const features = {
                 "hidden_profile_subscriptions_enabled": true,
