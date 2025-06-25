@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.14.9-2025.05.24
+// @version     1.15.0-2025.06.25-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -139,19 +139,27 @@ if (debugPopup) {
 
 const fetch = ujs_getGlobalFetch({verbose, strictTrackingProtectionFix: settings.strictTrackingProtectionFix});
 
-function ujs_getGlobalFetch({verbose, strictTrackingProtectionFix} = {}) {
-    const useFirefoxStrictTrackingProtectionFix = strictTrackingProtectionFix === undefined ? true : strictTrackingProtectionFix; // Let's use by default
-    const useFirefoxFix = useFirefoxStrictTrackingProtectionFix && typeof wrappedJSObject === "object" && typeof wrappedJSObject.fetch === "function";
-    // --- [VM/GM + Firefox ~90+ + Enabled "Strict Tracking Protection"] fix --- //
-    function fixedFirefoxFetch(resource, init = {}) {
-        verbose && console.log("[ujs][wrappedJSObject.fetch]", resource, init);
-        if (init.headers instanceof Headers) {
-            // Since `Headers` are not allowed for structured cloning.
-            init.headers = Object.fromEntries(init.headers.entries());
-        }
-        return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
+/**
+ * Returns a fetch function compatible with Firefox's Strict Tracking Protection
+ * ("Enhanced Tracking Protection" - "Strict").
+ * Fixes `TypeError: NetworkError when attempting to fetch resource.`.
+ * @param {Object} [options]
+ * @param {boolean} [options.verbose=false]
+ * @param {boolean} [options.strictTrackingProtectionFix=true]
+ * @returns {Function} A fetch function (either native or fixed for Firefox).
+ */
+function ujs_getGlobalFetch({verbose = false, strictTrackingProtectionFix = true} = {}) {
+    if (strictTrackingProtectionFix && typeof wrappedJSObject?.fetch === "function") {
+        return function fixedFirefoxFetch(resource, init = {}) {
+            verbose && console.log("[ujs][wrappedJSObject.fetch]", resource, init);
+            if (init.headers instanceof Headers) {
+                // `Headers` object is not allowed for structured cloning.
+                init.headers = Object.fromEntries(init.headers.entries());
+            }
+            return wrappedJSObject.fetch(cloneInto(resource, document), cloneInto(init, document));
+        };
     }
-    return useFirefoxFix ? fixedFirefoxFetch : globalThis.fetch;
+    return globalThis.fetch;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
