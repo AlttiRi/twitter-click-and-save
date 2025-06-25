@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.15.0-2025.06.25-dev
+// @version     1.15.1-2025.06.25-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -122,7 +122,7 @@ const backgroundFilenameTemplate = `[twitter][bg] {username}—{lastModifiedDate
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-if (globalThis.GM_registerMenuCommand /* undefined in Firefox with VM */ || typeof GM_registerMenuCommand === "function") {
+if (typeof GM_registerMenuCommand === "function") {
     GM_registerMenuCommand("Show settings", showSettings);
 }
 
