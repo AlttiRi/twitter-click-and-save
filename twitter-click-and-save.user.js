@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.15.1-2025.06.25-dev
+// @version     1.15.2-2025.06.25-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -150,6 +150,7 @@ const fetch = ujs_getGlobalFetch({verbose, strictTrackingProtectionFix: settings
  */
 function ujs_getGlobalFetch({verbose = false, strictTrackingProtectionFix = true} = {}) {
     if (strictTrackingProtectionFix && typeof wrappedJSObject?.fetch === "function") {
+        // Note: `wrappedJSObject` is Firefox only object
         return function fixedFirefoxFetch(resource, init = {}) {
             verbose && console.log("[ujs][wrappedJSObject.fetch]", resource, init);
             if (init.headers instanceof Headers) {
@@ -288,8 +289,9 @@ function showSettings() {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   `;
     const s = settings;
-    const downloadProgressFFTitle = `Disable the download progress if you use Firefox with "Enhanced Tracking Protection" set to "Strict" and ViolentMonkey, or GreaseMonkey extension`;
-    const strictTrackingProtectionFixFFTitle = `Choose this if you use ViolentMonkey, or GreaseMonkey in Firefox with "Enhanced Tracking Protection" set to "Strict". It is not required in case you use TamperMonkey.`;
+    const downloadProgressFFTitle = `Show the downloading progress inside the download button.
+In Firefox it works only with "Enhanced Tracking Protection" set to "Standard".`;
+    const strictTrackingProtectionFixFFTitle = `Choose this if you use Firefox with "Enhanced Tracking Protection" set to "Strict".`;
     document.body.insertAdjacentHTML("afterbegin", `
   <div class="ujs-modal-wrapper" style="${modalWrapperStyle}">
       <div class="ujs-modal-settings" style="${modalSettingsStyle}">
@@ -2488,7 +2490,10 @@ function getUtils({verbose}) {
         const onProgressProps = getOnProgressProps(response);
         let loaded = 0;
         const reader = response.body.getReader();
-        const readableStream = new ReadableStream({
+        const ReadableStreamConstructor = isFirefox && (typeof unsafeWindow !== "undefined" && typeof unsafeWindow.ReadableStream === "function")
+            ? unsafeWindow.ReadableStream
+            : globalThis.ReadableStream;
+        const readableStream = new ReadableStreamConstructor({
             async start(controller) {
                 while (true) {
                     const {done, /** @type {Uint8Array} */ value} = await reader.read();
@@ -2556,6 +2561,7 @@ function getUtils({verbose}) {
         return result;
     }
 
+    // const isFirefox = typeof wrappedJSObject === "object" && wrappedJSObject !== null; // an alternative
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
 
     function getBrowserName() {
