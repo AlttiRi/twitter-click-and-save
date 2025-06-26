@@ -25,6 +25,8 @@ _*For example: Tampermonkey
 Violentmonkey
 [![Chrome image by Google](https://github.com/user-attachments/assets/08515d91-3f98-42c4-a8d8-100118724898 "Download Violentmonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
 [![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download Violentmonkey for Firefox")](https://addons.mozilla.org/firefox/addon/violentmonkey/),
+FireMonkey
+[![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download FireMonkey for Firefox")](https://addons.mozilla.org/firefox/addon/firemonkey/),
 Greasemonkey
 [![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download Greasemonkey for Firefox")](https://addons.mozilla.org/firefox/addon/greasemonkey/)._
 
