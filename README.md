@@ -19,12 +19,13 @@ To install just do two clicks:
 1. **[Click on this link](https://greasyfork.org/scripts/430132-twitter-click-n-save/code/Twitter%20Click'n'Save.user.js)** _(to install it from [greasyfork](https://greasyfork.org/en/scripts/430132))_
 2. Confirm the installation in your userscript manager.
 
-_*For example: Tampermonkey
-[![Chrome image by Google](https://github.com/user-attachments/assets/08515d91-3f98-42c4-a8d8-100118724898 "Download Tampermonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
-[![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download Tampermonkey for Firefox")](https://addons.mozilla.org/firefox/addon/tampermonkey/),
+_*For example:
 Violentmonkey
 [![Chrome image by Google](https://github.com/user-attachments/assets/08515d91-3f98-42c4-a8d8-100118724898 "Download Violentmonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
 [![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download Violentmonkey for Firefox")](https://addons.mozilla.org/firefox/addon/violentmonkey/),
+Tampermonkey
+[![Chrome image by Google](https://github.com/user-attachments/assets/08515d91-3f98-42c4-a8d8-100118724898 "Download Tampermonkey for a Chromium based browser")](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+[![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download Tampermonkey for Firefox")](https://addons.mozilla.org/firefox/addon/tampermonkey/),
 FireMonkey
 [![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download FireMonkey for Firefox")](https://addons.mozilla.org/firefox/addon/firemonkey/),
 Greasemonkey
