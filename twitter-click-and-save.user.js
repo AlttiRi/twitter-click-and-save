@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.17.0-2025.06.26
+// @version     1.17.1-2025.06.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -698,7 +698,9 @@ function hoistFeatures() {
             Features.verifyBlob(blob, url, btn);
 
             btnProgress.style.cssText = "--progress: 100%";
-            btn.title = `Downloaded: ${formatSizeWinLike(Number(btnProgress.dataset.downloaded))}`;
+            if (btn.title.startsWith("Downloading:")) {
+                btn.title = `Downloaded: ${formatSizeWinLike(Number(btnProgress.dataset.downloaded))}`;
+            }
 
             const sampleText = isSample ? "[sample]" : ""; // "[sample]" prefix, when the original image is not available to download
             const filename = renderTemplateString(imageFilenameTemplate, {
@@ -970,7 +972,9 @@ function hoistFeatures() {
             Features.verifyBlob(blob, url, btn);
 
             btnProgress.style.cssText = "--progress: 100%";
-            btn.title = `Downloaded: ${formatSizeWinLike(Number(btnProgress.dataset.downloaded))}`;
+            if (btn.title.startsWith("Downloading:")) {
+                btn.title = `Downloaded: ${formatSizeWinLike(Number(btnProgress.dataset.downloaded))}`;
+            }
 
             const filename = renderTemplateString(videoFilenameTemplate, {
                 author, lastModifiedDate, tweetId: videoTweetId, name, extension,
