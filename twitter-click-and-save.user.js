@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.17.2-2025.06.26
+// @version     1.17.3-2025.06.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -689,8 +689,8 @@ function hoistFeatures() {
 
                             const needFFHint = (isFirefox || isFirefoxUserscriptContext) && !settings.strictTrackingProtectionFix;
                             const ffHint = needFFHint ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
-                            btn.title = "Failed to download the image." + ffHint;
-                            throw new Error("[error] Fallback URLs are failed.");
+                            btn.title = "Failed to download the image. Fallback URLs are failed." + ffHint;
+                            throw new Error("[error] " + btn.title);
                         }
                     }
                 }
@@ -913,15 +913,7 @@ function hoistFeatures() {
                 btn.title = "API.getVideoInfo Error";
                 throw new Error("API.getVideoInfo Error");
             }
-            try {
-                await Features._downloadVideoMediaEntry(mediaEntry, btn, id);
-            } catch (err) {
-                console.error(err);
-                btn.classList.add("ujs-error");
-                btnErrorTextElem.textContent = "Error";
-                btn.title = err.message + " Error";
-                throw err;
-            }
+            await Features._downloadVideoMediaEntry(mediaEntry, btn, id);
             Features._markButtonAsDownloaded(btn);
         }
 
@@ -966,7 +958,7 @@ function hoistFeatures() {
                     const needFFHint = (isFirefox || isFirefoxUserscriptContext) && !settings.strictTrackingProtectionFix;
                     const ffHint = needFFHint ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
                     btn.title = "Video download failed." + ffHint;
-                    throw new Error("[error] Video download failed.");
+                    throw new Error("[error] " + btn.title);
                 }
             }
 
