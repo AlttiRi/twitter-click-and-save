@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.15.2-2025.06.25-dev
+// @version     1.15.3-2025.06.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -2486,13 +2486,28 @@ function getUtils({verbose}) {
             headers, status, statusText, url, redirected, ok
         };
     }
+
+    // unsafeWindow.ReadableStream === globalThis.ReadableStream while page is loading // in VM, not TM
+    // unsafeWindow.ReadableStream !== globalThis.ReadableStream after page is loaded
+    // So, get `ReadableStreamConstructor` inside `responseProgressProxy`.
+    function getReadableStreamConstructor() {
+        const isFirefoxUserscriptContext = typeof wrappedJSObject === "object" && wrappedJSObject !== null;
+        const has_unsafeWin_RS = (typeof unsafeWindow !== "undefined" && typeof unsafeWindow.ReadableStream === "function");
+        const firefoxRSWorkaround = isFirefoxUserscriptContext && has_unsafeWin_RS;
+        console.log("[ujs] getReadableStreamConstructor", isFirefoxUserscriptContext, has_unsafeWin_RS, firefoxRSWorkaround);
+        console.log("[ujs] getReadableStreamConstructor", unsafeWindow.ReadableStream === globalThis.ReadableStream);
+        return firefoxRSWorkaround ? unsafeWindow.ReadableStream : globalThis.ReadableStream;
+    }
+
     function responseProgressProxy(response, onProgress) {
         const onProgressProps = getOnProgressProps(response);
         let loaded = 0;
         const reader = response.body.getReader();
-        const ReadableStreamConstructor = isFirefox && (typeof unsafeWindow !== "undefined" && typeof unsafeWindow.ReadableStream === "function")
-            ? unsafeWindow.ReadableStream
-            : globalThis.ReadableStream;
+        
+        // However, it only helps for VM, not TM.
+        // todo: not use ReadableStream at all in FF
+        const ReadableStreamConstructor = getReadableStreamConstructor();
+        
         const readableStream = new ReadableStreamConstructor({
             async start(controller) {
                 while (true) {
@@ -2561,7 +2576,6 @@ function getUtils({verbose}) {
         return result;
     }
 
-    // const isFirefox = typeof wrappedJSObject === "object" && wrappedJSObject !== null; // an alternative
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
 
     function getBrowserName() {
