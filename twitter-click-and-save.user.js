@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.17.1-2025.06.26
+// @version     1.17.2-2025.06.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -27,6 +27,8 @@ const sitename = location.hostname.replace(".com", ""); // "twitter" | "x"
 const {StorageNames, StorageNamesOld} = getStorageNames();
 
 const {verbose, debugPopup} = getDebugSettings(); // --- For debug --- //
+// localStorage.setItem("ujs-twitter-click-n-save-verbose",  true); // To  enable the debug console log
+// localStorage.setItem("ujs-twitter-click-n-save-verbose", false); // To disable the debug console log
 
 
 const {
