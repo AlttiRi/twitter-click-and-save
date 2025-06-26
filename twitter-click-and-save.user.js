@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.17.4-2025.06.26
+// @version     1.17.5-2025.06.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -55,7 +55,12 @@ const Tweet = hoistTweet();
 const Features = hoistFeatures();
 const I18N = getLanguageConstants();
 
-
+const {
+    downloadedImages,
+    downloadedImageTweetIds,
+    downloadedVideoTweetIds,
+    imagesHistoryBy,
+} = getLocalStorages();
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -439,16 +444,25 @@ function showSettings() {
 // ---------------------------------------------------------------------------------------------------------------------
 // --- Twitter Specific code --- //
 
-const downloadedImages        = new LS(StorageNames.downloadedImageNames);
-const downloadedImageTweetIds = new LS(StorageNames.downloadedImageTweetIds);
-const downloadedVideoTweetIds = new LS(StorageNames.downloadedVideoTweetIds);
+function getLocalStorages() {
+    const downloadedImages        = new LS(StorageNames.downloadedImageNames);
+    const downloadedImageTweetIds = new LS(StorageNames.downloadedImageTweetIds);
+    const downloadedVideoTweetIds = new LS(StorageNames.downloadedVideoTweetIds);
 
-// --- That to use for the image history --- //
-/** @type {"TWEET_ID" | "IMAGE_NAME"} */
-const imagesHistoryBy = LS.getItem(StorageNames.settingsImageHistoryBy, "IMAGE_NAME"); // Hidden settings
-// With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
-// on the next time when the tweet will appear.
-// "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
+    // --- That to use for the image history --- //
+    /** @type {"TWEET_ID" | "IMAGE_NAME"} */
+    const imagesHistoryBy = LS.getItem(StorageNames.settingsImageHistoryBy, "IMAGE_NAME"); // Hidden settings
+    // With "TWEET_ID" downloading of 1 image of 4 will mark all 4 images as "already downloaded"
+    // on the next time when the tweet will appear.
+    // "IMAGE_NAME" will count each image of a tweet, but it will take more data to store.
+
+    return {
+        downloadedImages,
+        downloadedImageTweetIds,
+        downloadedVideoTweetIds,
+        imagesHistoryBy,
+    };
+}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -620,7 +634,6 @@ function hoistFeatures() {
             btn.classList.add("ujs-downloading");
 
             const onProgress = ({loaded, total}) => {
-                console.log("onProgress", {loaded, total});
                 btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%"; // [note] total can be `0`
                 btnProgress.dataset.downloaded = loaded;
                 btnProgress.dataset.total = total;
@@ -936,7 +949,6 @@ function hoistFeatures() {
             const btnProgress = btn.querySelector(".ujs-progress");
 
             const onProgress = ({loaded, total}) => {
-                console.log("onProgress", {loaded, total});
                 btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%"; // [note] total can be `0`
                 btnProgress.dataset.downloaded = loaded;
                 btnProgress.dataset.total = total;
