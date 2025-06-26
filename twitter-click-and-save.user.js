@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.15.3-2025.06.26-dev
+// @version     1.16.0-2025.06.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -39,6 +39,7 @@ const {
     formatDate,
     toLineJSON,
     isFirefox,
+    isFirefoxUserscriptContext,
     getBrowserName,
     removeSearchParams,
     renderTemplateString,
@@ -149,8 +150,9 @@ const fetch = ujs_getGlobalFetch({verbose, strictTrackingProtectionFix: settings
  * @returns {Function} A fetch function (either native or fixed for Firefox).
  */
 function ujs_getGlobalFetch({verbose = false, strictTrackingProtectionFix = true} = {}) {
-    if (strictTrackingProtectionFix && typeof wrappedJSObject?.fetch === "function") {
-        // Note: `wrappedJSObject` is Firefox only object
+    // Note: `wrappedJSObject` is Firefox only object
+    const hasWrappedFetch = isFirefoxUserscriptContext && typeof wrappedJSObject.fetch === "function";
+    if (strictTrackingProtectionFix && hasWrappedFetch) {
         return function fixedFirefoxFetch(resource, init = {}) {
             verbose && console.log("[ujs][wrappedJSObject.fetch]", resource, init);
             if (init.headers instanceof Headers) {
@@ -245,8 +247,7 @@ function loadSettings() {
         hideLoginPopup: false,
         addBorder: false,
 
-        downloadProgress: true,
-        strictTrackingProtectionFix: false,
+        strictTrackingProtectionFix: true,
     };
 
     let savedSettings;
@@ -289,8 +290,6 @@ function showSettings() {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   `;
     const s = settings;
-    const downloadProgressFFTitle = `Show the downloading progress inside the download button.
-In Firefox it works only with "Enhanced Tracking Protection" set to "Standard".`;
     const strictTrackingProtectionFixFFTitle = `Choose this if you use Firefox with "Enhanced Tracking Protection" set to "Strict".`;
     document.body.insertAdjacentHTML("afterbegin", `
   <div class="ujs-modal-wrapper" style="${modalWrapperStyle}">
@@ -317,8 +316,7 @@ In Firefox it works only with "Enhanced Tracking Protection" set to "Standard".`
           </fieldset>
           <fieldset ${isFirefox ? '': 'style="display: none"'}>
               <legend>Firefox only</legend>
-              <label title='${downloadProgressFFTitle}'><input type="radio" ${s.downloadProgress ? "checked" : ""} name="firefoxDownloadProgress" value="downloadProgress">Download Progress<br/></label>
-              <label title='${strictTrackingProtectionFixFFTitle}'><input type="radio" ${s.strictTrackingProtectionFix ? "checked" : ""} name="firefoxDownloadProgress" value="strictTrackingProtectionFix">Strict Tracking Protection Fix<br/></label>
+              <label title='${strictTrackingProtectionFixFFTitle}'><input type="checkbox" ${s.strictTrackingProtectionFix ? "checked" : ""} name="strictTrackingProtectionFix">Strict Tracking Protection Fix<br/></label>
           </fieldset>
           <fieldset>
               <legend>Main</legend>
@@ -619,10 +617,7 @@ function hoistFeatures() {
             btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
 
-            let onProgress = null;
-            if (settings.downloadProgress) {
-                onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
-            }
+            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
 
             const originals = ["orig", "4096x4096"];
             const samples = ["large", "medium", "900x900", "small", "360x360", /*"240x240", "120x120", "tiny"*/];
@@ -932,10 +927,7 @@ function hoistFeatures() {
 
             const btnProgress = btn.querySelector(".ujs-progress");
 
-            let onProgress = null;
-            if (settings.downloadProgress) {
-                onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
-            }
+            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
 
             async function safeFetchResource(url, onProgress) {
                 try {
@@ -2291,7 +2283,7 @@ function getUtils({verbose}) {
             const extension = contentType ? extensionFromMime(contentType) : null;
 
             if (onProgress) {
-                response = responseProgressProxy(response, onProgress);
+                response = await responseProgressProxy(response, onProgress);
             }
 
             const blob = await response.blob();
@@ -2487,28 +2479,32 @@ function getUtils({verbose}) {
         };
     }
 
-    // unsafeWindow.ReadableStream === globalThis.ReadableStream while page is loading // in VM, not TM
-    // unsafeWindow.ReadableStream !== globalThis.ReadableStream after page is loaded
-    // So, get `ReadableStreamConstructor` inside `responseProgressProxy`.
-    function getReadableStreamConstructor() {
-        const isFirefoxUserscriptContext = typeof wrappedJSObject === "object" && wrappedJSObject !== null;
-        const has_unsafeWin_RS = (typeof unsafeWindow !== "undefined" && typeof unsafeWindow.ReadableStream === "function");
-        const firefoxRSWorkaround = isFirefoxUserscriptContext && has_unsafeWin_RS;
-        console.log("[ujs] getReadableStreamConstructor", isFirefoxUserscriptContext, has_unsafeWin_RS, firefoxRSWorkaround);
-        console.log("[ujs] getReadableStreamConstructor", unsafeWindow.ReadableStream === globalThis.ReadableStream);
-        return firefoxRSWorkaround ? unsafeWindow.ReadableStream : globalThis.ReadableStream;
-    }
 
-    function responseProgressProxy(response, onProgress) {
+    async function responseProgressProxy(response, onProgress) {
         const onProgressProps = getOnProgressProps(response);
         let loaded = 0;
         const reader = response.body.getReader();
-        
-        // However, it only helps for VM, not TM.
-        // todo: not use ReadableStream at all in FF
-        const ReadableStreamConstructor = getReadableStreamConstructor();
-        
-        const readableStream = new ReadableStreamConstructor({
+
+        if (isFirefox) {
+            const chunks = [];
+            while (true) {
+                const {done, /** @type {Uint8Array} */ value} = await reader.read();
+                if (done) {
+                    break;
+                }
+                loaded += value.length;
+                chunks.push(value);
+                try {
+                    onProgress({ loaded, ...onProgressProps });
+                } catch (err) {
+                    console.error("[ujs][onProgress]:", err);
+                }
+            }
+            reader.releaseLock();
+            return new ResponseEx(new Blob(chunks), response);
+        }
+
+        const readableStream = new ReadableStream({
             async start(controller) {
                 while (true) {
                     const {done, /** @type {Uint8Array} */ value} = await reader.read();
@@ -2576,7 +2572,10 @@ function getUtils({verbose}) {
         return result;
     }
 
+    // Sometimes it's `false` for unknown reason in FF.
+    const isFirefoxUserscriptContext = typeof wrappedJSObject === "object" && wrappedJSObject !== null;
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") !== -1;
+    verbose && console.log("[ujs] isFirefoxUserscriptContext", isFirefoxUserscriptContext);
 
     function getBrowserName() {
         const userAgent = window.navigator.userAgent.toLowerCase();
@@ -2626,6 +2625,7 @@ function getUtils({verbose}) {
         responseProgressProxy,
         toLineJSON,
         isFirefox,
+        isFirefoxUserscriptContext,
         getBrowserName,
         removeSearchParams,
         renderTemplateString,
