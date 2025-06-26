@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.16.0-2025.06.26
+// @version     1.17.0-2025.06.26
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -43,6 +43,7 @@ const {
     getBrowserName,
     removeSearchParams,
     renderTemplateString,
+    formatSizeWinLike,
 } = getUtils({verbose});
 
 const LS = hoistLS({verbose});
@@ -502,7 +503,6 @@ function hoistFeatures() {
             } = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
 
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
-
             Features.verifyBlob(blob, url, btn);
 
             const filename = renderTemplateString(backgroundFilenameTemplate, {
@@ -617,7 +617,17 @@ function hoistFeatures() {
             btn.classList.remove("ujs-error");
             btn.classList.add("ujs-downloading");
 
-            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
+            const onProgress = ({loaded, total}) => {
+                console.log("onProgress", {loaded, total});
+                btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%"; // [note] total can be `0`
+                btnProgress.dataset.downloaded = loaded;
+                btnProgress.dataset.total = total;
+                if (!total) {
+                    btn.title = `Downloading: ${formatSizeWinLike(loaded)}`;
+                } else {
+                    btn.title = `Downloading: ${formatSizeWinLike(loaded)} / ${formatSizeWinLike(total)}`;
+                }
+            };
 
             const originals = ["orig", "4096x4096"];
             const samples = ["large", "medium", "900x900", "small", "360x360", /*"240x240", "120x120", "tiny"*/];
@@ -669,14 +679,14 @@ function hoistFeatures() {
                             btn.title = "[warning] Original images are not available.";
                         }
 
-                        const ffAutoAllocateChunkSizeBug = err.message.includes("autoAllocateChunkSize"); // https://bugzilla.mozilla.org/show_bug.cgi?id=1757836
-                        if (!samples.length || ffAutoAllocateChunkSizeBug) {
+                        if (!samples.length) {
                             btn.classList.add("ujs-error");
                             btnErrorTextElem.textContent = "";
                             // Add ❌
                             btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/274c.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;
 
-                            const ffHint = isFirefox && !settings.strictTrackingProtectionFix && ffAutoAllocateChunkSizeBug ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
+                            const needFFHint = (isFirefox || isFirefoxUserscriptContext) && !settings.strictTrackingProtectionFix;
+                            const ffHint = needFFHint ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
                             btn.title = "Failed to download the image." + ffHint;
                             throw new Error("[error] Fallback URLs are failed.");
                         }
@@ -685,10 +695,10 @@ function hoistFeatures() {
             }
 
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
-
             Features.verifyBlob(blob, url, btn);
 
             btnProgress.style.cssText = "--progress: 100%";
+            btn.title = `Downloaded: ${formatSizeWinLike(Number(btnProgress.dataset.downloaded))}`;
 
             const sampleText = isSample ? "[sample]" : ""; // "[sample]" prefix, when the original image is not available to download
             const filename = renderTemplateString(imageFilenameTemplate, {
@@ -927,30 +937,40 @@ function hoistFeatures() {
 
             const btnProgress = btn.querySelector(".ujs-progress");
 
-            const onProgress = ({loaded, total}) => btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%";
+            const onProgress = ({loaded, total}) => {
+                console.log("onProgress", {loaded, total});
+                btnProgress.style.cssText = "--progress: " + loaded / total * 90 + "%"; // [note] total can be `0`
+                btnProgress.dataset.downloaded = loaded;
+                btnProgress.dataset.total = total;
+                if (!total) {
+                    btn.title = `Downloading: ${formatSizeWinLike(loaded)}`;
+                } else {
+                    btn.title = `Downloading: ${formatSizeWinLike(loaded)} / ${formatSizeWinLike(total)}`;
+                }
+            };
 
             async function safeFetchResource(url, onProgress) {
                 try {
                     return await fetchResource(url, onProgress);
                 } catch (err) {
                     const btnErrorTextElem = btn.querySelector(".ujs-btn-error-text");
-                    const ffAutoAllocateChunkSizeBug = err.message.includes("autoAllocateChunkSize"); // https://bugzilla.mozilla.org/show_bug.cgi?id=1757836
                     btn.classList.add("ujs-error");
                     btnErrorTextElem.textContent = "";
                     // Add ❌
                     btnErrorTextElem.style = `background-image: url("https://abs-0.twimg.com/emoji/v2/svg/274c.svg"); background-size: 1.5em; background-position: center; background-repeat: no-repeat;`;
 
-                    const ffHint = isFirefox && !settings.strictTrackingProtectionFix && ffAutoAllocateChunkSizeBug ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
+                    const needFFHint = (isFirefox || isFirefoxUserscriptContext) && !settings.strictTrackingProtectionFix;
+                    const ffHint = needFFHint ? "\nTry to enable 'Strict Tracking Protection Fix' in the userscript settings." : "";
                     btn.title = "Video download failed." + ffHint;
                     throw new Error("[error] Video download failed.");
                 }
             }
 
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url, onProgress);
+            Features.verifyBlob(blob, url, btn);
 
             btnProgress.style.cssText = "--progress: 100%";
-
-            Features.verifyBlob(blob, url, btn);
+            btn.title = `Downloaded: ${formatSizeWinLike(Number(btnProgress.dataset.downloaded))}`;
 
             const filename = renderTemplateString(videoFilenameTemplate, {
                 author, lastModifiedDate, tweetId: videoTweetId, name, extension,
@@ -2616,6 +2636,54 @@ function getUtils({verbose}) {
         return {value, hasUndefined};
     }
 
+    /**
+     * Formats bytes mostly like Windows does,
+     * but in some rare cases the result is different.
+     * @param {number} bytes
+     * @return {string}
+     */
+    function formatSizeWinLike(bytes) {
+        if (bytes < 1024) { return bytes + " B"; }
+        const sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+        let i = Math.floor(Math.log(bytes) / Math.log(1024));
+        let result = bytes / Math.pow(1024, i);
+        if (result >= 1000) {
+            i++;
+            result /= 1024;
+        }
+        return toTruncPrecision3(result) + " " + sizes[i];
+    }
+
+    /**
+     * @example
+     * 10.1005859375 -> "10.1"
+     * 9.99902343750 -> "9.99"
+     * 836.966796875 -> "836"
+     * 0.08   -> "0.08"
+     * 0.099  -> "0.09"
+     * 0.0099 -> "0"
+     * @param {number} number
+     * @return {string}
+     */
+    function toTruncPrecision3(number) {
+        let result;
+        if (number < 10) {
+            result = Math.trunc(number * 100) / 100;
+        } else if (number < 100) {
+            result = Math.trunc(number * 10) / 10;
+        } else if (number < 1000) {
+            result = Math.trunc(number);
+        } else {
+            return Math.trunc(number).toString();
+        }
+        if (number < 0.1) {
+            return result.toPrecision(1);
+        } else if (number < 1) {
+            return result.toPrecision(2);
+        }
+        return result.toPrecision(3);
+    }
+
     return {
         sleep, fetchResource, extensionFromMime, downloadBlob, formatDate,
         addCSS,
@@ -2629,6 +2697,7 @@ function getUtils({verbose}) {
         getBrowserName,
         removeSearchParams,
         renderTemplateString,
+        formatSizeWinLike,
     }
 }
 
