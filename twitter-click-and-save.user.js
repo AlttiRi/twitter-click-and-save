@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.19.0-2025.06.29-dev
+// @version     1.19.1-2025.06.29-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -473,7 +473,7 @@ function hoistFeatures() {
             const btn = document.createElement("div");
             btn.innerHTML = `
 <div class="ujs-btn-common ujs-btn-background">
-  <div class="ujs-dot ujs-multimedia-icon"></div>
+  <div class="ujs-dot ujs-multimedia-icon ujs-media-progress" style="--media-progress: 0%"></div>
   <div class="ujs-dot ujs-multimedia-icon ujs-back"></div>
 </div>
 <div class="ujs-btn-common ujs-hover"></div>
@@ -833,6 +833,11 @@ function hoistFeatures() {
                 throw new Error("API.getTweetMedias Error");
             }
 
+            const mediaProgress = btn.querySelector(".ujs-media-progress");
+            const mediaCount = medias.length;
+            let mediaDownloaded = 0;
+            mediaProgress.style.cssText = "--media-progress: 0%";
+
             for (const mediaEntry of medias) {
                 if (mediaEntry.type === "video") {
                     await Features._downloadVideoMediaEntry(mediaEntry, btn, id);
@@ -840,6 +845,10 @@ function hoistFeatures() {
                     const {screen_name: author,download_url: url, tweet_id: id} = mediaEntry;
                     await Features._downloadPhotoMediaEntry(id, author, url, btn);
                 }
+
+                mediaDownloaded++;
+                mediaProgress.style.cssText = "--media-progress: " + mediaDownloaded / mediaCount * 100 + "%";
+
                 await sleep(50);
             }
             Features._markButtonAsDownloaded(btn);
@@ -1518,7 +1527,7 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
     position: absolute;
     width: 6px;
     height: 6px;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.5) linear-gradient(to right, white var(--media-progress), transparent 0%);
     border-radius: 25%;
     
     bottom: 3px;
@@ -1531,6 +1540,11 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
     background: transparent;
     border-top:   1px solid rgba(255, 255, 255, 0.5);
     border-right: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.ujs-btn-download[data-is-multi-media] .ujs-dot[style="--media-progress: 100%;"] + .ujs-back {
+    border-top:   1px solid white;
+    border-right: 1px solid white;
 }
 
 `;
