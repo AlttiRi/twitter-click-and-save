@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.18.1-2025.06.29
+// @version     1.18.2-2025.06.29-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1349,11 +1349,14 @@ function getStoreInfo() {
 function getUserScriptCSS() {
     const labelText = I18N.IMAGE || "Image";
 
-    // By default, the scroll is showed all time, since <html style="overflow-y: scroll;>,
+    // By default, the scroll is shown all time, since <html style="overflow-y: scroll;>,
     // so it works — no need to use `getScrollbarWidth` function from SO (13382516).
     const scrollbarWidth = window.innerWidth - document.body.offsetWidth;
 
-    const css = `
+    // just to highlight the CSS text in IDE // prepend it before "`" of `cssText` variable.
+    // const css = (strings, ...values) => String.raw({raw: strings}, ...values);
+
+    const cssText = `
 .ujs-modal-wrapper .ujs-modal-settings {
   color: black;
 }
@@ -1447,8 +1450,7 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
   border-radius: 0.3em;
   top: 0;
   position: absolute;
-  border: 1px solid transparent;
-  border-color: var(--ujs-gray);
+  border: 1px solid var(--ujs-gray);
   ${settings.addBorder ? "border: 2px solid white;" : "border-color: var(--ujs-gray);"}
 }
 .ujs-not-downloaded .ujs-btn-background {
@@ -1509,7 +1511,7 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
 }
 
 `;
-    return css.slice(1);
+    return cssText.trimStart();
 }
 
 /*
