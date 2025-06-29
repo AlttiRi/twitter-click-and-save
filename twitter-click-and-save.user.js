@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.18.2-2025.06.29-dev
+// @version     1.19.0-2025.06.29-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -472,11 +472,14 @@ function hoistFeatures() {
         static createButton({url, downloaded, isVideo, isThumb, isMultiMedia}) {
             const btn = document.createElement("div");
             btn.innerHTML = `
-<div class="ujs-btn-common ujs-btn-background"></div>
+<div class="ujs-btn-common ujs-btn-background">
+  <div class="ujs-dot ujs-multimedia-icon"></div>
+  <div class="ujs-dot ujs-multimedia-icon ujs-back"></div>
+</div>
 <div class="ujs-btn-common ujs-hover"></div>
 <div class="ujs-btn-common ujs-shadow"></div>
 <div class="ujs-btn-common ujs-progress" style="--progress: 0%"></div>
-<div class="ujs-btn-common ujs-btn-error-text"></div>`.slice(1);
+<div class="ujs-btn-common ujs-btn-error-text"></div>`.trimStart();
             btn.classList.add("ujs-btn-download");
             if (!downloaded) {
                 btn.classList.add("ujs-not-downloaded");
@@ -1508,6 +1511,26 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
 }
 .ujs-modal-settings button:active {
     background-color: #DDD;
+}
+
+
+.ujs-btn-download[data-is-multi-media] .ujs-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 25%;
+    
+    bottom: 3px;
+    right: 3px;
+}
+.ujs-btn-download[data-is-multi-media] .ujs-dot.ujs-back {
+    bottom: 4px;
+    right: 2px;
+
+    background: transparent;
+    border-top:   1px solid rgba(255, 255, 255, 0.5);
+    border-right: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 `;
