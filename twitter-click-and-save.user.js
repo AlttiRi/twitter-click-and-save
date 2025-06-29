@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.18.0-2025.06.26
+// @version     1.18.1-2025.06.29
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -132,7 +132,7 @@ const backgroundFilenameTemplate = `[twitter][bg] {username}—{lastModifiedDate
 // ---------------------------------------------------------------------------------------------------------------------
 
 if (typeof GM === "object" && typeof GM?.registerMenuCommand === "function") {
-    GM.registerMenuCommand("Show settings", showSettings);
+    void GM.registerMenuCommand("Show settings", showSettings);
 }
 
 const settings = loadSettings();
@@ -1201,7 +1201,7 @@ function hoistFeatures() {
             }
             const elem = document.querySelector(`section[aria-label="${I18N.SIGNUP}"][role=region]`);
             if (elem) {
-                elem.parentNode.classList.add("ujs-hidden");
+                elem.parentElement.classList.add("ujs-hidden");
             }
         }
 
@@ -2494,6 +2494,7 @@ function getUtils({verbose}) {
     }
 
     const identityContentEncodings = new Set([null, "identity", "no encoding"]);
+    /** @param {Response} response */
     function getOnProgressProps(response) {
         const {headers, status, statusText, url, redirected, ok} = response;
         const isIdentity = identityContentEncodings.has(headers.get("Content-Encoding"));
