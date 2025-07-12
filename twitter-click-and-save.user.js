@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.20.0-2025.07.11-dev
+// @version     1.21.0-2025.07.12-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -630,51 +630,43 @@ function hoistFeatures() {
         }
     }
 
-    class Features {
-        // Banner/Background
-        static async _downloadBanner(url, btn) { // todo: catch the error // add progress
-            Btn.startDownloading(btn);
-
-            const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
-            Features.verifyBlob(blob, url);
-
-            const username = location.pathname.slice(1).split("/")[0];
-            const {
-                id, seconds, res
-            } = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
-            // https://pbs.twimg.com/profile_banners/34743251/1596331248/1500x500
-
-            const filename = renderTemplateString(backgroundFilenameTemplate, {
-                username, lastModifiedDate, id, seconds, extension,
-            }).value;
-            downloadBlob(blob, filename, url);
-
-            Btn.markAsDownloaded(btn);
+    class ImageHistory {
+        static _getImageNameFromUrl(url) {
+            const _url = new URL(url);
+            const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
+            return filename.match(/^[^.]+/)[0]; // remove extension
         }
-
-        static _ImageHistory = class {
-            static getImageNameFromUrl(url) {
-                const _url = new URL(url);
-                const {filename} = (_url.origin + _url.pathname).match(/(?<filename>[^\/]+$)/).groups;
-                return filename.match(/^[^.]+/)[0]; // remove extension
-            }
-            static isDownloaded({id, url}) {
-                if (imagesHistoryBy === "TWEET_ID") {
-                    return downloadedImageTweetIds.hasItem(id);
-                } else if (imagesHistoryBy === "IMAGE_NAME") {
-                    const name = Features._ImageHistory.getImageNameFromUrl(url);
-                    return downloadedImages.hasItem(name);
-                }
-            }
-            static async markDownloaded({id, url}) {
-                if (imagesHistoryBy === "TWEET_ID") {
-                    await downloadedImageTweetIds.pushItem(id);
-                } else if (imagesHistoryBy === "IMAGE_NAME") {
-                    const name = Features._ImageHistory.getImageNameFromUrl(url);
-                    await downloadedImages.pushItem(name);
-                }
+        static isDownloaded({id, url}) {
+            if (imagesHistoryBy === "TWEET_ID") {
+                return downloadedImageTweetIds.hasItem(id);
+            } else if (imagesHistoryBy === "IMAGE_NAME") {
+                const name = ImageHistory._getImageNameFromUrl(url);
+                return downloadedImages.hasItem(name);
             }
         }
+        static async markDownloaded({id, url}) {
+            if (imagesHistoryBy === "TWEET_ID") {
+                await downloadedImageTweetIds.pushItem(id);
+            } else if (imagesHistoryBy === "IMAGE_NAME") {
+                const name = ImageHistory._getImageNameFromUrl(url);
+                await downloadedImages.pushItem(name);
+            }
+        }
+    }
+
+    class VideoHistory {
+        static _getHistoryId(tweetId, videoIndex) {
+            return videoIndex /* not 0 */ ? tweetId + "-" + videoIndex : tweetId;
+        }
+        static isDownloaded({tweetId, videoIndex = 0} = {}) {
+            return downloadedVideoTweetIds.hasItem(this._getHistoryId(tweetId, videoIndex));
+        }
+        static async markDownloaded({tweetId, videoIndex}) {
+            await downloadedVideoTweetIds.pushItem(this._getHistoryId(tweetId, videoIndex));
+        }
+    }
+
+    class Core {
         static async imagesHandler() {
             verbose && console.log("[ujs][imagesHandler]");
             const images = document.querySelectorAll(`img:not([data-handled]):not([src$=".svg"])`);
@@ -706,7 +698,7 @@ function hoistFeatures() {
                 const isThumb = Boolean(listItemEl);
 
                 if (isThumb && parentElem.querySelector("svg")) {
-                    await Features.multiMediaThumbHandler(img);
+                    await Core._multiMediaThumbHandler(img);
                     continue;
                 }
 
@@ -717,15 +709,15 @@ function hoistFeatures() {
                                   || img.alt === "Embedded video"
                                   || img.closest(`a[aria-label="Embedded video"]`);
                 if (isVideoThumb) {
-                    await Features.thumbVideoHandler(img, isThumb);
+                    await Core._thumbVideoHandler(img, isThumb);
                     continue;
                 }
 
                 const btn = Btn.createButton({url: img.src, isThumb});
-                btn.addEventListener("click", Features._imageClickHandler);
+                btn.addEventListener("click", Core._imageClickHandler);
                 parentElem.append(btn);
 
-                const downloaded = Features._ImageHistory.isDownloaded({
+                const downloaded = ImageHistory.isDownloaded({
                     id: Tweet.of(btn).id,
                     url: btn.dataset.url
                 });
@@ -734,6 +726,126 @@ function hoistFeatures() {
                 }
             }
         }
+        static tweetVidWeakMapMobile = new WeakMap();
+        static tweetVidWeakMap = new WeakMap();
+        static async videoHandler() {
+            const videos = document.querySelectorAll("video:not([data-handled])");
+            for (const vid of videos) {
+                if (vid.dataset.handled) {
+                    continue;
+                }
+                vid.dataset.handled = "true";
+                verbose && console.log("[ujs][videoHandler][vid]", vid);
+
+                const poster = vid.getAttribute("poster");
+
+                const btn = Btn.createButton({url: poster, isVideo: true});
+                btn.addEventListener("click", Core._videoClickHandler);
+
+                let elem = vid.closest(`[data-testid="videoComponent"]`).parentNode;
+                if (elem) {
+                    elem.append(btn);
+                } else {
+                    elem = vid.parentNode.parentNode.parentNode;
+                    elem.after(btn);
+                }
+
+                const tweet = Tweet.of(btn);
+                const tweetId = tweet.id;
+                const tweetElem = tweet.elem;
+                let videoIndex = 0;
+
+                if (tweetElem) {
+                    const map = Core.tweetVidWeakMap;
+                    if (map.has(tweetElem)) {
+                        videoIndex = map.get(tweetElem) + 1;
+                        map.set(tweetElem, videoIndex);
+                    } else {
+                        map.set(tweetElem, videoIndex); // can throw an error for null
+                    }
+                } else { // expanded_url
+                    await sleep(10);
+                    const match = location.pathname.match(/(?<=\/video\/)\d/);
+                    if (!match) {
+                        verbose && console.log("[ujs][videoHandler] missed match for match");
+                    }
+                    videoIndex = Number(match[0]) - 1;
+
+                    console.warn("[ujs][videoHandler] videoIndex", videoIndex);
+                    // todo: add support for expanded_url video downloading
+                }
+
+                const downloaded = VideoHistory.isDownloaded({tweetId, videoIndex});
+                if (downloaded) {
+                    Btn.alreadyDownloaded(btn);
+                }
+            }
+        }
+
+        // Quick Dirty Fix // todo refactor
+        static async _thumbVideoHandler(imgElem, isThumb) {
+            verbose && console.log("[ujs][_thumbVideoHandler][vid]", imgElem);
+
+            const btn = Btn.createButton({url: imgElem.src, isVideo: true, isThumb});
+            btn.addEventListener("click", Core._videoClickHandler);
+
+            let anchor = imgElem.closest("a");
+            if (!anchor) {
+                anchor = imgElem.parentNode;
+            }
+            anchor.append(btn);
+
+            const tweet = Tweet.of(btn);
+            const tweetId = tweet.id;
+            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`);
+            let videoIndex = 0;
+
+            if (tweetElem) {
+                const map = Core.tweetVidWeakMapMobile;
+                if (map.has(tweetElem)) {
+                    videoIndex = map.get(tweetElem) + 1;
+                    map.set(tweetElem, videoIndex);
+                } else {
+                    map.set(tweetElem, videoIndex); // can throw an error for null
+                }
+            } // else thumbnail
+
+            const downloaded = VideoHistory.isDownloaded({tweetId, videoIndex});
+            if (downloaded) {
+                Btn.alreadyDownloaded(btn);
+            }
+        }
+
+        static async _multiMediaThumbHandler(imgElem) {
+            verbose && console.log("[ujs][_multiMediaThumbHandler]", imgElem);
+            let isVideo = false;
+            if (imgElem.src.includes("/ext_tw_video_thumb/") || imgElem.src.includes("/amplify_video_thumb/")) {
+                isVideo = true;
+            }
+
+            const btn = Btn.createButton({url: imgElem.src, isVideo, isThumb: true, isMultiMedia: true});
+            btn.addEventListener("click", Core._multiMediaThumbClickHandler);
+            let anchor = imgElem.closest("a");
+            if (!anchor) {
+                anchor = imgElem.parentNode;
+            }
+            anchor.append(btn);
+
+            let downloaded;
+            const tweetId = Tweet.of(btn).id;
+            if (isVideo) {
+                downloaded = VideoHistory.isDownloaded({tweetId});
+            } else {
+                downloaded = ImageHistory.isDownloaded({
+                    id: tweetId,
+                    url: btn.dataset.url
+                });
+            }
+            if (downloaded) {
+                Btn.alreadyDownloaded(btn);
+            }
+        }
+
         static async _imageClickHandler(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
@@ -743,14 +855,36 @@ function hoistFeatures() {
 
             const isBanner = url.includes("/profile_banners/");
             if (isBanner) {
-                return Features._downloadBanner(url, btn);
+                return Core._downloadBanner(url, btn);
             }
 
             const {id, author} = Tweet.of(btn);
             verbose && console.log("[ujs][_imageClickHandler]", {id, author});
 
-            return await Features._downloadPhotoMediaEntry(id, author, url, btn);
+            return await Core._downloadPhotoMediaEntry(id, author, url, btn);
         }
+
+        // Banner/Background
+        static async _downloadBanner(url, btn) { // todo: catch the error // add progress
+            Btn.startDownloading(btn);
+
+            const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
+            Core._verifyBlob(blob, url);
+
+            const username = location.pathname.slice(1).split("/")[0];
+            const {
+                id, seconds, res
+            } = url.match(/(?<=\/profile_banners\/)(?<id>\d+)\/(?<seconds>\d+)\/(?<res>\d+x\d+)/)?.groups || {};
+            // https://pbs.twimg.com/profile_banners/34743251/1596331248/1500x500
+
+            const filename = renderTemplateString(backgroundFilenameTemplate, {
+                username, lastModifiedDate, id, seconds, extension,
+            }).value;
+            downloadBlob(blob, filename, url);
+
+            Btn.markAsDownloaded(btn);
+        }
+
         static async _downloadPhotoMediaEntry(id, author, url, btn) {
             Btn.clearState(btn);
             Btn.startDownloading(btn);
@@ -810,7 +944,7 @@ function hoistFeatures() {
 
             Btn.connectionWaiting(btn);
             const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
-            Features.verifyBlob(blob, url);
+            Core._verifyBlob(blob, url);
             Btn.completeProgress(btn);
 
             const sampleText = isSample ? "[sample]" : ""; // "[sample]" prefix, when the original image is not available to download
@@ -821,13 +955,13 @@ function hoistFeatures() {
 
             const downloaded = Btn.isDownloaded(btn);
             if (!downloaded && !isSample) {
-                await Features._ImageHistory.markDownloaded({id, url});
+                await ImageHistory.markDownloaded({id, url});
             }
 
             if (btn.dataset.isMultiMedia && !isSample) { // dirty fix
-                const isDownloaded = Features._ImageHistory.isDownloaded({id, url});
+                const isDownloaded = ImageHistory.isDownloaded({id, url});
                 if (!isDownloaded) {
-                    await Features._ImageHistory.markDownloaded({id, url});
+                    await ImageHistory.markDownloaded({id, url});
                 }
             }
 
@@ -836,72 +970,6 @@ function hoistFeatures() {
             Btn.markAsDownloaded(btn);
         }
 
-
-        // Quick Dirty Fix // todo refactor
-        static async thumbVideoHandler(imgElem, isThumb) {
-            verbose && console.log("[ujs][thumbVideoHandler][vid]", imgElem);
-
-            const btn = Btn.createButton({url: imgElem.src, isVideo: true, isThumb});
-            btn.addEventListener("click", Features._videoClickHandler);
-
-            let anchor = imgElem.closest("a");
-            if (!anchor) {
-                anchor = imgElem.parentNode;
-            }
-            anchor.append(btn);
-
-            const tweet = Tweet.of(btn);
-            const id = tweet.id;
-            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`);
-            let vidNumber = 0;
-
-            if (tweetElem) {
-                const map = Features.tweetVidWeakMapMobile;
-                if (map.has(tweetElem)) {
-                    vidNumber = map.get(tweetElem) + 1;
-                    map.set(tweetElem, vidNumber);
-                } else {
-                    map.set(tweetElem, vidNumber); // can throw an error for null
-                }
-            } // else thumbnail
-
-            const historyId = vidNumber ? id + "-" + vidNumber : id;
-            const downloaded = downloadedVideoTweetIds.hasItem(historyId);
-            if (downloaded) {
-                Btn.alreadyDownloaded(btn);
-            }
-        }
-
-
-        static async multiMediaThumbHandler(imgElem) {
-            verbose && console.log("[ujs][multiMediaThumbHandler]", imgElem);
-            let isVideo = false;
-            if (imgElem.src.includes("/ext_tw_video_thumb/") || imgElem.src.includes("/amplify_video_thumb/")) {
-                isVideo = true;
-            }
-
-            const btn = Btn.createButton({url: imgElem.src, isVideo, isThumb: true, isMultiMedia: true});
-            btn.addEventListener("click", Features._multiMediaThumbClickHandler);
-            let anchor = imgElem.closest("a");
-            if (!anchor) {
-                anchor = imgElem.parentNode;
-            }
-            anchor.append(btn);
-
-            let downloaded;
-            const tweetId = Tweet.of(btn).id;
-            if (isVideo) {
-                downloaded = downloadedVideoTweetIds.hasItem(tweetId);
-            } else {
-                downloaded = Features._ImageHistory.isDownloaded({
-                    id: tweetId,
-                    url: btn.dataset.url
-                });
-            }
-            if (downloaded) {
-                Btn.alreadyDownloaded(btn);
-            }
-        }
         static async _multiMediaThumbClickHandler(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
@@ -927,10 +995,10 @@ function hoistFeatures() {
                 Btn.markAsNotDownloaded(btn);
 
                 if (mediaEntry.type === "video") {
-                    await Features._downloadVideoMediaEntry(mediaEntry, btn, id); // todo: catch the error
+                    await Core._downloadVideoMediaEntry(mediaEntry, btn, id); // todo: catch the error
                 } else { // "photo"
                     const {screen_name: author,download_url: url, tweet_id: id} = mediaEntry;
-                    await Features._downloadPhotoMediaEntry(id, author, url, btn);
+                    await Core._downloadPhotoMediaEntry(id, author, url, btn);
                 }
 
                 downloaded++;
@@ -941,64 +1009,6 @@ function hoistFeatures() {
             Btn.markAsDownloaded(btn);
         }
 
-        static tweetVidWeakMapMobile = new WeakMap();
-        static tweetVidWeakMap = new WeakMap();
-        static async videoHandler() {
-            const videos = document.querySelectorAll("video:not([data-handled])");
-            for (const vid of videos) {
-                if (vid.dataset.handled) {
-                    continue;
-                }
-                vid.dataset.handled = "true";
-                verbose && console.log("[ujs][videoHandler][vid]", vid);
-
-                const poster = vid.getAttribute("poster");
-
-                const btn = Btn.createButton({url: poster, isVideo: true});
-                btn.addEventListener("click", Features._videoClickHandler);
-
-                let elem = vid.closest(`[data-testid="videoComponent"]`).parentNode;
-                if (elem) {
-                    elem.append(btn);
-                } else {
-                    elem = vid.parentNode.parentNode.parentNode;
-                    elem.after(btn);
-                }
-
-
-                const tweet = Tweet.of(btn);
-                const id = tweet.id;
-                const tweetElem = tweet.elem;
-                let vidNumber = 0;
-
-                if (tweetElem) {
-                    const map = Features.tweetVidWeakMap;
-                    if (map.has(tweetElem)) {
-                        vidNumber = map.get(tweetElem) + 1;
-                        map.set(tweetElem, vidNumber);
-                    } else {
-                        map.set(tweetElem, vidNumber); // can throw an error for null
-                    }
-                } else { // expanded_url
-                    await sleep(10);
-                    const match = location.pathname.match(/(?<=\/video\/)\d/);
-                    if (!match) {
-                        verbose && console.log("[ujs][videoHandler] missed match for match");
-                    }
-                    vidNumber = Number(match[0]) - 1;
-
-                    console.warn("[ujs][videoHandler] vidNumber", vidNumber);
-                    // todo: add support for expanded_url video downloading
-                }
-
-                const historyId = vidNumber ? id + "-" + vidNumber : id;
-
-                const downloaded = downloadedVideoTweetIds.hasItem(historyId);
-                if (downloaded) {
-                    Btn.alreadyDownloaded(btn);
-                }
-            }
-        }
         static async _videoClickHandler(event) { // todo: parse the URL from HTML (For "Embedded video" (?))
             event.preventDefault();
             event.stopImmediatePropagation();
@@ -1021,7 +1031,7 @@ function hoistFeatures() {
             }
 
             try {
-                await Features._downloadVideoMediaEntry(mediaEntry, btn, id);
+                await Core._downloadVideoMediaEntry(mediaEntry, btn, id);
             } catch (/** @type Error */ err) {
                 throw Btn.error({btn, err});
             }
@@ -1037,7 +1047,7 @@ function hoistFeatures() {
                 screen_name:  author,
                 tweet_id:     videoTweetId,
                 download_url: url,
-                type_index:   vidNumber,
+                type_index:   videoIndex,
             } = mediaEntry;
             if (!url) {
                 throw new Error("No video URL found");
@@ -1055,7 +1065,7 @@ function hoistFeatures() {
             const onProgress = Btn.getOnProgress(btn);
             Btn.connectionWaiting(btn);
             const {blob, lastModifiedDate, extension, name} = await fetchResourceErrWrap(url, onProgress);
-            Features.verifyBlob(blob, url);
+            Core._verifyBlob(blob, url);
             Btn.completeProgress(btn);
 
             const filename = renderTemplateString(videoFilenameTemplate, {
@@ -1064,22 +1074,18 @@ function hoistFeatures() {
             downloadBlob(blob, filename, url);
 
             const downloaded = Btn.isDownloaded(btn);
-            const historyId = vidNumber /* not 0 */ ? videoTweetId + "-" + vidNumber : videoTweetId;
             if (!downloaded) {
-                await downloadedVideoTweetIds.pushItem(historyId);
+                await VideoHistory.markDownloaded({tweetId: videoTweetId, videoIndex});
                 if (videoTweetId !== id) { // if QRT
-                    const historyId = vidNumber ? id + "-" + vidNumber : id;
-                    await downloadedVideoTweetIds.pushItem(historyId);
+                    await VideoHistory.markDownloaded({tweetId: id, videoIndex});
                 }
             }
-
             if (btn.dataset.isMultiMedia) { // dirty fix
-                const isDownloaded = downloadedVideoTweetIds.hasItem(historyId);
+                const isDownloaded = VideoHistory.isDownloaded({tweetId: videoTweetId, videoIndex});
                 if (!isDownloaded) {
-                    await downloadedVideoTweetIds.pushItem(historyId);
+                    await VideoHistory.markDownloaded({tweetId: videoTweetId, videoIndex});
                     if (videoTweetId !== id) { // if QRT
-                        const historyId = vidNumber ? id + "-" + vidNumber : id;
-                        await downloadedVideoTweetIds.pushItem(historyId);
+                        await VideoHistory.markDownloaded({tweetId: id, videoIndex});
                     }
                 }
             }
@@ -1088,7 +1094,7 @@ function hoistFeatures() {
             Btn.resetProgress(btn);
         }
 
-        static verifyBlob(blob, url) {
+        static _verifyBlob(blob, url) {
             if (!blob.size) {
                 throw new Error("Download Error.\nZero size blob: " + url);
             }
@@ -1099,6 +1105,9 @@ function hoistFeatures() {
             addCSS(code);
         }
 
+    }
+
+    class Features extends Core {
         // it depends on `directLinks()` use only it after `directLinks()` // todo: handleTitleNew
         static handleTitle(title) {
 
