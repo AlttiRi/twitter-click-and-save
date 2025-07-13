@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.21.1-2025.07.13-dev
+// @version     1.21.2-2025.07.13-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -702,12 +702,7 @@ function hoistFeatures() {
                     continue;
                 }
 
-                const isVideoThumb = img.src.includes("ext_tw_video_thumb")
-                                  || img.src.includes("amplify_video_thumb")
-                                  || img.src.includes("tweet_video_thumb") /* GIF thumb */
-                                  || img.alt === "Animated Text GIF"
-                                  || img.alt === "Embedded video"
-                                  || img.closest(`a[aria-label="Embedded video"]`);
+                const isVideoThumb = Core._isVideoPoster(img) || Core._isVideoPosterExtra(img);
                 if (isVideoThumb) {
                     await Core._thumbVideoHandler(img, isThumb);
                     continue;
@@ -726,6 +721,23 @@ function hoistFeatures() {
                 }
             }
         }
+
+        /** @param {HTMLImageElement} img */
+        static _isVideoPoster(img) {
+            const result = img.src.includes("ext_tw_video_thumb")
+                        || img.src.includes("amplify_video_thumb")
+                        || img.src.includes("tweet_video_thumb") /* GIF thumb */;
+            return result;
+        }
+        /** @param {HTMLImageElement} img */
+        static _isVideoPosterExtra(img) {
+            const result = img.alt === "Animated Text GIF"
+                        || img.alt === "Embedded video"
+                        || img.closest(`a[aria-label="Embedded video"]`);
+            verbose && console.log("[ujs][_isVideoPosterExtra]", result, img);
+            return result;
+        }
+
         static tweetVidWeakMapMobile = new WeakMap();
         static tweetVidWeakMap = new WeakMap();
         static async videoHandler() {
@@ -818,7 +830,7 @@ function hoistFeatures() {
         static async _multiMediaThumbHandler(imgElem) {
             verbose && console.log("[ujs][_multiMediaThumbHandler]", imgElem);
             let isVideo = false;
-            if (imgElem.src.includes("/ext_tw_video_thumb/") || imgElem.src.includes("/amplify_video_thumb/")) {
+            if (Core._isVideoPoster(imgElem)) {
                 isVideo = true;
             }
 
