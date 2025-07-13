@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.21.0-2025.07.12-dev
+// @version     1.21.1-2025.07.13-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -730,24 +730,23 @@ function hoistFeatures() {
         static tweetVidWeakMap = new WeakMap();
         static async videoHandler() {
             const videos = document.querySelectorAll("video:not([data-handled])");
-            for (const vid of videos) {
-                if (vid.dataset.handled) {
+            for (const video of videos) {
+                if (video.dataset.handled) {
                     continue;
                 }
-                vid.dataset.handled = "true";
-                verbose && console.log("[ujs][videoHandler][vid]", vid);
+                video.dataset.handled = "true";
+                verbose && console.log("[ujs][videoHandler][video]", video);
 
-                const poster = vid.getAttribute("poster");
+                const poster = video.getAttribute("poster");
 
                 const btn = Btn.createButton({url: poster, isVideo: true});
                 btn.addEventListener("click", Core._videoClickHandler);
 
-                let elem = vid.closest(`[data-testid="videoComponent"]`).parentNode;
-                if (elem) {
-                    elem.append(btn);
-                } else {
-                    elem = vid.parentNode.parentNode.parentNode;
-                    elem.after(btn);
+                const videoComponentElem = video.closest(`[data-testid="videoComponent"]`);
+                if (videoComponentElem) {
+                    videoComponentElem.parentElement.append(btn);
+                } else { // just in case
+                    video.parentElement.parentElement.parentElement.after(btn);
                 }
 
                 const tweet = Tweet.of(btn);
@@ -791,7 +790,7 @@ function hoistFeatures() {
 
             let anchor = imgElem.closest("a");
             if (!anchor) {
-                anchor = imgElem.parentNode;
+                anchor = imgElem.parentElement;
             }
             anchor.append(btn);
 
@@ -827,7 +826,7 @@ function hoistFeatures() {
             btn.addEventListener("click", Core._multiMediaThumbClickHandler);
             let anchor = imgElem.closest("a");
             if (!anchor) {
-                anchor = imgElem.parentNode;
+                anchor = imgElem.parentElement;
             }
             anchor.append(btn);
 
