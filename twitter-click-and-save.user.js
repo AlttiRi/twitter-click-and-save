@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.21.2-2025.07.13-dev
+// @version     1.22.0-2025.07.23-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -666,59 +666,74 @@ function hoistFeatures() {
         }
     }
 
+    /** @param {HTMLImageElement} img */
+    function getImgParentElem(img) {
+        // find the parent "a"
+        // - for an image in a tweet ("expanded_url" - "/_/status/123456/photo/1")
+        // - or for an image/video on "/media" page (".../photo/1" / ".../video/1").
+        let parentElem = img.closest("a");
+        if (!parentElem) { // for video posters, or when `location.href` is "expanded_url"
+            verbose && console.log(`[ujs][getImgParentElem] No parent "expanded_url" link`, img);
+            parentElem = img.parentElement;
+        }
+        return parentElem;
+    }
+    /** @param {HTMLImageElement} img */
+    function isImageThumb(img) {
+        const listItemEl = img.closest(`li[role="listitem"]`); // The image on "/media" page
+        return Boolean(listItemEl);
+    }
+    /** @param {HTMLImageElement} img */
+    async function skipImage(img) {
+        if (img.width === 0) {
+            const imgOnload = new Promise(async (resolve) => {
+                img.onload = resolve;
+            });
+            await Promise.any([imgOnload, sleep(500)]);
+            await sleep(10); // to get updated img.width
+        }
+        return img.width < 140;
+    }
+
     class Core {
         static async imagesHandler() {
             verbose && console.log("[ujs][imagesHandler]");
             const images = document.querySelectorAll(`img:not([data-handled]):not([src$=".svg"])`);
-            for (const img of images) {
-                if (img.dataset.handled) {
-                    continue;
-                }
+            for (const img of images) { // let's mark them first, since handling is one by one with `await`
                 img.dataset.handled = "true";
-
-                if (img.width === 0) {
-                    const imgOnload = new Promise(async (resolve) => {
-                        img.onload = resolve;
-                    });
-                    await Promise.any([imgOnload, sleep(500)]);
-                    await sleep(10); // to get updated img.width
-                }
-                if (img.width < 140) {
+            }
+            for (const img of images) {
+                if (await skipImage(img)) {
                     continue;
                 }
                 verbose && console.log("[ujs][imagesHandler]", {img, img_width: img.width});
 
-                let parentElem = img.closest("a");
-                // if expanded_url (an image is _opened_ "https://twitter.com/UserName/status/1234567890123456789/photo/1" [fake-url])
-                if (!parentElem) {
-                    parentElem = img.parentElement;
-                }
-
-                const listItemEl = img.closest(`li[role="listitem"]`); // The element on "/media" page
-                const isThumb = Boolean(listItemEl);
-
+                const parentElem = getImgParentElem(img);
+                const isThumb = isImageThumb(img);
+                const isVideoThumb = Core._isVideoPoster(img)
                 if (isThumb && parentElem.querySelector("svg")) {
-                    await Core._multiMediaThumbHandler(img);
+                    Core._multiMediaThumbHandler(img, isThumb, parentElem, isVideoThumb);
                     continue;
                 }
-
-                const isVideoThumb = Core._isVideoPoster(img) || Core._isVideoPosterExtra(img);
-                if (isVideoThumb) {
-                    await Core._thumbVideoHandler(img, isThumb);
+                const isVideoPoster = isVideoThumb || Core._isVideoTweet(img);
+                if (isVideoPoster) {
+                    Core._videoPosterHandler(img, isThumb, parentElem);
                     continue;
                 }
+                Core._imagesHandler(img, isThumb, parentElem);
+            }
+        }
+        static _imagesHandler(img, isThumb, btnPlace) {
+            const btn = Btn.createButton({url: img.src, isThumb});
+            btn.addEventListener("click", Core._imageClickHandler);
+            btnPlace.append(btn);
 
-                const btn = Btn.createButton({url: img.src, isThumb});
-                btn.addEventListener("click", Core._imageClickHandler);
-                parentElem.append(btn);
-
-                const downloaded = ImageHistory.isDownloaded({
-                    id: Tweet.of(btn).id,
-                    url: btn.dataset.url
-                });
-                if (downloaded) {
-                    Btn.alreadyDownloaded(btn);
-                }
+            const downloaded = ImageHistory.isDownloaded({
+                id: Tweet.of(btn).id,
+                url: btn.dataset.url
+            });
+            if (downloaded) {
+                Btn.alreadyDownloaded(btn);
             }
         }
 
@@ -729,17 +744,17 @@ function hoistFeatures() {
                         || img.src.includes("tweet_video_thumb") /* GIF thumb */;
             return result;
         }
-        /** @param {HTMLImageElement} img */
-        static _isVideoPosterExtra(img) {
+        /** @param {HTMLImageElement} img */ // seems outdated // todo: delete
+        static _isVideoTweet(img) {
             const result = img.alt === "Animated Text GIF"
                         || img.alt === "Embedded video"
                         || img.closest(`a[aria-label="Embedded video"]`);
-            verbose && console.log("[ujs][_isVideoPosterExtra]", result, img);
+            verbose && console.log("[ujs][_isVideoTweet]", result, img);
             return result;
         }
 
-        static tweetVidWeakMapMobile = new WeakMap();
-        static tweetVidWeakMap = new WeakMap();
+        static tweetVidWeakMapPoster = new WeakMap();
+        static tweetVidWeakMap       = new WeakMap();
         static async videoHandler() {
             const videos = document.querySelectorAll("video:not([data-handled])");
             for (const video of videos) {
@@ -793,18 +808,12 @@ function hoistFeatures() {
             }
         }
 
-        // Quick Dirty Fix // todo refactor
-        static async _thumbVideoHandler(imgElem, isThumb) {
+        static _videoPosterHandler(imgElem, isThumb, btnPlace) {
             verbose && console.log("[ujs][_thumbVideoHandler][vid]", imgElem);
 
             const btn = Btn.createButton({url: imgElem.src, isVideo: true, isThumb});
             btn.addEventListener("click", Core._videoClickHandler);
-
-            let anchor = imgElem.closest("a");
-            if (!anchor) {
-                anchor = imgElem.parentElement;
-            }
-            anchor.append(btn);
+            btnPlace.append(btn);
 
             const tweet = Tweet.of(btn);
             const tweetId = tweet.id;
@@ -812,7 +821,7 @@ function hoistFeatures() {
             let videoIndex = 0;
 
             if (tweetElem) {
-                const map = Core.tweetVidWeakMapMobile;
+                const map = Core.tweetVidWeakMapPoster;
                 if (map.has(tweetElem)) {
                     videoIndex = map.get(tweetElem) + 1;
                     map.set(tweetElem, videoIndex);
@@ -827,20 +836,12 @@ function hoistFeatures() {
             }
         }
 
-        static async _multiMediaThumbHandler(imgElem) {
+        static _multiMediaThumbHandler(imgElem, isThumb, btnPlace, isVideo) {
             verbose && console.log("[ujs][_multiMediaThumbHandler]", imgElem);
-            let isVideo = false;
-            if (Core._isVideoPoster(imgElem)) {
-                isVideo = true;
-            }
 
-            const btn = Btn.createButton({url: imgElem.src, isVideo, isThumb: true, isMultiMedia: true});
+            const btn = Btn.createButton({url: imgElem.src, isVideo, isThumb, isMultiMedia: true});
             btn.addEventListener("click", Core._multiMediaThumbClickHandler);
-            let anchor = imgElem.closest("a");
-            if (!anchor) {
-                anchor = imgElem.parentElement;
-            }
-            anchor.append(btn);
+            btnPlace.append(btn);
 
             let downloaded;
             const tweetId = Tweet.of(btn).id;
@@ -875,8 +876,7 @@ function hoistFeatures() {
             return await Core._downloadPhotoMediaEntry(id, author, url, btn);
         }
 
-        // Banner/Background
-        static async _downloadBanner(url, btn) { // todo: catch the error // add progress
+        static async _downloadBanner(url, btn) { // Banner/Background // todo: catch the error // add progress
             Btn.startDownloading(btn);
 
             const {blob, lastModifiedDate, extension, name} = await fetchResource(url);
@@ -987,6 +987,7 @@ function hoistFeatures() {
 
             const btn = Btn.getBtnElemFromEvent(event);
             Btn.clearState(btn);
+            Btn.startDownloading(btn);
             const {id} = Tweet.of(btn);
 
             /** @type {TweetMediaEntry[]} */
@@ -1020,7 +1021,7 @@ function hoistFeatures() {
             Btn.markAsDownloaded(btn);
         }
 
-        static async _videoClickHandler(event) { // todo: parse the URL from HTML (For "Embedded video" (?))
+        static async _videoClickHandler(event) { // todo: parse the URL from HTML for "GIF"s // https://video.twimg.com/tweet_video/12345Abc.mp4
             event.preventDefault();
             event.stopImmediatePropagation();
 
@@ -1087,7 +1088,7 @@ function hoistFeatures() {
             const downloaded = Btn.isDownloaded(btn);
             if (!downloaded) {
                 await VideoHistory.markDownloaded({tweetId: videoTweetId, videoIndex});
-                if (videoTweetId !== id) { // if QRT
+                if (videoTweetId !== id) { // if QRT // note: a new QRT tweet will not be marked // todo: keep poster url
                     await VideoHistory.markDownloaded({tweetId: id, videoIndex});
                 }
             }
@@ -1695,6 +1696,7 @@ function hoistTweet() {
             }
         }
 
+        // QRT photo (only!) has a link to the original tweet https://x.com/User/status/1234567890/photo/1
         static of(innerElem) {
             // Workaround for media from a quoted tweet
             const url = innerElem.closest(`a[href^="/"]`)?.href;
@@ -1703,7 +1705,7 @@ function hoistTweet() {
             }
 
             const elem = innerElem.closest(`[data-testid="tweet"]`);
-            if (!elem) { // opened image
+            if (!elem) { // === null // opened image or bg image
                 verbose && console.log("[ujs][Tweet.of]", "No-tweet elem");
             }
             return new Tweet({elem});
