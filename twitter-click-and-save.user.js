@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.23.0-2025.07.26-dev
+// @version     1.24.0-2025.07.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -496,14 +496,13 @@ function hoistFeatures() {
             btnErrorTextElem.style = errorStyle;
             let title = err.message;
             if (text) {
-                title = text + "\n" + title;
+                title = text + "\n" + err.message;
             }
             if (title.includes("{ffHint}")) {
                 title =  title.replace("{ffHint}", Btn.getFFHint());
             }
-            btn.title = title;
-
-            err.message = "[error] " + err.message + title;
+            btn.title   = title;
+            err.message = title;
             return err;
         }
         static warning({btn, text = ""} = {}) {
@@ -874,7 +873,11 @@ function hoistFeatures() {
             const {id, author} = Tweet.of(btn);
             verbose && console.log("[ujs][_imageClickHandler]", {id, author});
 
-            return await Core._downloadPhotoMediaEntry(id, author, url, btn);
+            try {
+                await Core._downloadPhotoMediaEntry(id, author, url, btn);
+            } catch (err) {
+                throw Btn.error({btn, err, text: "Failed to download the image."});
+            }
         }
 
         static async _downloadBanner(url, btn) { // Banner/Background // todo: catch the error // add progress
@@ -923,23 +926,26 @@ function hoistFeatures() {
                 if (urlObj.searchParams.get("format") === "webp") {
                     urlObj.searchParams.set("format", "jpg");
                 }
-                url = urlObj.toString();
-                verbose && console.log("[ujs][handleImgUrl][url]", url);
-                return url;
+                const urlStr = urlObj.toString();
+                verbose && console.log("[ujs][handleImgUrl][url]", urlStr);
+                return urlStr;
             }
 
-            async function safeFetchResource(url) {
+            let currentUrl = url;
+
+            async function safeFetchResource(urlStr) {
                 while (true) {
-                    url = handleImgUrl(url);
+                    const newUrl = handleImgUrl(urlStr);
+                    currentUrl = newUrl;
                     try {
-                        const result = await fetchResource(url, onProgress);
-                        if (result.status === 404) {
-                            const urlObj = new URL(url);
+                        const result = await fetchResource(newUrl, onProgress);
+                        if (result.status === 404) { // todo: handle any 400 and 500 errors
+                            const urlObj = new URL(newUrl);
                             const params = urlObj.searchParams;
                             if (params.get("name") === "orig" && params.get("format") === "jpg") {
                                 params.set("format", "png");
-                                url = urlObj.toString();
-                                return await fetchResource(url, onProgress);
+                                const newPngUrl = urlObj.toString();
+                                return await fetchResource(newPngUrl, onProgress);
                             }
                         }
                         return result;
@@ -948,32 +954,32 @@ function hoistFeatures() {
                             Btn.warning({btn, text: "Original images are not available."});
                         }
                         if (!samples.length) {
-                            throw Btn.error({btn, err, text: "Failed to download the image. All fallback URLs are failed.{ffHint}"});
+                            throw Btn.error({btn, err, text: "All fallback URLs are failed.{ffHint}"});
                         }
                     }
                 }
             }
 
             Btn.connectionWaiting(btn);
-            const {blob, lastModifiedDate, extension, name} = await safeFetchResource(url);
-            Core._verifyBlob(blob, url);
+            const {blob, lastModifiedDate, extension, name} = await safeFetchResource(currentUrl);
+            Core._verifyBlob(blob, currentUrl); // throws an error for 503 http status code
             Btn.completeProgress(btn);
 
             const sampleText = isSample ? "[sample]" : ""; // "[sample]" prefix, when the original image is not available to download
             const filename = renderTemplateString(imageFilenameTemplate, {
                 author, lastModifiedDate, tweetId: id, name, extension, sampleText,
             }).value;
-            downloadBlob(blob, filename, url);
+            downloadBlob(blob, filename, currentUrl);
 
             const downloaded = Btn.isDownloaded(btn);
             if (!downloaded && !isSample) {
-                await ImageHistory.markDownloaded({id, url});
+                await ImageHistory.markDownloaded({id, url: currentUrl});
             }
 
             if (btn.dataset.isMultiMedia && !isSample) { // dirty fix
-                const isDownloaded = ImageHistory.isDownloaded({id, url});
+                const isDownloaded = ImageHistory.isDownloaded({id, url: currentUrl});
                 if (!isDownloaded) {
-                    await ImageHistory.markDownloaded({id, url});
+                    await ImageHistory.markDownloaded({id, url: currentUrl});
                 }
             }
 
@@ -1109,7 +1115,7 @@ function hoistFeatures() {
 
         static _verifyBlob(blob, url) {
             if (!blob.size) {
-                throw new Error("Download Error.\nZero size blob: " + url);
+                throw new Error("Zero size blob: " + url);
             }
         }
 
