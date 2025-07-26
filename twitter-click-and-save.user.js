@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.22.0-2025.07.23-dev
+// @version     1.23.0-2025.07.26-dev
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -9,6 +9,7 @@
 // @supportURL  https://github.com/AlttiRi/twitter-click-and-save/issues
 // @license     GPL-3.0
 // @grant       GM.registerMenuCommand
+// @icon        https://raw.githubusercontent.com/AlttiRi/twitter-click-and-save/master/x-icon-with-button.png
 // ==/UserScript==
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
