@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.24.0-2025.07.26-dev
+// @version     1.25.0-2025.08.08
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -188,12 +188,12 @@ function execFeaturesOnce() {
     settings.hideLoginPopup                 && Features.hideLoginPopup();
 }
 function execFeaturesImmediately() {
-    settings.expandSpoilers     && Features.expandSpoilers();
+    // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
 }
 function execFeatures() {
     settings.imagesHandler      && Features.imagesHandler();
     settings.videoHandler       && Features.videoHandler();
-    settings.expandSpoilers     && Features.expandSpoilers();
+    // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
     settings.hideSignUpSection  && Features.hideSignUpSection();
     settings.directLinks        && Features.directLinks();
     settings.handleTitle        && Features.handleTitle();
@@ -244,7 +244,7 @@ function loadSettings() {
 
         highlightVisitedLinks: true,
         highlightOnlySpecialVisitedLinks: true,
-        expandSpoilers: true,
+        expandSpoilers: false,
 
         directLinks: true,
         handleTitle: true,
@@ -315,8 +315,6 @@ function showSettings() {
               <legend>Recommended</legend>
               <label><input type="checkbox" ${s.highlightVisitedLinks ? "checked" : ""} name="highlightVisitedLinks">Highlight Visited Links<br/></label>
               <label title="In most cases absolute links are 3rd-party links"><input type="checkbox" ${s.highlightOnlySpecialVisitedLinks ? "checked" : ""} name="highlightOnlySpecialVisitedLinks">Highlight Only Absolute Visited Links<br/></label>
-
-              <label title="Note: since the recent update the most NSFW spoilers are impossible to expand without an account"><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers (if possible)*<br/></label>
           </fieldset>
           <fieldset>
               <legend>Highly Recommended</legend>
@@ -339,6 +337,7 @@ function showSettings() {
 
               <label><input type="checkbox" ${s.hideSignUpSection ? "checked" : ""} name="hideSignUpSection">Hide <b title='"New to Twitter?" (If yoy are not logged in)'>Sign Up</b> section (in the right column)*<br/></label>
               <label title="Hides the modal login pop up. Useful if you have no account. \nWARNING: Currently it will close any popup, not only the login one.\nIt's recommended to use only if you do not have an account to hide the annoiyng login popup."><input type="checkbox" ${s.hideLoginPopup ? "checked" : ""} name="hideLoginPopup">Hide <strike>Login</strike> Popups. (beta)<br/></label>
+              <label title="Note: since the recent update the most NSFW spoilers are impossible to expand without an account"><input type="checkbox" ${s.expandSpoilers ? "checked" : ""} name="expandSpoilers">Expand Spoilers (if possible)*<br/></label>
 
               </strike>
           </fieldset>
@@ -1450,9 +1449,7 @@ function getUserScriptCSS() {
     // so it works — no need to use `getScrollbarWidth` function from SO (13382516).
     const scrollbarWidth = window.innerWidth - document.body.offsetWidth;
 
-    // just to highlight the CSS text in IDE // prepend it before "`" of `cssText` variable.
-    // const css = (strings, ...values) => String.raw({raw: strings}, ...values);
-
+    // language=CSS
     const cssText = `
 .ujs-modal-wrapper .ujs-modal-settings {
   color: black;
