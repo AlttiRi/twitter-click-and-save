@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.25.0-2025.08.08
+// @version     1.26.0-2025.08.08
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -188,12 +188,12 @@ function execFeaturesOnce() {
     settings.hideLoginPopup                 && Features.hideLoginPopup();
 }
 function execFeaturesImmediately() {
-    // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
+ // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
 }
 function execFeatures() {
     settings.imagesHandler      && Features.imagesHandler();
     settings.videoHandler       && Features.videoHandler();
-    // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
+ // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
     settings.hideSignUpSection  && Features.hideSignUpSection();
     settings.directLinks        && Features.directLinks();
     settings.handleTitle        && Features.handleTitle();
@@ -684,6 +684,10 @@ function hoistFeatures() {
     }
     /** @param {HTMLImageElement} img */
     async function skipImage(img) {
+        // Age-restricted adult content.
+        if (img.src === "https://pbs.twimg.com/media/GxJIrSUagAAK-ZP?format=jpg&name=240x240") {
+            return true;
+        }
         if (img.width === 0) {
             const imgOnload = new Promise(async (resolve) => {
                 img.onload = resolve;
