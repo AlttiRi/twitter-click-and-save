@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.26.3-2025.09.19
+// @version     1.26.4-2025.09.22
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1630,7 +1630,7 @@ div[aria-label="${labelText}"]:hover .ujs-btn-download {
 }
 .ujs-btn-download[data-is-multi-media] .ujs-dot.ujs-back {
     bottom: 4px;
-    right: 2px;
+    right: 1px;
 
     background: transparent;
     border-top:   1px solid rgba(255, 255, 255, 0.5);
