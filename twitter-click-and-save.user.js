@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.26.6-2025.11.02
+// @version     1.27.0-2025.11.15
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1861,7 +1861,7 @@ function hoistAPI() {
             const instruction = json.data.threaded_conversation_with_injections_v2.instructions.find(ins => ins.type === "TimelineAddEntries");
             const tweetEntry  = instruction.entries.find(ins => ins.entryId === "tweet-" + tweetId);
             let tweetResult = tweetEntry.content.itemContent.tweet_results.result; // {"__typename": "Tweet"} // or {"__typename": "TweetWithVisibilityResults", tweet: {...}} (1641596499351212033)
-            if (tweetResult.tweet) {
+            if ("tweet" in tweetResult) {
                 tweetResult = tweetResult.tweet;
             }
             verbose && console.log("[ujs][parseTweetJsonFrom_TweetDetail] tweetResult", tweetResult, JSON.stringify(tweetResult));
@@ -1875,7 +1875,7 @@ function hoistAPI() {
         /** return {tweetResult, tweetLegacy, tweetUser} */
         static parseTweetJsonFrom_TweetResultByRestId(json, tweetId) {
             let tweetResult = json.data.tweetResult.result; // {"__typename": "Tweet"} // or {"__typename": "TweetWithVisibilityResults", tweet: {...}} (1641596499351212033)
-            if (tweetResult.tweet) {
+            if ("tweet" in tweetResult) {
                 tweetResult = tweetResult.tweet;
             }
             const tweetUser   = tweetResult.core.user_results.result; // {"__typename": "User"}
@@ -1903,7 +1903,21 @@ function hoistAPI() {
          */
         /** @returns {TweetMediaEntry[]} */
         static parseTweetLegacyMedias(tweetResult, tweetLegacy, tweetUser) {
-            if (!tweetLegacy.extended_entities || !tweetLegacy.extended_entities.media) {
+            let sourceMedias = [];
+
+            if (tweetLegacy.extended_entities && tweetLegacy.extended_entities.media) {
+                sourceMedias = tweetLegacy.extended_entities.media;
+            } else if ("card" in tweetResult) {
+                const unified_card = tweetResult.card.legacy?.binding_values?.find(bv => bv.key === "unified_card");
+                if (!unified_card) {
+                    verbose && console.log("[ujs][getTweetMedias] unified_card is not found");
+                    return [];
+                } else {
+                    verbose && console.log("[ujs][getTweetMedias] unified_card", unified_card, unified_card.value.string_value);
+                    const value = JSON.parse(unified_card.value.string_value);
+                    sourceMedias = Object.values(value.media_entities);
+                }
+            } else {
                 return [];
             }
 
@@ -1911,7 +1925,7 @@ function hoistAPI() {
             const typeIndex = {}; // "photo", "video", "animated_gif"
             let index = -1;
 
-            for (const media of tweetLegacy.extended_entities.media) {
+            for (const media of sourceMedias) {
                 index++;
                 let   type          = media.type;
                 const type_original = media.type;
