@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.27.0-2025.11.15
+// @version     1.27.1-2025.11.15
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -1908,14 +1908,15 @@ function hoistAPI() {
             if (tweetLegacy.extended_entities && tweetLegacy.extended_entities.media) {
                 sourceMedias = tweetLegacy.extended_entities.media;
             } else if ("card" in tweetResult) {
-                const unified_card = tweetResult.card.legacy?.binding_values?.find(bv => bv.key === "unified_card");
-                if (!unified_card) {
-                    verbose && console.log("[ujs][getTweetMedias] unified_card is not found");
-                    return [];
-                } else {
+                try {
+                    const unified_card = tweetResult.card.legacy.binding_values.find(bv => bv.key === "unified_card");
                     verbose && console.log("[ujs][getTweetMedias] unified_card", unified_card, unified_card.value.string_value);
                     const value = JSON.parse(unified_card.value.string_value);
+                    verbose && console.log("[ujs][getTweetMedias] unified_card value", value);
                     sourceMedias = Object.values(value.media_entities);
+                } catch (e) {
+                    verbose && console.log("[ujs][getTweetMedias] failed to parse unified_card", e);
+                    return [];
                 }
             } else {
                 return [];
