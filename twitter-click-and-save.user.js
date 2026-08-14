@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.27.1-2025.11.15
+// @version     1.28.0-2026.08.14
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -186,6 +186,7 @@ function execFeaturesOnce() {
     settings.hideTrends                     && Features.hideTrends();
     settings.highlightVisitedLinks          && Features.highlightVisitedLinks();
     settings.hideLoginPopup                 && Features.hideLoginPopup();
+    settings.cssRemoveCarousel              && Features.cssRemoveCarousel();
 }
 function execFeaturesImmediately() {
  // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
@@ -255,6 +256,7 @@ function loadSettings() {
 
         hideLoginPopup: false,
         addBorder: true,
+        cssRemoveCarousel: false,
 
         strictTrackingProtectionFix: true,
     };
@@ -308,6 +310,7 @@ function showSettings() {
               <label title="Makes the button more visible"><input type="checkbox" ${s.addBorder ? "checked" : ""} name="addBorder">Add a white border to the download button<br/></label>
               <label title="WARNING: It may broke the login page, but it works fine if you logged in and want to hide 'Messages'"><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <strike><b>Sign Up Bar</b> and</strike> <b>Messages</b> and <b>Cookies</b> (in the bottom). <span title="WARNING: It may broke the login page!">(beta)</span><br/></label>
               <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b> (in the right column)*<br/></label>
+              <label><input type="checkbox" ${s.cssRemoveCarousel ? "checked" : ""} name="cssRemoveCarousel">Remove <b>Carousel</b> for multimedia tweets<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
           </fieldset>
@@ -1367,6 +1370,21 @@ function hoistFeatures() {
             addCSS(`
                 a:visited {
                     color: darkorange !important;
+                }
+            `);
+        }
+
+        static cssRemoveCarousel() {
+            addCSS(`
+                [role="article"] [data-testid="ScrollSnap-List"] {
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  grid-auto-flow: row;
+                  align-content: initial;
+                }
+                
+                [role="article"] [data-testid="ScrollSnap-List"] > *:last-child:nth-child(odd) {
+                  grid-column: 1 / -1;  
                 }
             `);
         }
