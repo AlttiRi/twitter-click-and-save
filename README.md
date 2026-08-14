@@ -31,7 +31,7 @@ FireMonkey
 Greasemonkey
 [![Firefox image by Mozilla Foundation](https://github.com/user-attachments/assets/b7292c1c-dc7b-44ab-a159-0935991c503f "Download Greasemonkey for Firefox")](https://addons.mozilla.org/firefox/addon/greasemonkey/)._
 
-_Also, you can install the latest (beta) version from [GitHub](https://github.com/AlttiRi/twitter-click-and-save/raw/refs/heads/master/twitter-click-and-save.user.js)._
+_Also, you can install the latest (beta) version from [GitHub](https://github.com/AlttiRi/twitter-click-and-save/raw/refs/heads/master/twitter-click-and-save.user.js)/[GHP](https://alttiri.github.io/twitter-click-and-save/twitter-click-and-save.user.js)._
 
 ---
 
