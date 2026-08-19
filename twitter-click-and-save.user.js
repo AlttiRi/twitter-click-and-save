@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.28.3-2026.08.14
+// @version     1.29.1-2026.08.19
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -187,7 +187,7 @@ function execFeaturesOnce() {
     settings.hideTrends                     && Features.hideTrends();
     settings.highlightVisitedLinks          && Features.highlightVisitedLinks();
     settings.hideLoginPopup                 && Features.hideLoginPopup();
-    settings.cssRemoveCarousel              && Features.cssRemoveCarousel();
+    settings.cssRemoveMultimediaCarousel    && Features.cssRemoveMultimediaCarousel();
 }
 function execFeaturesImmediately() {
  // settings.expandSpoilers     && Features.expandSpoilers(); // 2025.08.08 // "Scan to confirm your age" popup
@@ -257,7 +257,7 @@ function loadSettings() {
 
         hideLoginPopup: false,
         addBorder: true,
-        cssRemoveCarousel: false,
+        cssRemoveMultimediaCarousel: true,
 
         strictTrackingProtectionFix: true,
     };
@@ -311,7 +311,7 @@ function showSettings() {
               <label title="Makes the button more visible"><input type="checkbox" ${s.addBorder ? "checked" : ""} name="addBorder">Add a white border to the download button<br/></label>
               <label title="WARNING: It may broke the login page, but it works fine if you logged in and want to hide 'Messages'"><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <strike><b>Sign Up Bar</b> and</strike> <b>Messages</b> and <b>Cookies</b> (in the bottom). <span title="WARNING: It may broke the login page!">(beta)</span><br/></label>
               <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b> (in the right column)*<br/></label>
-              <label><input type="checkbox" ${s.cssRemoveCarousel ? "checked" : ""} name="cssRemoveCarousel">Remove <b>Carousel</b> for multimedia tweets<br/></label>
+              <label><input type="checkbox" ${s.cssRemoveMultimediaCarousel ? "checked" : ""} name="cssRemoveMultimediaCarousel">Remove <b>Carousel</b> for multimedia tweets<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
           </fieldset>
@@ -1375,7 +1375,38 @@ function hoistFeatures() {
             `);
         }
 
-        static cssRemoveCarousel() {
+        static cssRemoveMultimediaCarousel() {
+            addCSS(`
+                [role="article"] [data-testid="ScrollSnap-List"] {
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  grid-auto-flow: row;
+                  align-content: initial;
+                  gap: 2px;
+                }
+                
+                /* stretch first item full-width when count is odd, except for exactly 3 items */
+                [role="article"] [data-testid="ScrollSnap-List"] > *:first-child:nth-last-child(odd):not(:nth-last-child(3)) {
+                  grid-column: 1 / -1;
+                }
+                
+                /* when exactly 3 items — stretch the first one full-height instead */
+                [role="article"] [data-testid="ScrollSnap-List"] > *:first-child:nth-last-child(3) {
+                  grid-row: 1 / 3;
+                  grid-column: 1 / 2;
+                }
+                
+                [role="article"] [data-testid="ScrollSnap-List"] [data-testid="tweetPhoto"] > div {
+                    position: absolute;
+                    top:    0px;
+                    bottom: 0px;
+                    right:  0px;
+                    left:   0px;
+                }
+            `);
+        }
+
+        static cssRemoveMultimediaCarousel_v1() {
             addCSS(`
                 [role="article"] [data-testid="ScrollSnap-List"] {
                   display: grid;
