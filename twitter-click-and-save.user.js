@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.29.1-2026.08.19
+// @version     1.29.2-2026.08.19
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -311,7 +311,6 @@ function showSettings() {
               <label title="Makes the button more visible"><input type="checkbox" ${s.addBorder ? "checked" : ""} name="addBorder">Add a white border to the download button<br/></label>
               <label title="WARNING: It may broke the login page, but it works fine if you logged in and want to hide 'Messages'"><input type="checkbox" ${s.hideSignUpBottomBarAndMessages ? "checked" : ""} name="hideSignUpBottomBarAndMessages">Hide <strike><b>Sign Up Bar</b> and</strike> <b>Messages</b> and <b>Cookies</b> (in the bottom). <span title="WARNING: It may broke the login page!">(beta)</span><br/></label>
               <label><input type="checkbox" ${s.hideTrends ? "checked" : ""} name="hideTrends">Hide <b>Trends</b> (in the right column)*<br/></label>
-              <label><input type="checkbox" ${s.cssRemoveMultimediaCarousel ? "checked" : ""} name="cssRemoveMultimediaCarousel">Remove <b>Carousel</b> for multimedia tweets<br/></label>
               <label hidden><input type="checkbox" ${s.doNotPlayVideosAutomatically ? "checked" : ""} name="doNotPlayVideosAutomatically">Do <i>Not</i> Play Videos Automatically</b><br/></label>
               <label hidden><input type="checkbox" ${s.goFromMobileToMainSite ? "checked" : ""} name="goFromMobileToMainSite">Redirect from Mobile version (beta)<br/></label>
           </fieldset>
@@ -322,6 +321,7 @@ function showSettings() {
           </fieldset>
           <fieldset>
               <legend>Highly Recommended</legend>
+              <label><input type="checkbox" ${s.cssRemoveMultimediaCarousel ? "checked" : ""} name="cssRemoveMultimediaCarousel">Remove <b>Carousel</b> for multimedia tweets<br/></label>
               <label><input type="checkbox" ${s.directLinks ? "checked" : ""} name="directLinks">Direct Links</label><br/>
               <label><input type="checkbox" ${s.handleTitle ? "checked" : ""} name="handleTitle">Enchance Title*<br/></label>
           </fieldset>
