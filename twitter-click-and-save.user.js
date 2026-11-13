@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.30.0-2026.11.13
+// @version     1.30.1-2026.11.13
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -200,6 +200,7 @@ function execFeatures() {
     settings.hideSignUpSection  && Features.hideSignUpSection();
     settings.directLinks        && Features.directLinks();
     settings.handleTitle        && Features.handleTitle();
+    settings.cssRemoveMultimediaCarousel && Features.markMultimediaLists();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1383,21 +1384,22 @@ function hoistFeatures() {
                   display: grid;
                   grid-template-columns: repeat(2, 1fr);
                   grid-auto-flow: row;
+                  grid-auto-rows: minmax(180px, auto);
                   align-content: initial;
                   gap: 2px;
                 }
-                
+
                 /* stretch first item full-width when count is odd, except for exactly 3 items */
                 [role="article"] [data-testid="ScrollSnap-List"] > *:first-child:nth-last-child(odd):not(:nth-last-child(3)) {
                   grid-column: 1 / -1;
                 }
-                
+
                 /* when exactly 3 items — stretch the first one full-height instead */
                 [role="article"] [data-testid="ScrollSnap-List"] > *:first-child:nth-last-child(3) {
                   grid-row: 1 / 3;
                   grid-column: 1 / 2;
                 }
-                
+
                 [role="article"] [data-testid="ScrollSnap-List"] [data-testid="tweetPhoto"] > div {
                     position: absolute;
                     top:    0px;
@@ -1405,39 +1407,48 @@ function hoistFeatures() {
                     right:  0px;
                     left:   0px;
                 }
-                
-                [role="article"] [data-testid="ScrollSnap-List"] {
+
+                /* hide carousel arrows, grid has no horizontal scroll */
+                [role="article"] [data-testid="ScrollSnap-prevButtonWrapper"],
+                [role="article"] [data-testid="ScrollSnap-nextButtonWrapper"] {
+                    display: none !important;
+                }
+
+                /* only when more than 4 media (attribute is set by markMultimediaLists) */
+                [role="article"] [data-testid="ScrollSnap-List"][data-ujs-many] {
                     overflow-y: scroll;
                     overflow-x: hidden;
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(128, 128, 128, 0.7) transparent;
+                    margin-left: 0 !important;
+                    margin-right: 0 !important;
+                    padding-left: 0 !important;
+                    padding-right: 0 !important;
                 }
-                [role="article"] [data-testid="ScrollSnap-List"] [role="presentation"] {
-                    min-height: 180px;
+                [role="article"] [data-testid="ScrollSnap-List"][data-ujs-many]::-webkit-scrollbar {
+                    display: block;
+                    width: 8px;
+                    height: 8px;
                 }
-            `);
-        }
-
-        static cssRemoveMultimediaCarousel_v1() {
-            addCSS(`
-                [role="article"] [data-testid="ScrollSnap-List"] {
-                  display: grid;
-                  grid-template-columns: repeat(2, 1fr);
-                  grid-auto-flow: row;
-                  align-content: initial;
+                [role="article"] [data-testid="ScrollSnap-List"][data-ujs-many]::-webkit-scrollbar-track {
+                    background: transparent;
                 }
-
-                [role="article"] [data-testid="ScrollSnap-List"] > *:last-child:nth-child(odd) {
-                  grid-column: 1 / -1;
-                }
-
-                [role="article"] [data-testid="ScrollSnap-List"] [data-testid="tweetPhoto"] > div {
-                    position: absolute;
-                    top:    0px;
-                    bottom: 0px;
-                    right:  0px;
-                    left:   0px;
+                [role="article"] [data-testid="ScrollSnap-List"][data-ujs-many]::-webkit-scrollbar-thumb {
+                    background: rgba(128, 128, 128, 0.7);
+                    border-radius: 4px;
                 }
             `);
         }
+        static markMultimediaLists() {
+            const lists = document.querySelectorAll("[role=\"article\"] [data-testid=\"ScrollSnap-List\"]");
+            for (const list of lists) {
+                const many = list.children.length > 4;
+                if (many !== list.hasAttribute("data-ujs-many")) {
+                    list.toggleAttribute("data-ujs-many", many);
+                }
+            }
+        }
+
 
         // todo split to two methods
         // todo fix it, currently it works questionably
