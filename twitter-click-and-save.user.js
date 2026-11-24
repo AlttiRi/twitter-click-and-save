@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.30.3-2026.11.23
+// @version     1.30.4-2026.11.24
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -690,6 +690,13 @@ function hoistFeatures() {
     }
     /** @param {HTMLImageElement} img */
     async function skipImage(img) {
+        // UI icons (for example, the X logo) and other non-media images.
+        if (img.src.startsWith("data:")) {
+            return true;
+        }
+        if (img.closest("button")) {
+            return true;
+        }
         // Age-restricted adult content.
         if (img.src === "https://pbs.twimg.com/media/GxJIrSUagAAK-ZP?format=jpg&name=240x240") {
             return true;
@@ -700,6 +707,11 @@ function hoistFeatures() {
             });
             await Promise.any([imgOnload, sleep(500)]);
             await sleep(10); // to get updated img.width
+            if (img.width === 0) {
+                // The image is lazy-loaded (or it is a hidden carousel slide).
+                // Media images still can be handled, since their URL is enough to download them.
+                return !/\/(?:media|profile_banners|ext_tw_video_thumb|amplify_video_thumb|tweet_video_thumb)\//.test(img.src);
+            }
         }
         return img.width < 140;
     }
@@ -719,14 +731,14 @@ function hoistFeatures() {
 
                 const parentElem = getImgParentElem(img);
                 const isThumb = isImageThumb(img);
-                const isVideoThumb = Core._isVideoPoster(img)
+                const isVideoThumb = Core._isVideoPoster(img);
                 if (isThumb && parentElem.querySelector("svg")) {
                     Core._multiMediaThumbHandler(img, isThumb, parentElem, isVideoThumb);
                     continue;
                 }
-                const isVideoPoster = isVideoThumb || Core._isVideoTweet(img);
+                const isVideoPoster = isVideoThumb || Core._isVideoPosterImage(img) || Core._isVideoTweet(img);
                 if (isVideoPoster) {
-                    Core._videoPosterHandler(img, isThumb, parentElem);
+                    Core._videoPosterHandler(img, isThumb, Core._getMediaContainer(img));
                     continue;
                 }
                 Core._imagesHandler(img, isThumb, parentElem);
@@ -735,6 +747,7 @@ function hoistFeatures() {
         static _imagesHandler(img, isThumb, btnPlace) {
             const btn = Btn.createButton({url: img.src, isThumb});
             btn.addEventListener("click", Core._imageClickHandler);
+            btnPlace.dataset.ujsMediaWrapper = "true";
             btnPlace.append(btn);
 
             const downloaded = ImageHistory.isDownloaded({
@@ -762,6 +775,70 @@ function hoistFeatures() {
                         || img.src.includes("tweet_video_thumb") /* GIF thumb */;
             return result;
         }
+
+        /**
+         * Returns a media identity from an image URL, ignoring the `name`/`format` search params.
+         * @param {string} [url]
+         * @returns {string | null}
+         */
+        static _getMediaKeyFromUrl(url) {
+            if (!url) {
+                return null;
+            }
+            const {pathname} = new URL(url);
+            // https://pbs.twimg.com/media/HXBS_RyWMAAE_VR.jpg -> HXBS_RyWMAAE_VR
+            const imageName = pathname.match(/\/media\/(?<name>[^/.]+)/)?.groups.name;
+            if (imageName) {
+                return imageName;
+            }
+            // https://pbs.twimg.com/ext_tw_video_thumb/1418673666997489670/pu/img/xxx.jpg -> 1418673666997489670
+            const videoId = pathname.match(/\/(?:ext_tw_video_thumb|amplify_video_thumb|tweet_video_thumb)\/(?<id>\d+)/)?.groups.id;
+            if (videoId) {
+                return videoId;
+            }
+            return pathname;
+        }
+
+        /**
+         * The poster of a video can have a regular `/media/` URL (for example, for embedded videos).
+         * In this case the `<video>` element is placed in the same media container.
+         * @param {HTMLImageElement} img
+         */
+        static _isVideoPosterImage(img) {
+            if (Core._isVideoPoster(img)) {
+                return true;
+            }
+            if (!img.src.includes("/media/")) {
+                return false;
+            }
+            const container = Core._getMediaContainer(img);
+            return Boolean(container.querySelector("video"));
+        }
+
+        /**
+         * Returns the visual container of a media element.
+         * The new Twitter's DOM has no `data-testid` attributes, so it is detected by its computed styles.
+         * @param {HTMLElement} elem
+         * @returns {HTMLElement}
+         */
+        static _getMediaContainer(elem) {
+            let firstPositioned = null;
+            let node = elem.parentElement;
+            while (node && node !== document.body) {
+                const style = getComputedStyle(node);
+                if (style.position !== "static" && !firstPositioned) {
+                    firstPositioned = node;
+                }
+                if (style.position === "relative" && (style.overflow === "hidden" || style.overflow === "clip")) {
+                    return node;
+                }
+                if (node.tagName === "ARTICLE") {
+                    break;
+                }
+                node = node.parentElement;
+            }
+            return firstPositioned || elem.parentElement;
+        }
         /** @param {HTMLImageElement} img */ // seems outdated // todo: delete
         static _isVideoTweet(img) {
             const result = img.alt === "Animated Text GIF"
@@ -771,8 +848,23 @@ function hoistFeatures() {
             return result;
         }
 
-        static tweetVidWeakMapPoster = new WeakMap();
-        static tweetVidWeakMap       = new WeakMap();
+        // `tweetElem` -> Map<tweetId, videoCount>, since a tweet may contain videos with different tweet IDs (QRT).
+        static tweetVidWeakMap = new WeakMap();
+        /** @returns {number} The index of the video in the tweet (for the download history) */
+        static _getNextVideoIndex(tweetElem, tweetId) {
+            if (!tweetElem) {
+                return 0;
+            }
+            let map = Core.tweetVidWeakMap.get(tweetElem);
+            if (!map) {
+                map = new Map();
+                Core.tweetVidWeakMap.set(tweetElem, map);
+            }
+            const videoIndex = map.get(tweetId) ?? 0;
+            map.set(tweetId, videoIndex + 1);
+            return videoIndex;
+        }
+
         static async videoHandler() {
             const videos = document.querySelectorAll("video:not([data-handled])");
             for (const video of videos) {
@@ -784,40 +876,44 @@ function hoistFeatures() {
 
                 const poster = video.getAttribute("poster");
 
+                // The poster image handler creates the button for such videos.
+                const scope = video.closest("article") || document;
+                const posterKey = Core._getMediaKeyFromUrl(poster);
+                if (posterKey) {
+                    const sameMediaBtns = [...scope.querySelectorAll(".ujs-btn-download")]
+                        .filter(btn => Core._getMediaKeyFromUrl(btn.dataset.url) === posterKey);
+                    if (sameMediaBtns.some(btn => btn.classList.contains("ujs-video"))) {
+                        continue;
+                    }
+                    // A poster image can be handled as a regular image.
+                    sameMediaBtns.forEach(btn => btn.remove());
+                }
+
                 const btn = Btn.createButton({url: poster, isVideo: true});
                 btn.addEventListener("click", Core._videoClickHandler);
 
+                let btnPlace;
                 const videoComponentElem = video.closest(`[data-testid="videoComponent"]`);
                 if (videoComponentElem) {
-                    videoComponentElem.parentElement.append(btn);
-                } else { // just in case
-                    video.parentElement.parentElement.parentElement.after(btn);
+                    btnPlace = videoComponentElem.parentElement;
+                } else {
+                    btnPlace = Core._getMediaContainer(video);
                 }
+                btnPlace.dataset.ujsMediaWrapper = "true";
+                btnPlace.append(btn);
 
                 const tweet = Tweet.of(btn);
                 const tweetId = tweet.id;
-                const tweetElem = tweet.elem;
-                let videoIndex = 0;
+                const tweetElem = tweet.elem || btn.closest("article");
 
-                if (tweetElem) {
-                    const map = Core.tweetVidWeakMap;
-                    if (map.has(tweetElem)) {
-                        videoIndex = map.get(tweetElem) + 1;
-                        map.set(tweetElem, videoIndex);
-                    } else {
-                        map.set(tweetElem, videoIndex); // can throw an error for null
-                    }
-                } else { // expanded_url
-                    await sleep(10);
-                    const match = location.pathname.match(/(?<=\/video\/)\d/);
-                    if (!match) {
-                        Btn.warning({btn, test: "missed match for videoIndex"});
-                        verbose && console.log("[ujs][videoHandler] missed match for videoIndex");
-                    } else {
+                let videoIndex = Core._getNextVideoIndex(tweetElem, tweetId);
+                if (!tweetElem) { // expanded_url
+                    const match = location.pathname.match(/(?<=\/video\/)\d+/);
+                    if (match) {
                         videoIndex = Number(match[0]) - 1;
-                        console.warn("[ujs][videoHandler] videoIndex", videoIndex);
                     }
                 }
+                btn.dataset.videoIndex = String(videoIndex);
 
                 const downloaded = VideoHistory.isDownloaded({tweetId, videoIndex});
                 if (downloaded) {
@@ -829,24 +925,26 @@ function hoistFeatures() {
         static _videoPosterHandler(imgElem, isThumb, btnPlace) {
             verbose && console.log("[ujs][_thumbVideoHandler][vid]", imgElem);
 
+            // The `videoHandler()` runs in parallel and can create a button for the same video.
+            const scope = imgElem.closest("article") || document;
+            const mediaKey = Core._getMediaKeyFromUrl(imgElem.src);
+            const sameMediaBtns = [...scope.querySelectorAll(".ujs-btn-download")]
+                .filter(btn => Core._getMediaKeyFromUrl(btn.dataset.url) === mediaKey);
+            const existedVideoIndex = sameMediaBtns.find(btn => btn.dataset.videoIndex !== undefined)?.dataset.videoIndex;
+            sameMediaBtns.forEach(btn => btn.remove());
+
             const btn = Btn.createButton({url: imgElem.src, isVideo: true, isThumb});
             btn.addEventListener("click", Core._videoClickHandler);
+            btnPlace.dataset.ujsMediaWrapper = "true";
             btnPlace.append(btn);
 
             const tweet = Tweet.of(btn);
             const tweetId = tweet.id;
-            const tweetElem = tweet.elem || btn.closest(`[data-testid="tweet"]`);
-            let videoIndex = 0;
-
-            if (tweetElem) {
-                const map = Core.tweetVidWeakMapPoster;
-                if (map.has(tweetElem)) {
-                    videoIndex = map.get(tweetElem) + 1;
-                    map.set(tweetElem, videoIndex);
-                } else {
-                    map.set(tweetElem, videoIndex); // can throw an error for null
-                }
-            } // else thumbnail
+            const tweetElem = tweet.elem || btn.closest("article");
+            const videoIndex = existedVideoIndex === undefined
+                ? Core._getNextVideoIndex(tweetElem, tweetId)
+                : Number(existedVideoIndex);
+            btn.dataset.videoIndex = String(videoIndex);
 
             const downloaded = VideoHistory.isDownloaded({tweetId, videoIndex});
             if (downloaded) {
@@ -859,6 +957,7 @@ function hoistFeatures() {
 
             const btn = Btn.createButton({url: imgElem.src, isVideo, isThumb, isMultiMedia: true});
             btn.addEventListener("click", Core._multiMediaThumbClickHandler);
+            btnPlace.dataset.ujsMediaWrapper = "true";
             btnPlace.append(btn);
 
             let downloaded;
@@ -1064,9 +1163,14 @@ function hoistFeatures() {
             let mediaEntry;
             try {
                 const medias = await API.getTweetMedias(id);
-                const posterUrl = btn.dataset.url; // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
-                const posterUrlClear = removeSearchParams(posterUrl);
-                mediaEntry = medias.find(media => media.preview_url.startsWith(posterUrlClear));
+                // [note] if `posterUrl` has `searchParams`, it will have no extension at the end of `pathname`.
+                const posterUrl = btn.dataset.url || "";
+                const posterUrlClear = posterUrl ? removeSearchParams(posterUrl) : "";
+                // The media ID from the poster URL is the most reliable way to find the media entry.
+                const posterMediaId = posterUrlClear.match(/\/(?:ext_tw_video_thumb|amplify_video_thumb|tweet_video_thumb)\/(?<mediaId>\d+)/)?.groups.mediaId;
+                mediaEntry = (posterMediaId && medias.find(media => media.media_id === posterMediaId))
+                          || (posterUrlClear && medias.find(media => media.preview_url.startsWith(posterUrlClear)))
+                          || (!posterUrlClear && medias.find(media => media.type === "video"));
                 verbose && console.log("[ujs][_videoClickHandler] mediaEntry", mediaEntry);
             } catch (err) {
                 throw Btn.error({btn, err, text: "API.getVideoInfo failed.{ffHint}"});
@@ -1605,25 +1709,22 @@ function getUserScriptCSS() {
     opacity: 0;
 }
 
-li[role="listitem"]:hover .ujs-btn-download {
-    opacity: 1;
-}
-article[role=article]:hover .ujs-btn-download {
-    opacity: 1;
-}
-div[aria-label="${labelText}"]:hover .ujs-btn-download {
+/* The new Twitter's DOM has no role="article" and no data-testid attributes. */
+article:hover .ujs-btn-download,
+article:focus-within .ujs-btn-download,
+li:hover .ujs-btn-download,
+[data-href*="/status/"]:hover .ujs-btn-download,
+li[role="listitem"]:hover .ujs-btn-download,
+div[aria-label="${labelText}"]:hover .ujs-btn-download,
+[data-ujs-media-wrapper]:hover > .ujs-btn-download,
+[data-ujs-media-wrapper]:focus-within > .ujs-btn-download,
+.ujs-btn-download:hover {
     opacity: 1;
 }
 .ujs-btn-download.ujs-downloaded {
     opacity: 1;
 }
 .ujs-btn-download.ujs-downloading {
-    opacity: 1;
-}
-[data-testid="videoComponent"]:hover + .ujs-btn-download {
-    opacity: 1;
-}
-[data-testid="videoComponent"] + .ujs-btn-download:hover {
     opacity: 1;
 }
 
@@ -1787,28 +1888,64 @@ function getLanguageConstants() { // todo: "de", "fr"
 function hoistTweet() {
     class Tweet {
         constructor({elem, url}) {
+            this.elem = elem || null;
             if (url) {
-                this.elem = null;
                 this.url = url;
             } else {
-                this.elem = elem;
                 this.url = Tweet.getUrl(elem);
             }
         }
 
         // QRT photo (only!) has a link to the original tweet https://x.com/User/status/1234567890/photo/1
+        // Since 2026.11 Twitter has no `data-testid` attributes and no `role="article"`.
+        // A tweet is wrapped in `div[role="link"][data-href="/User/status/123"]`.
         static of(innerElem) {
-            // Workaround for media from a quoted tweet
-            const url = innerElem.closest(`a[href^="/"]`)?.href;
-            if (url && url.includes("/status/")) {
-                return new Tweet({url});
+            const elem = innerElem.closest(`article`) || innerElem.closest(`[data-testid="tweet"]`);
+            const url = Tweet.getMediaTweetUrl(innerElem);
+            if (url) {
+                return new Tweet({url, elem});
             }
-
-            const elem = innerElem.closest(`[data-testid="tweet"]`);
             if (!elem) { // === null // opened image or bg image
                 verbose && console.log("[ujs][Tweet.of]", "No-tweet elem");
             }
             return new Tweet({elem});
+        }
+
+        /**
+         * Returns the URL of the tweet that owns the media element.
+         * The media of a quoted tweet has a link to the quoted tweet inside its media container.
+         * @param {HTMLElement} innerElem
+         * @returns {string | null}
+         */
+        static getMediaTweetUrl(innerElem) {
+            // Old DOM: the media is inside a link to the original tweet.
+            const anchor = innerElem.closest(`a[href*="/status/"]`);
+            if (anchor) {
+                return anchor.href;
+            }
+
+            // New DOM: the link to the tweet is a sibling (an overlay) inside the media container.
+            let node = innerElem.parentElement;
+            for (let depth = 0; node && depth < 8; depth++, node = node.parentElement) {
+                const link = node.querySelector(`a[href*="/status/"]`);
+                if (link) {
+                    return link.href;
+                }
+                if (node.matches(`article`)) {
+                    break;
+                }
+            }
+
+            const wrapper = innerElem.closest(`[data-href*="/status/"]`);
+            if (wrapper) {
+                return new URL(wrapper.getAttribute("data-href"), location.origin).href;
+            }
+
+            if (location.pathname.includes("/status/")) {
+                return location.href;
+            }
+
+            return null;
         }
 
         static getUrl(elem) {
@@ -1816,13 +1953,25 @@ function hoistTweet() {
                 verbose && console.log("[ujs][Tweet.getUrl]", "Opened full screen image");
                 return location.href;
             }
-            const quotedTweetAnchorEl = [...elem.querySelectorAll("a")].find(el => {
-                return el.childNodes[0]?.nodeName === "TIME";
-            });
-            if (quotedTweetAnchorEl) {
-                verbose && console.log("[ujs][Tweet.getUrl]", "Quoted/Re Tweet");
-                return quotedTweetAnchorEl.href;
+
+            const wrapper = elem.closest(`[data-href*="/status/"]`);
+            if (wrapper) {
+                return new URL(wrapper.getAttribute("data-href"), location.origin).href;
             }
+
+            const tweetAnchor = [...elem.querySelectorAll(`a[href*="/status/"]`)].find(el => {
+                return el.querySelector(`time`) || el.childNodes[0]?.nodeName === "TIME";
+            });
+            if (tweetAnchor) {
+                verbose && console.log("[ujs][Tweet.getUrl]", "Quoted/Re Tweet");
+                return tweetAnchor.href;
+            }
+
+            const anyTweetAnchor = elem.querySelector(`a[href*="/status/"]`);
+            if (anyTweetAnchor) {
+                return anyTweetAnchor.href;
+            }
+
             verbose && console.log("[ujs][Tweet.getUrl]", "Unreachable"); // Is it used?
             return location.href;
         }
