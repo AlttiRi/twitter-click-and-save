@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Twitter Click'n'Save
-// @version     1.30.4-2026.11.24
+// @version     1.31.0-2026.11.25
 // @namespace   gh.alttiri
 // @description Add buttons to download images and videos in Twitter, also does some other enhancements.
 // @match       https://twitter.com/*
@@ -690,7 +690,7 @@ function hoistFeatures() {
     }
     /** @param {HTMLImageElement} img */
     async function skipImage(img) {
-        // UI icons (for example, the X logo) and other non-media images.
+        // Just in case: inline images are not media (Twitter does not seem to use them, at least in the old design).
         if (img.src.startsWith("data:")) {
             return true;
         }
@@ -800,6 +800,22 @@ function hoistFeatures() {
         }
 
         /**
+         * Returns the download buttons that were already created for the same media as `url`.
+         * @param {HTMLElement} elem
+         * @param {string | null} url
+         * @returns {HTMLElement[]}
+         */
+        static _findSameMediaBtns(elem, url) {
+            const mediaKey = Core._getMediaKeyFromUrl(url);
+            if (!mediaKey) {
+                return [];
+            }
+            const scope = elem.closest("article") || document;
+            return [...scope.querySelectorAll(".ujs-btn-download")]
+                .filter(btn => Core._getMediaKeyFromUrl(btn.dataset.url) === mediaKey);
+        }
+
+        /**
          * The poster of a video can have a regular `/media/` URL (for example, for embedded videos).
          * In this case the `<video>` element is placed in the same media container.
          * @param {HTMLImageElement} img
@@ -876,18 +892,13 @@ function hoistFeatures() {
 
                 const poster = video.getAttribute("poster");
 
-                // The poster image handler creates the button for such videos.
-                const scope = video.closest("article") || document;
-                const posterKey = Core._getMediaKeyFromUrl(poster);
-                if (posterKey) {
-                    const sameMediaBtns = [...scope.querySelectorAll(".ujs-btn-download")]
-                        .filter(btn => Core._getMediaKeyFromUrl(btn.dataset.url) === posterKey);
-                    if (sameMediaBtns.some(btn => btn.classList.contains("ujs-video"))) {
-                        continue;
-                    }
-                    // A poster image can be handled as a regular image.
-                    sameMediaBtns.forEach(btn => btn.remove());
+                // The poster image may be already handled (see `_videoPosterHandler()`).
+                const sameMediaBtns = Core._findSameMediaBtns(video, poster);
+                if (sameMediaBtns.some(btn => btn.classList.contains("ujs-video"))) {
+                    continue;
                 }
+                // The poster image could be handled as a regular image.
+                sameMediaBtns.forEach(btn => btn.remove());
 
                 const btn = Btn.createButton({url: poster, isVideo: true});
                 btn.addEventListener("click", Core._videoClickHandler);
@@ -908,8 +919,12 @@ function hoistFeatures() {
 
                 let videoIndex = Core._getNextVideoIndex(tweetElem, tweetId);
                 if (!tweetElem) { // expanded_url
+                    await sleep(10); // to ensure that the History API has changed the location URL
                     const match = location.pathname.match(/(?<=\/video\/)\d+/);
-                    if (match) {
+                    if (!match) {
+                        Btn.warning({btn, test: "missed match for videoIndex"});
+                        verbose && console.log("[ujs][videoHandler] missed match for videoIndex");
+                    } else {
                         videoIndex = Number(match[0]) - 1;
                     }
                 }
@@ -925,11 +940,9 @@ function hoistFeatures() {
         static _videoPosterHandler(imgElem, isThumb, btnPlace) {
             verbose && console.log("[ujs][_thumbVideoHandler][vid]", imgElem);
 
-            // The `videoHandler()` runs in parallel and can create a button for the same video.
-            const scope = imgElem.closest("article") || document;
-            const mediaKey = Core._getMediaKeyFromUrl(imgElem.src);
-            const sameMediaBtns = [...scope.querySelectorAll(".ujs-btn-download")]
-                .filter(btn => Core._getMediaKeyFromUrl(btn.dataset.url) === mediaKey);
+            // `imagesHandler()` awaits `skipImage()` before it gets here, while `videoHandler()` is called right after it
+            // and usually finishes first. So a button for the same video may already exist (it is not parallelism, just the call order).
+            const sameMediaBtns = Core._findSameMediaBtns(imgElem, imgElem.src);
             const existedVideoIndex = sameMediaBtns.find(btn => btn.dataset.videoIndex !== undefined)?.dataset.videoIndex;
             sameMediaBtns.forEach(btn => btn.remove());
 
@@ -1711,13 +1724,11 @@ function getUserScriptCSS() {
 
 /* The new Twitter's DOM has no role="article" and no data-testid attributes. */
 article:hover .ujs-btn-download,
-article:focus-within .ujs-btn-download,
 li:hover .ujs-btn-download,
 [data-href*="/status/"]:hover .ujs-btn-download,
 li[role="listitem"]:hover .ujs-btn-download,
 div[aria-label="${labelText}"]:hover .ujs-btn-download,
 [data-ujs-media-wrapper]:hover > .ujs-btn-download,
-[data-ujs-media-wrapper]:focus-within > .ujs-btn-download,
 .ujs-btn-download:hover {
     opacity: 1;
 }
